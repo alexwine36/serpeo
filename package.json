@@ -11,7 +11,7 @@
     "js-lint": "ultracite lint",
     "js-lint:ci": "biome check --diagnostic-level=error",
     "lint": "turbo run js-lint rust-lint sync:lint",
-    "rust-format": "cargo clippy --fix",
+    "rust-format": "cargo clippy --fix --allow-dirty",
     "rust-lint": "cargo clippy",
     "static": "turbo run js-lint rust-lint sync:lint typecheck",
     "sync:fix": "run-s sync:format sync:fix-*",

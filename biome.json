@@ -1,19 +1,10 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "extends": ["ultracite"],
-  "vcs": {
-    "enabled": false,
-    "clientKind": "git",
-    "useIgnoreFile": false
-  },
+
   "files": {
     "ignoreUnknown": false,
-    "ignore": [
-      "target/**",
-      "apps/serpeo/src-tauri/gen",
-      "**/.turbo/**",
-      "apps/serpeo/src/routeTree.gen.ts"
-    ]
+    "ignore": ["apps/serpeo/src-tauri/gen", "apps/serpeo/src/routeTree.gen.ts"]
   },
   "formatter": {
     "enabled": true,
