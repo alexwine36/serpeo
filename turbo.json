@@ -23,6 +23,7 @@
       "dependsOn": ["sync:fix"]
     },
     "//#rust-format": {},
+    "//#rust-test": {},
     "//#sync:lint": {},
     "//#sync:fix": {}
   }
