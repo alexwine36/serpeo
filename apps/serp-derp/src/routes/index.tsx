@@ -56,7 +56,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState("https://stem-programs.newspacenexus.org/");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SeoAnalysisResult | null>(null);
 
@@ -150,14 +150,14 @@ function Index() {
                     {/* <p>
                       <strong>Title:</strong> {result.meta_tags.title}
                     </p> */}
-                    <p>
+                    {/* <p>
                       <strong>Description:</strong>{" "}
                       {result.meta_tags.description}
                     </p>
                     <p>
                       <strong>Keywords:</strong>{" "}
                       {result.meta_tags.keywords.join(", ")}
-                    </p>
+                    </p> */}
                   </div>
                 </CardContent>
               </Card>
