@@ -17,10 +17,12 @@
         "height": 600
       }
     ],
+
     "security": {
       "csp": null
     }
   },
+
   "bundle": {
     "active": true,
     "targets": "all",

@@ -9,13 +9,14 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-async fn analyze_seo(url: String) -> Result<SeoAnalysis, String> {
-    analyze_url(&url).await.map_err(|e| e.to_string())
+async fn analyze_seo(app: tauri::AppHandle, url: String) -> Result<SeoAnalysis, String> {
+    analyze_url(app, url).await.map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet])
         .invoke_handler(tauri::generate_handler![analyze_seo])

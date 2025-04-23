@@ -4,6 +4,9 @@ use std::time::Instant;
 use thiserror::Error;
 use url::Url;
 
+mod lighthouse;
+pub use lighthouse::{run_lighthouse_analysis, LighthouseMetrics};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetaTags {
     title: String,
@@ -44,6 +47,7 @@ pub struct SeoAnalysis {
     images: Images,
     links: Links,
     performance: Performance,
+    lighthouse_metrics: Option<LighthouseMetrics>,
 }
 
 #[derive(Error, Debug)]
@@ -54,6 +58,8 @@ pub enum SeoError {
     UrlParseError(String),
     #[error("Failed to analyze content: {0}")]
     AnalysisError(String),
+    #[error("Lighthouse error: {0}")]
+    LighthouseError(String),
 }
 
 pub async fn analyze_url(url: &str) -> Result<SeoAnalysis, SeoError> {
@@ -74,19 +80,22 @@ pub async fn analyze_url(url: &str) -> Result<SeoAnalysis, SeoError> {
 
     let document = Html::parse_document(&html);
 
-    // Analyze meta tags
-    let meta_tags = analyze_meta_tags(&document)?;
+    // Run all analyses in parallel
+    let (meta_tags, headings, images, links, lighthouse_metrics) = tokio::try_join!(
+        tokio::spawn(async move { analyze_meta_tags(&document) }),
+        tokio::spawn(async move { analyze_headings(&document) }),
+        tokio::spawn(async move { analyze_images(&document) }),
+        tokio::spawn(async move { analyze_links(&document, &parsed_url) }),
+        tokio::spawn(async move { run_lighthouse_analysis(url) }),
+    )
+    .map_err(|e| SeoError::AnalysisError(e.to_string()))?;
 
-    // Analyze headings
-    let headings = analyze_headings(&document)?;
+    let meta_tags = meta_tags.map_err(|e| SeoError::AnalysisError(e.to_string()))?;
+    let headings = headings.map_err(|e| SeoError::AnalysisError(e.to_string()))?;
+    let images = images.map_err(|e| SeoError::AnalysisError(e.to_string()))?;
+    let links = links.map_err(|e| SeoError::AnalysisError(e.to_string()))?;
+    let lighthouse_metrics = lighthouse_metrics.ok();
 
-    // Analyze images
-    let images = analyze_images(&document)?;
-
-    // Analyze links
-    let links = analyze_links(&document, &parsed_url)?;
-
-    // Calculate performance metrics
     let performance = Performance {
         load_time: format!("{:.2}s", start_time.elapsed().as_secs_f32()),
         mobile_responsive: check_mobile_responsive(&document),
@@ -98,6 +107,7 @@ pub async fn analyze_url(url: &str) -> Result<SeoAnalysis, SeoError> {
         images,
         links,
         performance,
+        lighthouse_metrics,
     })
 }
 

@@ -7,7 +7,8 @@ import {
 } from "@/components/ui/card";
 import { createFileRoute } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { RadialChart } from "../components/custom/radial-chart";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 
@@ -35,6 +36,19 @@ interface SeoAnalysisResult {
     load_time: string;
     mobile_responsive: boolean;
   };
+  lighthouse_metrics: {
+    performance_score: number;
+    accessibility_score: number;
+    best_practices_score: number;
+    seo_score: number;
+    pwa_score: number;
+    first_contentful_paint: number;
+    speed_index: number;
+    largest_contentful_paint: number;
+    time_to_interactive: number;
+    total_blocking_time: number;
+    cumulative_layout_shift: number;
+  };
 }
 
 export const Route = createFileRoute("/")({
@@ -59,6 +73,38 @@ function Index() {
     }
   };
 
+  const charts = useMemo((): {
+    label: string;
+    value: number;
+  }[] => {
+    if (!result) {
+      return [];
+    }
+    const {
+      performance_score,
+      best_practices_score,
+      seo_score,
+      accessibility_score,
+    } = result.lighthouse_metrics;
+    return [
+      {
+        label: "Performance",
+        value: performance_score,
+      },
+      {
+        label: "SEO",
+        value: seo_score,
+      },
+      {
+        label: "Best Practices",
+        value: best_practices_score,
+      },
+      {
+        label: "Accessibility",
+        value: accessibility_score,
+      },
+    ];
+  }, [result]);
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       <Card>
@@ -84,6 +130,37 @@ function Index() {
 
           {result && (
             <div className="mt-8 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lighthouse</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-full grid grid-cols-2 gap-2">
+                    {charts.map((chart) => {
+                      return (
+                        <div key={chart.label} className="h-full">
+                          <RadialChart
+                            title={chart.label}
+                            value={chart.value}
+                          />
+                        </div>
+                      );
+                    })}
+
+                    {/* <p>
+                      <strong>Title:</strong> {result.meta_tags.title}
+                    </p> */}
+                    <p>
+                      <strong>Description:</strong>{" "}
+                      {result.meta_tags.description}
+                    </p>
+                    <p>
+                      <strong>Keywords:</strong>{" "}
+                      {result.meta_tags.keywords.join(", ")}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>Meta Tags Analysis</CardTitle>
