@@ -45,3 +45,5 @@ Cargo.lock
 
 
 tsconfig.tsbuildinfo
+
+coverage.json

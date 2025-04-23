@@ -3,9 +3,12 @@ packages:
   - 'packages/*' 
 
 catalog:
-  "react": "^19.0.0"
-  "react-dom": "^19.0.0"
+  react: ^19.0.0
+  react-dom: ^19.0.0
   "@types/node": "^20"
   "@types/react": "^19"
   "@types/react-dom": "^19"
-  "lucide-react": "^0.503.0"
+  lucide-react: ^0.503.0
+  typescript: ^5.7.3
+  vitest: ^3.0.7
+  "@vitest/coverage-istanbul": ^3.0.7

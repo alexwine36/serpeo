@@ -203,7 +203,7 @@ pub fn analyze_links(document: &Html, base_url: &Url) -> Result<Links, SeoError>
             println!("{}", href);
             match Url::parse(href) {
                 Ok(url) => {
-                    if (url.domain() == base_url.domain() || href.starts_with("/")) {
+                    if url.domain() == base_url.domain() || href.starts_with("/") {
                         internal += 1;
                     } else {
                         external += 1;
