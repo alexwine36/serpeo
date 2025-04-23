@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    serp_derp_lib::run()
+    serpeo_lib::run()
 }

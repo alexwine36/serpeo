@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "apps/serp-derp/src-tauri",
+    "apps/serpeo/src-tauri",
     "crates/*"
 ]
 resolver = "2"

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "serp-derp",
+  "productName": "serpeo",
   "version": "0.1.0",
-  "identifier": "com.serp-derp.app",
+  "identifier": "com.serpeo.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "serp-derp",
+        "title": "serpeo",
         "width": 800,
         "height": 600
       }
