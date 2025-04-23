@@ -183,7 +183,7 @@ fn analyze_meta_tags(document: &Html) -> Result<MetaTags, SeoError> {
     })
 }
 
-fn analyze_headings(document: &Html) -> Result<Headings, SeoError> {
+pub fn analyze_headings(document: &Html) -> Result<Headings, SeoError> {
     Ok(Headings {
         h1: count_elements(document, "h1"),
         h2: count_elements(document, "h2"),
@@ -191,7 +191,7 @@ fn analyze_headings(document: &Html) -> Result<Headings, SeoError> {
     })
 }
 
-fn analyze_images(document: &Html) -> Result<Images, SeoError> {
+pub fn analyze_images(document: &Html) -> Result<Images, SeoError> {
     let img_selector = Selector::parse("img").unwrap();
     let images = document.select(&img_selector);
 
@@ -215,7 +215,7 @@ fn analyze_images(document: &Html) -> Result<Images, SeoError> {
     })
 }
 
-fn analyze_links(document: &Html, base_url: &Url) -> Result<Links, SeoError> {
+pub fn analyze_links(document: &Html, base_url: &Url) -> Result<Links, SeoError> {
     let link_selector = Selector::parse("a[href]").unwrap();
     let mut internal = 0;
     let mut external = 0;

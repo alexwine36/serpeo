@@ -6,9 +6,6 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "lint": {
-      "outputs": []
-    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -19,6 +16,12 @@
     "tauri:dev": {
       "persistent": true
     },
-    "typecheck": {}
+    "typecheck": {},
+    "//#js-lint": {},
+    "//#rust-lint": {},
+    "//#js-format": {},
+    "//#rust-format": {},
+    "//#sync:lint": {},
+    "//#sync:fix": {}
   }
 }

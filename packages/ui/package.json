@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "comp:add": "pnpm dlx shadcn@latest add",
-    "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {

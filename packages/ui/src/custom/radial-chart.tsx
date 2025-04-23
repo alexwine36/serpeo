@@ -8,7 +8,7 @@ import {
   RadialBarChart,
 } from "recharts";
 
-import { ChartConfig, ChartContainer } from "@repo/ui/components/chart";
+import { type ChartConfig, ChartContainer } from "@repo/ui/components/chart";
 
 type RadialChartProps = {
   value: number;
@@ -67,7 +67,7 @@ export function RadialChart({ title, value }: RadialChartProps) {
                     <tspan
                       x={viewBox.cx}
                       y={viewBox.cy}
-                      className="fill-foreground text-4xl font-bold"
+                      className="fill-foreground font-bold text-4xl"
                     >
                       {chartData[0]?.visitors.toLocaleString()}
                     </tspan>

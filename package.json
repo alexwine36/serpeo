@@ -6,7 +6,8 @@
     "build": "turbo run build",
     "clean": "turbo run clean",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "lint": "turbo run js-lint rust-lint sync:lint",
+    "format": "turbo run sync:fix js-format rust-format",
     "sync:fix": "run-s sync:format sync:fix-*",
     "sync:fix-mismatches": "syncpack fix-mismatches",
     "sync:fix-semver": "syncpack set-semver-ranges",
@@ -14,13 +15,21 @@
     "sync:lint": "syncpack lint",
     "sync:list": "syncpack list",
     "tauri:dev": "turbo run tauri:dev",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "static": "turbo run js-lint rust-lint sync:lint typecheck",
+    "js-format": "ultracite format",
+    "js-lint": "ultracite lint",
+    "rust-lint": "cargo clippy",
+    "rust-format": "cargo clippy --fix",
+    "js-lint:ci": "biome check --diagnostic-level=error"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "npm-run-all": "^4.1.5",
     "syncpack": "^13.0.3",
     "turbo": "latest",
+    "ultracite": "^4.2.1",
     "yaml": "^2.7.1"
   },
-  "packageManager": "pnpm@8.15.4"
+  "packageManager": "pnpm@9.15.0"
 }
