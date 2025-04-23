@@ -36,7 +36,7 @@ interface SeoAnalysisResult {
     load_time: string;
     mobile_responsive: boolean;
   };
-  lighthouse_metrics: {
+  lighthouse_metrics: null | {
     performance_score: number;
     accessibility_score: number;
     best_practices_score: number;
@@ -77,7 +77,7 @@ function Index() {
     label: string;
     value: number;
   }[] => {
-    if (!result) {
+    if (!result?.lighthouse_metrics) {
       return [];
     }
     const {
