@@ -1,16 +1,16 @@
+import { Button } from "@repo/ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@repo/ui/components/card";
+import { Input } from "@repo/ui/components/input";
+import { RadialChart } from "@repo/ui/custom/radial-chart";
 import { createFileRoute } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { useMemo, useState } from "react";
-import { RadialChart } from "../components/custom/radial-chart";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
 
 interface SeoAnalysisResult {
   meta_tags: {
