@@ -28,6 +28,7 @@ thiserror = { workspace = true }
 seo-analyzer = { path = "../../../crates/seo-analyzer" }
 tauri-plugin-shell = "2.0.0-beta"
 tauri-plugin-opener = "2.0.0-beta"
+async-trait = "0.1"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

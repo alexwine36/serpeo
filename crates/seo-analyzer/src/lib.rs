@@ -3,11 +3,10 @@ mod lighthouse;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
-use tauri::AppHandle;
 use thiserror::Error;
 use url::Url;
 
-pub use lighthouse::{run_lighthouse_analysis, LighthouseMetrics};
+pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MetaTags {
@@ -64,7 +63,7 @@ pub enum SeoError {
     LighthouseError(String),
 }
 
-pub async fn analyze_url(app: AppHandle, url: String) -> Result<SeoAnalysis, SeoError> {
+pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoAnalysis, SeoError> {
     let start_time = Instant::now();
 
     // Validate and parse URL
@@ -85,7 +84,7 @@ pub async fn analyze_url(app: AppHandle, url: String) -> Result<SeoAnalysis, Seo
         analyze_html_content(&html, &parsed_url)?;
 
     // Run lighthouse analysis
-    let lighthouse_metrics = run_lighthouse_analysis(app, url).await.ok();
+    let lighthouse_metrics = run_lighthouse_analysis(shell, url).await.ok();
 
     let performance = Performance {
         load_time: format!("{:.2}s", start_time.elapsed().as_secs_f32()),

@@ -1,6 +1,4 @@
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
-use tauri_plugin_shell::ShellExt;
 use tempfile::TempDir;
 use thiserror::Error;
 
@@ -29,32 +27,46 @@ pub enum LighthouseError {
     IoError(#[from] std::io::Error),
 }
 
-pub async fn run_lighthouse_analysis(
-    app_handle: AppHandle,
+#[async_trait::async_trait]
+pub trait ShellCommand {
+    async fn run_command(
+        &self,
+        command: &str,
+        args: &[&str],
+    ) -> Result<CommandOutput, std::io::Error>;
+}
+
+pub struct CommandOutput {
+    pub status: bool,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+}
+
+pub async fn run_lighthouse_analysis<S: ShellCommand>(
+    shell: &S,
     url: String,
 ) -> Result<LighthouseMetrics, LighthouseError> {
-    let shell = app_handle.shell();
     // Create a temporary directory for the report
     let temp_dir = TempDir::new()?;
     let report_path = temp_dir.path().join("lighthouse-report.json");
     let report_path_str = report_path.to_str().unwrap().to_string();
 
     // Run Lighthouse using Node.js
+    let args = [
+        &url,
+        "--output=json",
+        "--output-path",
+        &report_path_str,
+        "--chrome-flags=--headless",
+        "--only-categories=performance,accessibility,best-practices,seo,pwa",
+    ];
+
     let output = shell
-        .command("lighthouse")
-        .args([
-            &url,
-            "--output=json",
-            "--output-path",
-            &report_path_str,
-            "--chrome-flags=--headless",
-            "--only-categories=performance,accessibility,best-practices,seo,pwa",
-        ])
-        .output()
+        .run_command("lighthouse", &args)
         .await
         .map_err(|e| LighthouseError::ExecutionError(e.to_string()))?;
 
-    if !output.status.success() {
+    if !output.status {
         return Err(LighthouseError::ExecutionError(
             String::from_utf8_lossy(&output.stderr).to_string(),
         ));
