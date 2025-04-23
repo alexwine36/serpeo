@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "comp:add": "pnpm dlx shadcn@latest add",
-    "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -21,14 +20,17 @@
     "zod": "3.24.2"
   },
   "devDependencies": {
+    "@repo/vitest-config": "workspace:*",
     "@tailwindcss/postcss": "^4.0.8",
     "@turbo/gen": "^2.4.2",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@workspace/typescript-config": "workspace:*",
     "tailwindcss": "^4.1.4",
-    "typescript": "^5.7.3"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "exports": {
     "./globals.css": "./src/styles/globals.css",

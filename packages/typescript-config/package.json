@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "license": "PROPRIETARY",
+  "devDependencies": {
+    "vitest": "catalog:"
+  },
   "publishConfig": {
     "access": "public"
   }

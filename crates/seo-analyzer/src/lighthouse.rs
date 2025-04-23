@@ -75,7 +75,7 @@ pub async fn run_lighthouse_analysis<S: ShellCommand>(
     // Read and parse the report
     let report_content = tokio::fs::read_to_string(&report_path)
         .await
-        .map_err(|e| LighthouseError::IoError(e))?;
+        .map_err(LighthouseError::IoError)?;
 
     let report: serde_json::Value = serde_json::from_str(&report_content)
         .map_err(|e| LighthouseError::ParseError(e.to_string()))?;

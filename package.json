@@ -4,23 +4,37 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "change": "pnpm changeset",
     "clean": "turbo run clean",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "format": "turbo run sync:fix js-format rust-format",
+    "js-format": "ultracite format",
+    "js-lint": "ultracite lint",
+    "js-lint:ci": "biome check --diagnostic-level=error",
+    "lint": "turbo run js-lint rust-lint sync:lint",
+    "rust-format": "cargo clippy --fix --allow-dirty",
+    "rust-lint": "cargo clippy",
+    "rust-test": "cargo test",
+    "static": "turbo run js-lint rust-lint test rust-test sync:lint typecheck",
+    "static:affected": "pnpm static --affected",
     "sync:fix": "run-s sync:format sync:fix-*",
     "sync:fix-mismatches": "syncpack fix-mismatches",
     "sync:fix-semver": "syncpack set-semver-ranges",
     "sync:format": "syncpack format",
     "sync:lint": "syncpack lint",
     "sync:list": "syncpack list",
+    "js-test": "turbo run test",
     "tauri:dev": "turbo run tauri:dev",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.29.2",
     "npm-run-all": "^4.1.5",
     "syncpack": "^13.0.3",
     "turbo": "latest",
+    "ultracite": "^4.2.1",
     "yaml": "^2.7.1"
   },
-  "packageManager": "pnpm@8.15.4"
+  "packageManager": "pnpm@9.15.0"
 }

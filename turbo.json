@@ -6,9 +6,6 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "lint": {
-      "outputs": []
-    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -16,9 +13,22 @@
     "clean": {
       "cache": false
     },
+    "test": {
+      "dependsOn": ["@repo/vitest-config#build"],
+      "outputs": ["coverage.json"]
+    },
     "tauri:dev": {
       "persistent": true
     },
-    "typecheck": {}
+    "typecheck": {},
+    "//#js-lint": {},
+    "//#rust-lint": {},
+    "//#js-format": {
+      "dependsOn": ["sync:fix"]
+    },
+    "//#rust-format": {},
+    "//#rust-test": {},
+    "//#sync:lint": {},
+    "//#sync:fix": {}
   }
 }

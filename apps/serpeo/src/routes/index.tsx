@@ -106,7 +106,7 @@ function Index() {
     ];
   }, [result]);
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto max-w-4xl p-4">
       <Card>
         <CardHeader>
           <CardTitle>SEO Analysis Tool</CardTitle>
@@ -135,7 +135,7 @@ function Index() {
                   <CardTitle>Lighthouse</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-full grid grid-cols-2 gap-2">
+                  <div className="grid h-full grid-cols-2 gap-2">
                     {charts.map((chart) => {
                       return (
                         <div key={chart.label} className="h-full">

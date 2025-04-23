@@ -107,29 +107,7 @@ fn analyze_html_content(
 ) -> Result<(MetaTags, Headings, Images, Links, bool), SeoError> {
     let document = Html::parse_document(html);
 
-    let title = document
-        .select(&Selector::parse("title").unwrap())
-        .next()
-        .map(|el| el.inner_html())
-        .unwrap_or_default();
-    let description = document
-        .select(&Selector::parse("meta[name='description']").unwrap())
-        .next()
-        .and_then(|el| el.value().attr("content"))
-        .unwrap_or_default()
-        .to_string();
-    let keywords = document
-        .select(&Selector::parse("meta[name='keywords']").unwrap())
-        .next()
-        .and_then(|el| el.value().attr("content"))
-        .map(|k| k.split(',').map(|s| s.trim().to_string()).collect())
-        .unwrap_or_default();
-
-    let meta_tags = MetaTags {
-        title,
-        description,
-        keywords,
-    };
+    let meta_tags = analyze_meta_tags(&document)?;
 
     let headings = Headings {
         h1: count_elements(&document, "h1"),
@@ -183,7 +161,7 @@ fn analyze_meta_tags(document: &Html) -> Result<MetaTags, SeoError> {
     })
 }
 
-fn analyze_headings(document: &Html) -> Result<Headings, SeoError> {
+pub fn analyze_headings(document: &Html) -> Result<Headings, SeoError> {
     Ok(Headings {
         h1: count_elements(document, "h1"),
         h2: count_elements(document, "h2"),
@@ -191,7 +169,7 @@ fn analyze_headings(document: &Html) -> Result<Headings, SeoError> {
     })
 }
 
-fn analyze_images(document: &Html) -> Result<Images, SeoError> {
+pub fn analyze_images(document: &Html) -> Result<Images, SeoError> {
     let img_selector = Selector::parse("img").unwrap();
     let images = document.select(&img_selector);
 
@@ -215,16 +193,17 @@ fn analyze_images(document: &Html) -> Result<Images, SeoError> {
     })
 }
 
-fn analyze_links(document: &Html, base_url: &Url) -> Result<Links, SeoError> {
+pub fn analyze_links(document: &Html, base_url: &Url) -> Result<Links, SeoError> {
     let link_selector = Selector::parse("a[href]").unwrap();
     let mut internal = 0;
     let mut external = 0;
 
     for link in document.select(&link_selector) {
         if let Some(href) = link.value().attr("href") {
+            println!("{}", href);
             match Url::parse(href) {
                 Ok(url) => {
-                    if url.domain() == base_url.domain() {
+                    if url.domain() == base_url.domain() || href.starts_with("/") {
                         internal += 1;
                     } else {
                         external += 1;
@@ -295,4 +274,108 @@ fn analyze_link_stats(document: &Html, base_url: &Url) -> (i32, i32) {
     }
 
     (internal, external)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_analyze_meta_tags() {
+        let html = r#"
+            <html>
+                <head>
+                    <title>Test Title</title>
+                    <meta name="description" content="Test Description">
+                    <meta name="keywords" content="test, rust, seo">
+                </head>
+            </html>
+        "#;
+        let document = Html::parse_document(html);
+        let meta_tags = analyze_meta_tags(&document).unwrap();
+
+        assert_eq!(meta_tags.title, "Test Title");
+        assert_eq!(meta_tags.description, "Test Description");
+        assert_eq!(meta_tags.keywords, vec!["test", "rust", "seo"]);
+    }
+
+    #[test]
+    fn test_analyze_headings() {
+        let html = r#"
+            <html>
+                <body>
+                    <h1>Heading 1</h1>
+                    <h2>Heading 2</h2>
+                    <h2>Another Heading 2</h2>
+                    <h3>Heading 3</h3>
+                </body>
+            </html>
+        "#;
+        let document = Html::parse_document(html);
+        let headings = analyze_headings(&document).unwrap();
+
+        assert_eq!(headings.h1, 1);
+        assert_eq!(headings.h2, 2);
+        assert_eq!(headings.h3, 1);
+    }
+
+    #[test]
+    fn test_analyze_images() {
+        let html = r#"
+            <html>
+                <body>
+                    <img src="image1.jpg" alt="Image 1">
+                    <img src="image2.jpg">
+                    <img src="image3.jpg" alt="Image 3">
+                </body>
+            </html>
+        "#;
+        let document = Html::parse_document(html);
+        let images = analyze_images(&document).unwrap();
+
+        assert_eq!(images.total, 3);
+        assert_eq!(images.with_alt, 2);
+        assert_eq!(images.without_alt, 1);
+    }
+
+    #[test]
+    fn test_analyze_links() {
+        let html = r#"
+            <html>
+                <body>
+                    <a href="https://example.com">External Link</a>
+                    <a href="/internal">Internal Link</a>
+                    <a href="https://example.com/page">Another External Link</a>
+                    <a href="https://cool-web.com/page">Another External Link</a>
+                </body>
+            </html>
+        "#;
+        let document = Html::parse_document(html);
+        let base_url = Url::parse("https://example.com").unwrap();
+        let links = analyze_links(&document, &base_url).unwrap();
+
+        assert_eq!(links.internal, 3);
+        assert_eq!(links.external, 1);
+    }
+
+    #[test]
+    fn test_check_mobile_responsive() {
+        let html_with_viewport = r#"
+            <html>
+                <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                </head>
+            </html>
+        "#;
+        let document_with_viewport = Html::parse_document(html_with_viewport);
+        assert!(check_mobile_responsive(&document_with_viewport));
+
+        let html_without_viewport = r#"
+            <html>
+                <head></head>
+            </html>
+        "#;
+        let document_without_viewport = Html::parse_document(html_without_viewport);
+        assert!(!check_mobile_responsive(&document_without_viewport));
+    }
 }
