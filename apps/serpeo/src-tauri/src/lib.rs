@@ -1,4 +1,4 @@
-use seo_analyzer::{analyze_url, CommandOutput, SeoAnalysis, ShellCommand};
+use seo_analyzer::{analyze_url, crawl_url, CommandOutput, CrawlResult, SeoAnalysis, ShellCommand};
 use tauri_plugin_shell::ShellExt;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -39,12 +39,17 @@ async fn analyze_seo(app: tauri::AppHandle, url: String) -> Result<SeoAnalysis, 
     analyze_url(&shell, url).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn crawl_seo(url: String) -> Result<CrawlResult, String> {
+    crawl_url(&url).await.map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![analyze_seo])
+        .invoke_handler(tauri::generate_handler![analyze_seo, crawl_seo])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
