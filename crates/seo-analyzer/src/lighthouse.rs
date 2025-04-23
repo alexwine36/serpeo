@@ -68,8 +68,6 @@ pub async fn run_lighthouse_analysis(
     let report: serde_json::Value = serde_json::from_str(&report_content)
         .map_err(|e| LighthouseError::ParseError(e.to_string()))?;
 
-    println!("{:?}", report);
-
     // Extract metrics from the report
     let categories = &report["categories"];
     let audits = &report["audits"];
@@ -87,7 +85,6 @@ pub async fn run_lighthouse_analysis(
         total_blocking_time: get_audit_value(audits, "total-blocking-time"),
         cumulative_layout_shift: get_audit_value(audits, "cumulative-layout-shift"),
     };
-    println!("{:?}", metrics);
 
     Ok(metrics)
 }

@@ -1,4 +1,3 @@
-mod seo_analyzer;
 use seo_analyzer::{analyze_url, SeoAnalysis};
 use tauri::State;
 
