@@ -1,0 +1,46 @@
+{
+  "name": "serpeo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc && vite build",
+    "comp:add": "pnpm dlx shadcn@latest add",
+    "dev": "vite",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@radix-ui/react-slot": "1.2.0",
+    "@repo/ui": "workspace:*",
+    "@tailwindcss/vite": "4.1.4",
+    "@tanstack/react-router": "1.116.0",
+    "@tanstack/react-router-devtools": "1.116.0",
+    "@tauri-apps/api": "2",
+    "@tauri-apps/plugin-opener": "2",
+    "@tauri-apps/plugin-shell": "2",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lighthouse": "12.5.1",
+    "lucide-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "recharts": "2.15.3",
+    "tailwind-merge": "3.2.0",
+    "tailwindcss": "4.1.4",
+    "tw-animate-css": "1.2.8"
+  },
+  "devDependencies": {
+    "@tanstack/router-plugin": "^1.116.1",
+    "@tauri-apps/cli": "^2",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.3"
+  },
+  "type": "module"
+}

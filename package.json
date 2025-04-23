@@ -1,42 +1,26 @@
 {
-  "name": "serp-derp",
+  "name": "serpeo-monorepo",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri",
-    "comp:add": "pnpm dlx shadcn@latest add"
-  },
-  "dependencies": {
-    "@radix-ui/react-slot": "^1.2.0",
-    "@tailwindcss/vite": "^4.1.4",
-    "@tanstack/react-router": "^1.116.0",
-    "@tanstack/react-router-devtools": "^1.116.0",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
-    "@tauri-apps/plugin-shell": "~2",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lighthouse": "^12.5.1",
-    "lucide-react": "^0.503.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "recharts": "^2.15.3",
-    "tailwind-merge": "^3.2.0",
-    "tailwindcss": "^4.1.4",
-    "tw-animate-css": "^1.2.8"
+    "build": "turbo run build",
+    "clean": "turbo run clean",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "sync:fix": "run-s sync:format sync:fix-*",
+    "sync:fix-mismatches": "syncpack fix-mismatches",
+    "sync:fix-semver": "syncpack set-semver-ranges",
+    "sync:format": "syncpack format",
+    "sync:lint": "syncpack lint",
+    "sync:list": "syncpack list",
+    "tauri:dev": "turbo run tauri:dev",
+    "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
-    "@tanstack/router-plugin": "^1.116.1",
-    "@tauri-apps/cli": "^2",
-    "@types/node": "^22.14.1",
-    "@types/react": "^18.3.1",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "~5.6.2",
-    "vite": "^6.0.3"
-  }
+    "npm-run-all": "^4.1.5",
+    "syncpack": "^13.0.3",
+    "turbo": "latest",
+    "yaml": "^2.7.1"
+  },
+  "packageManager": "pnpm@8.15.4"
 }
