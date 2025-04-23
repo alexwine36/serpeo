@@ -2,6 +2,7 @@ use futures::stream::{self, StreamExt};
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
+use specta::Type;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use thiserror::Error;
@@ -12,7 +13,7 @@ use url::Url;
 const MAX_CONCURRENT_REQUESTS: usize = 5;
 const REQUEST_DELAY_MS: u64 = 100;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct UrlSource {
     pub found_in_links: bool,
     pub found_in_sitemap: bool,
@@ -30,11 +31,10 @@ pub enum CrawlerError {
     SitemapError(String),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[ts(export)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct CrawlResult {
     pub urls: HashMap<String, UrlSource>,
-    pub total_pages: usize,
+    pub total_pages: u32,
 }
 
 pub struct Crawler {
@@ -116,7 +116,7 @@ impl Crawler {
         let visited = self.visited_urls.lock().await;
         Ok(CrawlResult {
             urls: visited.clone(),
-            total_pages: visited.len(),
+            total_pages: visited.len() as u32,
         })
     }
 

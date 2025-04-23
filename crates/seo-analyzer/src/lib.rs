@@ -10,7 +10,7 @@ pub use analyze_html::{analyze_html_content, Headings, Images, Links, MetaTags, 
 pub use crawler::{CrawlResult, Crawler};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {
     meta_tags: MetaTags,
     headings: Headings,

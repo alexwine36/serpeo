@@ -1,5 +1,7 @@
 use seo_analyzer::{analyze_url, crawl_url, CommandOutput, CrawlResult, SeoAnalysis, ShellCommand};
+use specta_typescript::Typescript;
 use tauri_plugin_shell::ShellExt;
+use tauri_specta::{collect_commands, Builder};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -34,22 +36,32 @@ impl ShellCommand for TauriShell {
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn analyze_seo(app: tauri::AppHandle, url: String) -> Result<SeoAnalysis, String> {
     let shell = TauriShell(app);
     analyze_url(&shell, url).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn crawl_seo(url: String) -> Result<CrawlResult, String> {
     crawl_url(&url).await.map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let mut builder = Builder::<tauri::Wry>::new()
+        // Then register them (separated by a comma)
+        .commands(collect_commands![analyze_seo, crawl_seo]);
+
+    #[cfg(debug_assertions)] // <- Only export on non-release builds
+    builder
+        .export(Typescript::default(), "../src/bindings.ts")
+        .expect("Failed to export typescript bindings");
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![analyze_seo, crawl_seo])
+        .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

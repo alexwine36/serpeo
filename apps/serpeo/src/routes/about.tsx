@@ -8,8 +8,8 @@ import {
 } from "@repo/ui/components/card";
 import { Input } from "@repo/ui/components/input";
 import { createFileRoute } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
+import { commands } from "../bindings";
 export const Route = createFileRoute("/about")({
   component: About,
 });
@@ -21,7 +21,7 @@ function About() {
   const crawlSeo = async () => {
     try {
       setLoading(true);
-      const crawl = await invoke("crawl_seo", { url });
+      const crawl = await commands.crawlSeo(url);
       console.log("Crawls", crawl);
     } catch (error) {
       console.error("Error analyzing SEO:", error);

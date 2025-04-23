@@ -9,47 +9,8 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { RadialChart } from "@repo/ui/custom/radial-chart";
 import { createFileRoute } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
 import { useMemo, useState } from "react";
-
-interface SeoAnalysisResult {
-  meta_tags: {
-    title: string;
-    description: string;
-    keywords: string[];
-  };
-  headings: {
-    h1: number;
-    h2: number;
-    h3: number;
-  };
-  images: {
-    total: number;
-    withAlt: number;
-    withoutAlt: number;
-  };
-  links: {
-    internal: number;
-    external: number;
-  };
-  performance: {
-    load_time: string;
-    mobile_responsive: boolean;
-  };
-  lighthouse_metrics: null | {
-    performance_score: number;
-    accessibility_score: number;
-    best_practices_score: number;
-    seo_score: number;
-    pwa_score: number;
-    first_contentful_paint: number;
-    speed_index: number;
-    largest_contentful_paint: number;
-    time_to_interactive: number;
-    total_blocking_time: number;
-    cumulative_layout_shift: number;
-  };
-}
+import { type SeoAnalysis, commands } from "../bindings";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -58,14 +19,16 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [url, setUrl] = useState("https://stem-programs.newspacenexus.org/");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SeoAnalysisResult | null>(null);
+  const [result, setResult] = useState<SeoAnalysis | null>(null);
 
   const analyzeSeo = async () => {
     try {
       setLoading(true);
-      const analysis = await invoke("analyze_seo", { url });
+      const analysis = await commands.analyzeSeo(url);
       console.log("Analysis", analysis);
-      setResult(analysis as SeoAnalysisResult);
+      if (analysis.status === "ok") {
+        setResult(analysis.data);
+      }
     } catch (error) {
       console.error("Error analyzing SEO:", error);
     } finally {
@@ -197,8 +160,8 @@ function Index() {
                     <div>
                       <h3 className="font-semibold">Images</h3>
                       <p>Total: {result.images.total}</p>
-                      <p>With Alt: {result.images.withAlt}</p>
-                      <p>Without Alt: {result.images.withoutAlt}</p>
+                      <p>With Alt: {result.images.with_alt}</p>
+                      <p>Without Alt: {result.images.without_alt}</p>
                     </div>
                   </div>
                 </CardContent>

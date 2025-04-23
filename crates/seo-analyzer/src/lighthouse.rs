@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use tempfile::TempDir;
 use thiserror::Error;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct LighthouseMetrics {
     pub performance_score: f64,
     pub accessibility_score: f64,
