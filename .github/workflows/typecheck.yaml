@@ -18,8 +18,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
+      - name: Install rust deps
+        run: sudo apt install libwebkit2gtk-4.1-dev libsoup3.0-dev
+      - uses: dtolnay/rust-toolchain@stable
       - uses: ./.github/actions/ci-setup
+      - uses: Swatinem/rust-cache@v2
 
       # Running Lint with --quiet to only print errors
       - name: Static Check...
