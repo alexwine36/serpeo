@@ -7,7 +7,7 @@
     "ignore": [
       "apps/serpeo/src-tauri/gen",
       "apps/serpeo/src/routeTree.gen.ts",
-      "apps/serpeo/src/bindings.ts"
+      "apps/serpeo/src/generated"
     ]
   },
   "formatter": {

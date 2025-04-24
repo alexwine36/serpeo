@@ -9,7 +9,7 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { commands } from "../bindings";
+import { type CrawlResult, commands } from "../generated/bindings";
 export const Route = createFileRoute("/about")({
   component: About,
 });
@@ -17,12 +17,16 @@ export const Route = createFileRoute("/about")({
 function About() {
   const [url, setUrl] = useState("https://stem-programs.newspacenexus.org/");
   const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<CrawlResult | null>(null);
 
   const crawlSeo = async () => {
     try {
       setLoading(true);
       const crawl = await commands.crawlSeo(url);
       console.log("Crawls", crawl);
+      if (crawl.status === "ok") {
+        setResults(crawl.data);
+      }
     } catch (error) {
       console.error("Error analyzing SEO:", error);
     } finally {
@@ -57,6 +61,7 @@ function About() {
         <CardHeader>
           <CardTitle>Results</CardTitle>
         </CardHeader>
+        <CardContent>{results?.total_pages}</CardContent>
       </Card>
     </div>
   );

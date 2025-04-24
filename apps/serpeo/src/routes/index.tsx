@@ -10,7 +10,7 @@ import { Input } from "@repo/ui/components/input";
 import { RadialChart } from "@repo/ui/custom/radial-chart";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { type SeoAnalysis, commands } from "../bindings";
+import { type SeoAnalysis, commands } from "../generated/bindings";
 
 export const Route = createFileRoute("/")({
   component: Index,

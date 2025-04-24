@@ -61,7 +61,7 @@ impl Crawler {
 
     pub async fn crawl(&self) -> Result<CrawlResult, CrawlerError> {
         // First try to fetch and parse sitemap
-        let sitemap_urls = self.fetch_sitemap().await.unwrap_or_default();
+        let sitemap_urls = self.fetch_sitemap().await?;
 
         // Add sitemap URLs to visited_urls
         {
@@ -214,8 +214,10 @@ impl Crawler {
         let content_clone = content.to_string();
         Ok(
             tokio::task::spawn_blocking(move || -> Result<HashSet<String>, CrawlerError> {
-                let document = roxmltree::Document::parse(&content_clone)
-                    .map_err(|e| CrawlerError::SitemapError(e.to_string()))?;
+                let document = match roxmltree::Document::parse(&content_clone) {
+                    Ok(doc) => doc,
+                    Err(_) => return Ok(HashSet::new()), // Return empty set on parse failure
+                };
 
                 let mut urls = HashSet::new();
                 for node in document.descendants() {
@@ -297,46 +299,51 @@ mod tests {
         let addr = SocketAddr::from(([127, 0, 0, 1], 0));
         let listener = TcpListener::bind(addr).await.unwrap();
         let addr = listener.local_addr().unwrap();
+        let base_url = format!("http://{}", addr);
 
-        let make_svc = make_service_fn(|_conn| async {
-            Ok::<_, Infallible>(service_fn(|req| async move {
-                match req.uri().path() {
-                    "/" => Ok::<_, Infallible>(Response::new(Body::from(
-                        r#"
-                        <html>
-                            <body>
-                                <a href="/page1">Page 1</a>
-                                <a href="/page2">Page 2</a>
-                                <a href="https://external.com">External</a>
-                            </body>
-                        </html>
-                    "#,
-                    ))),
-                    "/sitemap.xml" => Ok(Response::new(Body::from(
-                        r#"
-                        <?xml version="1.0" encoding="UTF-8"?>
-                        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-                            <url>
-                                <loc>http://127.0.0.1/page1</loc>
-                            </url>
-                            <url>
-                                <loc>http://127.0.0.1/page3</loc>
-                            </url>
-                        </urlset>
-                    "#,
-                    ))),
-                    "/page1" => Ok(Response::new(Body::from(
-                        "<html><body>Page 1</body></html>",
-                    ))),
-                    "/page2" => Ok(Response::new(Body::from(
-                        "<html><body>Page 2</body></html>",
-                    ))),
-                    "/page3" => Ok(Response::new(Body::from(
-                        "<html><body>Page 3</body></html>",
-                    ))),
-                    _ => Ok(Response::new(Body::from("404"))),
-                }
-            }))
+        let make_svc = make_service_fn(move |_conn| {
+            let base_url = base_url.clone();
+            async move {
+                Ok::<_, Infallible>(service_fn(move |req| {
+                    let base_url = base_url.clone();
+                    async move {
+                        match req.uri().path() {
+                            "/" => Ok::<_, Infallible>(Response::new(Body::from(
+                                r#"
+                                <html>
+                                    <body>
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page2">Page 2</a>
+                                        <a href="https://external.com">External</a>
+                                    </body>
+                                </html>
+                            "#,
+                            ))),
+                            "/sitemap.xml" => {
+                                let sitemap = format!(
+                                    r#"<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+<url><loc>{}/page1</loc></url>
+<url><loc>{}/page3</loc></url>
+</urlset>"#,
+                                    base_url, base_url
+                                );
+                                Ok(Response::new(Body::from(sitemap)))
+                            }
+                            "/page1" => Ok(Response::new(Body::from(
+                                "<html><body>Page 1</body></html>",
+                            ))),
+                            "/page2" => Ok(Response::new(Body::from(
+                                "<html><body>Page 2</body></html>",
+                            ))),
+                            "/page3" => Ok(Response::new(Body::from(
+                                "<html><body>Page 3</body></html>",
+                            ))),
+                            _ => Ok(Response::new(Body::from("404"))),
+                        }
+                    }
+                }))
+            }
         });
 
         tokio::spawn(async move {
