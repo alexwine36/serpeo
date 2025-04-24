@@ -57,13 +57,13 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
         analyze_html_content(&html, &parsed_url)
             .map_err(|e| SeoError::AnalysisError(e.to_string()))?;
 
-    // Run lighthouse analysis
-    let lighthouse_metrics = run_lighthouse_analysis(shell, url).await.ok();
-
     let performance = Performance {
         load_time: format!("{:.2}s", start_time.elapsed().as_secs_f32()),
         mobile_responsive: is_mobile_responsive,
     };
+
+    // Run lighthouse analysis
+    let lighthouse_metrics = run_lighthouse_analysis(shell, url).await.ok();
 
     Ok(SeoAnalysis {
         meta_tags,

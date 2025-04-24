@@ -58,12 +58,7 @@ pub fn analyze_html_content(
         h2: headings.iter().filter(|h| h.tag == "h2").count() as i32,
         h3: headings.iter().filter(|h| h.tag == "h3").count() as i32,
     };
-    // let (total_images, with_alt, without_alt) = analyze_image_stats(&document);
-    // let images = Images {
-    //     total: total_images,
-    //     with_alt,
-    //     without_alt,
-    // };
+
     let images = parser.extract_images();
     let images = Images {
         total: images.iter().count() as i32,
@@ -71,7 +66,7 @@ pub fn analyze_html_content(
         without_alt: images.iter().filter(|img| img.alt.is_none()).count() as i32,
     };
     let links = parser.extract_links();
-    println!("Links: {:?}", links);
+
     let links = Links {
         internal: links
             .iter()

@@ -53,7 +53,6 @@ export type Headings = { h1: number; h2: number; h3: number }
 export type Images = { total: number; with_alt: number; without_alt: number }
 export type LighthouseMetrics = { performance_score: number; accessibility_score: number; best_practices_score: number; seo_score: number; pwa_score: number; first_contentful_paint: number; speed_index: number; largest_contentful_paint: number; time_to_interactive: number; total_blocking_time: number; cumulative_layout_shift: number }
 export type Links = { internal: number; external: number }
-export type MetaTagInfo = { title: string | null; description: string | null; robots: string | null; canonical: string | null; og_title: string | null; og_description: string | null; og_image: string | null; twitter_card: string | null }
 export type MetaTagInfo = { title: string | null; description: string | null; keywords: string | null; robots: string | null; canonical: string | null; sitemap: string | null; favicon: string | null; viewport: string | null; generators: string[]; webmanifest: string | null; og_tags: Partial<{ [key in string]: string }>; scripts: string[]; styles: string[]; twitter_tags: Partial<{ [key in string]: string }> }
 export type PageAnalysis = { url: string; path: string; meta_tags: MetaTagInfo; h1_count: number; image_alt_missing: number; broken_links: string[]; lighthouse_score: number | null; status: AnalysisStatus }
 export type Performance = { load_time: string; mobile_responsive: boolean }

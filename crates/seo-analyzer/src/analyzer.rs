@@ -216,15 +216,15 @@ impl Analyzer {
 
         let html_clone = html.clone();
         let url_string = url.to_string();
+        let url_string_2 = url.to_string();
 
         // Run HTML parsing in a blocking task
         let (meta_tags, h1_count, image_alt_missing, links) =
             tokio::task::spawn_blocking(move || {
-                let url_parsed =
-                    Url::parse(url).map_err(|e| AnalyzerError::UrlParseError(e.to_string()))?;
-                let parser = PageParser::new(url_string);
+                let mut parser = PageParser::new(url_string_2).unwrap();
                 let document = Html::parse_document(&html_clone);
-                let meta_tags = Self::extract_meta_tags_sync(&document);
+                parser.set_document(document.clone());
+                let meta_tags = parser.extract_meta_tags();
                 let h1_count = Self::count_h1_tags_sync(&document);
                 let image_alt_missing = Self::count_missing_alt_tags_sync(&document);
                 let links = document

@@ -88,6 +88,28 @@ fn normalize_url(url: &str) -> String {
     url.trim_end_matches('/').to_string()
 }
 
+pub trait FromBaseUrl {
+    fn to_url(self) -> Result<Url, PageParserError>;
+}
+
+impl FromBaseUrl for Url {
+    fn to_url(self) -> Result<Url, PageParserError> {
+        Ok(self)
+    }
+}
+
+impl FromBaseUrl for String {
+    fn to_url(self) -> Result<Url, PageParserError> {
+        Url::parse(&self).map_err(|e| PageParserError::UrlParseError(e.to_string()))
+    }
+}
+
+impl FromBaseUrl for &str {
+    fn to_url(self) -> Result<Url, PageParserError> {
+        Url::parse(self).map_err(|e| PageParserError::UrlParseError(e.to_string()))
+    }
+}
+
 pub struct PageParser {
     pub href: String,
     pub path: String,
@@ -95,9 +117,15 @@ pub struct PageParser {
 
     document: Option<Html>,
 }
+// impl Into<Url> for String {
+//     fn into(self) -> Url {
+//         return Url::parse(&self).unwrap();
+//     }
+// }
 
 impl PageParser {
-    pub fn new(base_url: Url) -> Result<Self, PageParserError> {
+    pub fn new<T: FromBaseUrl>(base_url: T) -> Result<Self, PageParserError> {
+        let base_url = base_url.to_url()?;
         let path = base_url.clone().path().to_string();
         let href = normalize_url(base_url.clone().as_str());
         Ok(PageParser {

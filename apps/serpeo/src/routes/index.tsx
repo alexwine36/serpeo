@@ -138,8 +138,7 @@ function Index() {
                       {result.meta_tags.description}
                     </p>
                     <p>
-                      <strong>Keywords:</strong>{" "}
-                      {result.meta_tags.keywords.join(", ")}
+                      <strong>Keywords:</strong> {result.meta_tags.keywords}
                     </p>
                   </div>
                 </CardContent>
