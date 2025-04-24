@@ -15,6 +15,7 @@ thiserror = { workspace = true }
 tauri = { workspace = true }
 tauri-specta = { workspace = true }
 url = { workspace = true }
+once_cell = {workspace = true}
 
 
 [dev-dependencies]

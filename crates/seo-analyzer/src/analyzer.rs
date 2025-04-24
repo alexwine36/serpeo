@@ -1,11 +1,11 @@
 use futures::stream::{self, StreamExt};
-use html_parser::page_parser::{MetaTagInfo, PageParser};
+use html_parser::page_parser::{MetaTagInfo, PageParser, PageParserError};
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tauri_specta::Event;
 use thiserror::Error;
@@ -28,6 +28,8 @@ pub enum AnalyzerError {
     LighthouseError(String),
     #[error("Failed to parse URL: {0}")]
     UrlParseError(String),
+    #[error("Page parser error: {0}")]
+    PageParserError(#[from] PageParserError),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -84,8 +86,8 @@ impl Analyzer {
         F: for<'a> FnMut(AnalysisProgress) + Send + Sync + 'static,
     {
         let total_urls = crawl_result.urls.len() as u32;
-        let results = std::sync::Arc::new(tokio::sync::Mutex::new(HashMap::new()));
-        let completed = std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let results = Arc::new(Mutex::new(HashMap::new()));
+        let completed = Arc::new(AtomicU32::new(0));
         let callback = Arc::new(Mutex::new(progress_callback));
 
         // Initialize results with pending status
@@ -198,6 +200,7 @@ impl Analyzer {
             .expect("Arc still has multiple owners")
             .into_inner())
     }
+
     async fn analyze_page(
         &self,
         url: &str,
@@ -265,55 +268,6 @@ impl Analyzer {
             status: AnalysisStatus::Complete,
         })
     }
-
-    // fn extract_meta_tags_sync(document: &Html) -> MetaTagInfo {
-    //     let mut info = MetaTagInfo::default();
-
-    //     // Title
-    //     if let Some(title) = document.select(&Selector::parse("title").unwrap()).next() {
-    //         info.title = title.text().collect::<String>().into();
-    //     }
-
-    //     // Meta tags
-    //     let meta_selector = Selector::parse("meta").unwrap();
-    //     for meta in document.select(&meta_selector) {
-    //         match meta
-    //             .value()
-    //             .attr("name")
-    //             .or_else(|| meta.value().attr("property"))
-    //         {
-    //             Some("description") => {
-    //                 info.description = meta.value().attr("content").map(String::from);
-    //             }
-    //             Some("robots") => {
-    //                 info.robots = meta.value().attr("content").map(String::from);
-    //             }
-    //             Some("og:title") => {
-    //                 info.og_title = meta.value().attr("content").map(String::from);
-    //             }
-    //             Some("og:description") => {
-    //                 info.og_description = meta.value().attr("content").map(String::from);
-    //             }
-    //             Some("og:image") => {
-    //                 info.og_image = meta.value().attr("content").map(String::from);
-    //             }
-    //             Some("twitter:card") => {
-    //                 info.twitter_card = meta.value().attr("content").map(String::from);
-    //             }
-    //             _ => {}
-    //         }
-    //     }
-
-    //     // Canonical link
-    //     if let Some(canonical) = document
-    //         .select(&Selector::parse("link[rel='canonical']").unwrap())
-    //         .next()
-    //     {
-    //         info.canonical = canonical.value().attr("href").map(String::from);
-    //     }
-
-    //     info
-    // }
 
     fn count_h1_tags_sync(document: &Html) -> u32 {
         document.select(&Selector::parse("h1").unwrap()).count() as u32

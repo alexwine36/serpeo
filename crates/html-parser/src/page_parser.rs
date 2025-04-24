@@ -1,4 +1,4 @@
-use futures::stream::{StreamExt};
+use futures::stream::StreamExt;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
@@ -66,18 +66,19 @@ pub struct Links {
     pub link_type: LinkType,
 }
 
-#[derive(Debug, Serialize, Deserialize, specta::Type)]
+#[derive(Debug, Serialize, Deserialize, Type)]
 pub struct Performance {
     pub load_time: String,
     pub mobile_responsive: bool,
 }
 
-// #[derive(Debug, Clone, Serialize, Deserialize, Type)]
-// pub struct PageAnalysis {
-//     pub url: String,
-//     pub path: String,
-//     pub meta_tags: MetaTagInfo,
-// }
+#[derive(Debug, Serialize, Deserialize, Type)]
+pub struct PageAnalysis {
+    pub meta_tags: MetaTagInfo,
+    pub headings: Vec<Heading>,
+    pub images: Vec<Image>,
+    pub links: Vec<Links>,
+}
 
 fn normalize_url(url: &str) -> String {
     url.trim_end_matches('/').to_string()
@@ -99,6 +100,12 @@ impl FromBaseUrl for String {
     }
 }
 
+impl FromBaseUrl for &String {
+    fn to_url(self) -> Result<Url, PageParserError> {
+        Url::parse(self).map_err(|e| PageParserError::UrlParseError(e.to_string()))
+    }
+}
+
 impl FromBaseUrl for &str {
     fn to_url(self) -> Result<Url, PageParserError> {
         Url::parse(self).map_err(|e| PageParserError::UrlParseError(e.to_string()))
@@ -106,11 +113,10 @@ impl FromBaseUrl for &str {
 }
 
 pub struct PageParser {
-    pub href: String,
-    pub path: String,
+    href: String,
+    path: String,
     base_url: Url,
-
-    document: Option<Html>,
+    html_content: Option<String>,
 }
 // impl Into<Url> for String {
 //     fn into(self) -> Url {
@@ -127,12 +133,23 @@ impl PageParser {
             base_url,
             href,
             path,
-            document: None,
+            html_content: None,
         })
+    }
+    pub fn get_href(&self) -> String {
+        self.href.clone()
+    }
+
+    pub fn get_path(&self) -> String {
+        self.path.clone()
+    }
+
+    pub fn set_content(&mut self, html: String) {
+        self.html_content = Some(html);
     }
 
     pub fn set_document(&mut self, document: Html) {
-        self.document = Some(document);
+        self.html_content = Some(document.html());
     }
 
     pub async fn fetch(&mut self) -> Result<(), PageParserError> {
@@ -141,6 +158,7 @@ impl PageParser {
             .timeout(Duration::from_secs(10))
             .build()
             .map_err(|e| PageParserError::FetchError(e.to_string()))?;
+
         let response = client
             .get(self.base_url.clone())
             .send()
@@ -159,16 +177,18 @@ impl PageParser {
             .await
             .map_err(|e| PageParserError::FetchError(e.to_string()))?;
 
-        self.set_document(Html::parse_document(&body));
+        self.set_content(body);
         Ok(())
     }
 
-    fn get_document(&self) -> Result<&Html, PageParserError> {
-        self.document
+    fn get_document(&self) -> Result<Html, PageParserError> {
+        let html = self
+            .html_content
             .as_ref()
             .ok_or(PageParserError::DocumentNotSet(
                 "Document not set".to_string(),
-            ))
+            ))?;
+        Ok(Html::parse_document(html))
     }
 
     pub fn extract_meta_tags(&self) -> MetaTagInfo {
@@ -313,6 +333,25 @@ impl PageParser {
 
         headings
     }
+
+    pub async fn analyze_page(&self) -> Result<PageAnalysis, PageParserError> {
+        // let document = self.get_document()?;
+
+        // Run all extractors concurrently
+        let (meta_tags, headings, images, links) = tokio::join!(
+            async { self.extract_meta_tags() },
+            async { self.extract_headings() },
+            async { self.extract_images() },
+            async { self.extract_links() }
+        );
+
+        Ok(PageAnalysis {
+            meta_tags,
+            headings,
+            images,
+            links,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -340,7 +379,7 @@ mod tests {
             "#;
         let document = Html::parse_document(html);
         let mut parser = PageParser::new(Url::parse("https://example.com").unwrap()).unwrap();
-        parser.set_document(document);
+        parser.set_content(html.to_string());
 
         let meta_tags = parser.extract_meta_tags();
 
@@ -376,7 +415,7 @@ mod tests {
             "#;
         let document = Html::parse_document(html);
         let mut parser = PageParser::new(Url::parse("https://example.com").unwrap()).unwrap();
-        parser.set_document(document);
+        parser.set_content(html.to_string());
 
         let links = parser.extract_links();
 
@@ -400,7 +439,7 @@ mod tests {
             "#;
         let document = Html::parse_document(html);
         let mut parser = PageParser::new(Url::parse("https://example.com").unwrap()).unwrap();
-        parser.set_document(document);
+        parser.set_content(html.to_string());
 
         let headings = parser.extract_headings();
 

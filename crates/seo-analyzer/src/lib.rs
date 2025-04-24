@@ -1,13 +1,11 @@
-mod analyze_html;
 mod crawler;
 mod lighthouse;
-use html_parser::page_parser::MetaTagInfo;
+use html_parser::page_parser::{Heading, Image, Links, MetaTagInfo, Performance};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use thiserror::Error;
 use url::Url;
 
-pub use analyze_html::{analyze_html_content, Headings, Images, Links, Performance};
 pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 pub mod analyzer;
@@ -17,9 +15,9 @@ pub use analyzer::{AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError, Pa
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {
     meta_tags: MetaTagInfo,
-    headings: Headings,
-    images: Images,
-    links: Links,
+    headings: Vec<Heading>,
+    images: Vec<Image>,
+    links: Vec<Links>,
     performance: Performance,
     lighthouse_metrics: Option<LighthouseMetrics>,
 }
@@ -39,37 +37,38 @@ pub enum SeoError {
 pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoAnalysis, SeoError> {
     let start_time = Instant::now();
 
-    // Validate and parse URL
-    let parsed_url = Url::parse(&url).map_err(|e| SeoError::UrlParseError(e.to_string()))?;
-
-    // Fetch the webpage
-    let response = reqwest::get(parsed_url.clone())
+    // Create and fetch page using PageParser
+    let mut parser = html_parser::page_parser::PageParser::new(&url)
+        .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
+    parser
+        .fetch()
         .await
         .map_err(|e| SeoError::FetchError(e.to_string()))?;
 
-    let html = response
-        .text()
-        .await
-        .map_err(|e| SeoError::FetchError(e.to_string()))?;
+    // Extract all information using PageParser
+    // let meta_tags = parser.extract_meta_tags();
+    // let headings = parser.extract_headings();
+    // let images = parser.extract_images();
+    // let links = parser.extract_links();
 
-    // Analyze HTML synchronously
-    let (meta_tags, headings, images, links, is_mobile_responsive) =
-        analyze_html_content(&html, &parsed_url)
-            .map_err(|e| SeoError::AnalysisError(e.to_string()))?;
+    let page_analysis = parser
+        .analyze_page()
+        .await
+        .map_err(|e| SeoError::AnalysisError(e.to_string()))?;
 
     let performance = Performance {
         load_time: format!("{:.2}s", start_time.elapsed().as_secs_f32()),
-        mobile_responsive: is_mobile_responsive,
+        mobile_responsive: page_analysis.meta_tags.viewport.is_some(), // This should be determined by viewport meta tag or other means
     };
 
     // Run lighthouse analysis
     let lighthouse_metrics = run_lighthouse_analysis(shell, url).await.ok();
 
     Ok(SeoAnalysis {
-        meta_tags,
-        headings,
-        images,
-        links,
+        meta_tags: page_analysis.meta_tags,
+        headings: page_analysis.headings,
+        images: page_analysis.images,
+        links: page_analysis.links,
         performance,
         lighthouse_metrics,
     })

@@ -151,16 +151,19 @@ function Index() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h3 className="font-semibold">Headings</h3>
-                      <p>H1: {result.headings.h1}</p>
+                      <h3 className="font-semibold">
+                        Headings {result.headings.length}
+                      </h3>
+
+                      {/* <p>H1: {result.headings.h1}</p>
                       <p>H2: {result.headings.h2}</p>
-                      <p>H3: {result.headings.h3}</p>
+                      <p>H3: {result.headings.h3}</p> */}
                     </div>
                     <div>
                       <h3 className="font-semibold">Images</h3>
-                      <p>Total: {result.images.total}</p>
-                      <p>With Alt: {result.images.with_alt}</p>
-                      <p>Without Alt: {result.images.without_alt}</p>
+                      <p>Total: {result.images.length}</p>
+                      {/* <p>With Alt: {result.images.with_alt}</p>
+                      <p>Without Alt: {result.images.without_alt}</p> */}
                     </div>
                   </div>
                 </CardContent>
@@ -173,9 +176,11 @@ function Index() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h3 className="font-semibold">Links</h3>
-                      <p>Internal: {result.links.internal}</p>
-                      <p>External: {result.links.external}</p>
+                      <h3 className="font-semibold">
+                        Links {result.links.length}
+                      </h3>
+                      {/* <p>Internal: {result.links.internal}</p>
+                      <p>External: {result.links.external}</p> */}
                     </div>
                     <div>
                       <h3 className="font-semibold">Performance</h3>
