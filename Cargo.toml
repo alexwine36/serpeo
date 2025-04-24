@@ -1,8 +1,5 @@
 [workspace]
-members = [
-    "apps/serpeo/src-tauri",
-    "crates/*"
-]
+members = ["apps/serpeo/src-tauri", "crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -11,5 +8,14 @@ serde_json = "1.0"
 tokio = { version = "1.0", features = ["full", "tracing"] }
 console-subscriber = "0.4.1"
 tauri = { version = "2.0.0-beta", features = [] }
-thiserror = "1.0" 
+thiserror = "1.0"
 specta = { version = "2.0.0-rc.22" }
+tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
+hyper = { version = "0.14", features = ["full"] }
+scraper = "0.18.1"
+url = "2.5.0"
+reqwest = { version = "0.11", features = ["json"] }
+futures = "0.3"
+roxmltree = "0.19.0"
+tempfile = "3.10.1"
+async-trait = "0.1"

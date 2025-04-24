@@ -1,4 +1,5 @@
 use futures::stream::{self, StreamExt};
+use html_parser::page_parser::{MetaTagInfo, PageParser};
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
@@ -27,18 +28,6 @@ pub enum AnalyzerError {
     LighthouseError(String),
     #[error("Failed to parse URL: {0}")]
     UrlParseError(String),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Type, Default)]
-pub struct MetaTagInfo {
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub robots: Option<String>,
-    pub canonical: Option<String>,
-    pub og_title: Option<String>,
-    pub og_description: Option<String>,
-    pub og_image: Option<String>,
-    pub twitter_card: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
@@ -231,6 +220,9 @@ impl Analyzer {
         // Run HTML parsing in a blocking task
         let (meta_tags, h1_count, image_alt_missing, links) =
             tokio::task::spawn_blocking(move || {
+                let url_parsed =
+                    Url::parse(url).map_err(|e| AnalyzerError::UrlParseError(e.to_string()))?;
+                let parser = PageParser::new(url_string);
                 let document = Html::parse_document(&html_clone);
                 let meta_tags = Self::extract_meta_tags_sync(&document);
                 let h1_count = Self::count_h1_tags_sync(&document);
@@ -274,54 +266,54 @@ impl Analyzer {
         })
     }
 
-    fn extract_meta_tags_sync(document: &Html) -> MetaTagInfo {
-        let mut info = MetaTagInfo::default();
+    // fn extract_meta_tags_sync(document: &Html) -> MetaTagInfo {
+    //     let mut info = MetaTagInfo::default();
 
-        // Title
-        if let Some(title) = document.select(&Selector::parse("title").unwrap()).next() {
-            info.title = title.text().collect::<String>().into();
-        }
+    //     // Title
+    //     if let Some(title) = document.select(&Selector::parse("title").unwrap()).next() {
+    //         info.title = title.text().collect::<String>().into();
+    //     }
 
-        // Meta tags
-        let meta_selector = Selector::parse("meta").unwrap();
-        for meta in document.select(&meta_selector) {
-            match meta
-                .value()
-                .attr("name")
-                .or_else(|| meta.value().attr("property"))
-            {
-                Some("description") => {
-                    info.description = meta.value().attr("content").map(String::from);
-                }
-                Some("robots") => {
-                    info.robots = meta.value().attr("content").map(String::from);
-                }
-                Some("og:title") => {
-                    info.og_title = meta.value().attr("content").map(String::from);
-                }
-                Some("og:description") => {
-                    info.og_description = meta.value().attr("content").map(String::from);
-                }
-                Some("og:image") => {
-                    info.og_image = meta.value().attr("content").map(String::from);
-                }
-                Some("twitter:card") => {
-                    info.twitter_card = meta.value().attr("content").map(String::from);
-                }
-                _ => {}
-            }
-        }
+    //     // Meta tags
+    //     let meta_selector = Selector::parse("meta").unwrap();
+    //     for meta in document.select(&meta_selector) {
+    //         match meta
+    //             .value()
+    //             .attr("name")
+    //             .or_else(|| meta.value().attr("property"))
+    //         {
+    //             Some("description") => {
+    //                 info.description = meta.value().attr("content").map(String::from);
+    //             }
+    //             Some("robots") => {
+    //                 info.robots = meta.value().attr("content").map(String::from);
+    //             }
+    //             Some("og:title") => {
+    //                 info.og_title = meta.value().attr("content").map(String::from);
+    //             }
+    //             Some("og:description") => {
+    //                 info.og_description = meta.value().attr("content").map(String::from);
+    //             }
+    //             Some("og:image") => {
+    //                 info.og_image = meta.value().attr("content").map(String::from);
+    //             }
+    //             Some("twitter:card") => {
+    //                 info.twitter_card = meta.value().attr("content").map(String::from);
+    //             }
+    //             _ => {}
+    //         }
+    //     }
 
-        // Canonical link
-        if let Some(canonical) = document
-            .select(&Selector::parse("link[rel='canonical']").unwrap())
-            .next()
-        {
-            info.canonical = canonical.value().attr("href").map(String::from);
-        }
+    //     // Canonical link
+    //     if let Some(canonical) = document
+    //         .select(&Selector::parse("link[rel='canonical']").unwrap())
+    //         .next()
+    //     {
+    //         info.canonical = canonical.value().attr("href").map(String::from);
+    //     }
 
-        info
-    }
+    //     info
+    // }
 
     fn count_h1_tags_sync(document: &Html) -> u32 {
         document.select(&Selector::parse("h1").unwrap()).count() as u32

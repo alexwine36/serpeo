@@ -1,23 +1,22 @@
 mod analyze_html;
 mod crawler;
 mod lighthouse;
+use html_parser::page_parser::MetaTagInfo;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::Instant};
 use thiserror::Error;
 use url::Url;
 
-pub use analyze_html::{analyze_html_content, Headings, Images, Links, MetaTags, Performance};
+pub use analyze_html::{analyze_html_content, Headings, Images, Links, Performance};
 pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 pub mod analyzer;
 
-pub use analyzer::{
-    AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError, MetaTagInfo, PageAnalysis,
-};
+pub use analyzer::{AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError, PageAnalysis};
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {
-    meta_tags: MetaTags,
+    meta_tags: MetaTagInfo,
     headings: Headings,
     images: Images,
     links: Links,
