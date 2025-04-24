@@ -1,5 +1,10 @@
-use seo_analyzer::{analyze_url, crawl_url, CommandOutput, CrawlResult, SeoAnalysis, ShellCommand};
+use seo_analyzer::{
+    analyze_url, crawl_url, AnalysisProgress, CommandOutput, CrawlResult, PageAnalysis,
+    SeoAnalysis, ShellCommand,
+};
 use specta_typescript::Typescript;
+use std::collections::HashMap;
+use tauri::Emitter;
 use tauri_plugin_shell::ShellExt;
 use tauri_specta::{collect_commands, Builder};
 
@@ -48,11 +53,29 @@ async fn crawl_seo(url: String) -> Result<CrawlResult, String> {
     crawl_url(&url).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn analyze_crawl_seo(
+    app: tauri::AppHandle,
+    crawl_result: CrawlResult,
+    lighthouse_enabled: bool,
+) -> Result<HashMap<String, PageAnalysis>, String> {
+    let analyzer = seo_analyzer::Analyzer::new(lighthouse_enabled);
+    let app_handle = app.clone();
+
+    analyzer
+        .analyze_crawl_result(crawl_result, move |progress| {
+            let _ = app_handle.emit("analysis-progress", progress);
+        })
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = Builder::<tauri::Wry>::new()
+    let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![analyze_seo, crawl_seo]);
+        .commands(collect_commands![analyze_seo, crawl_seo, analyze_crawl_seo]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder

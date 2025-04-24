@@ -20,6 +20,14 @@ async crawlSeo(url: string) : Promise<Result<CrawlResult, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async analyzeCrawlSeo(crawlResult: CrawlResult, lighthouseEnabled: boolean) : Promise<Result<Partial<{ [key in string]: PageAnalysis }>, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("analyze_crawl_seo", { crawlResult, lighthouseEnabled }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -33,12 +41,15 @@ async crawlSeo(url: string) : Promise<Result<CrawlResult, string>> {
 
 /** user-defined types **/
 
+export type AnalysisStatus = "Pending" | "InProgress" | "Complete" | { Failed: string }
 export type CrawlResult = { urls: Partial<{ [key in string]: UrlSource }>; total_pages: number }
 export type Headings = { h1: number; h2: number; h3: number }
 export type Images = { total: number; with_alt: number; without_alt: number }
 export type LighthouseMetrics = { performance_score: number; accessibility_score: number; best_practices_score: number; seo_score: number; pwa_score: number; first_contentful_paint: number; speed_index: number; largest_contentful_paint: number; time_to_interactive: number; total_blocking_time: number; cumulative_layout_shift: number }
 export type Links = { internal: number; external: number }
+export type MetaTagInfo = { title: string | null; description: string | null; robots: string | null; canonical: string | null; og_title: string | null; og_description: string | null; og_image: string | null; twitter_card: string | null }
 export type MetaTags = { title: string; description: string; keywords: string[] }
+export type PageAnalysis = { url: string; meta_tags: MetaTagInfo; h1_count: number; image_alt_missing: number; broken_links: string[]; lighthouse_score: number | null; status: AnalysisStatus }
 export type Performance = { load_time: string; mobile_responsive: boolean }
 export type SeoAnalysis = { meta_tags: MetaTags; headings: Headings; images: Images; links: Links; performance: Performance; lighthouse_metrics: LighthouseMetrics | null }
 export type UrlSource = { found_in_links: boolean; found_in_sitemap: boolean }
