@@ -84,19 +84,19 @@ pub async fn crawl_url(url: &str) -> Result<CrawlResult, SeoError> {
         .map_err(|e| SeoError::AnalysisError(e.to_string()))
 }
 
-pub async fn analyze_crawl_result<F>(
-    url: &str,
-    crawl_result: CrawlResult,
-    progress_callback: F,
-    lighthouse_enabled: bool,
-) -> Result<HashMap<String, PageAnalysis>, SeoError>
-where
-    F: Fn(AnalysisProgress) + Send + Sync + 'static,
-{
-    let analyzer = Analyzer::new(url, lighthouse_enabled)
-        .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
-    analyzer
-        .analyze_crawl_result(crawl_result, progress_callback)
-        .await
-        .map_err(|e| SeoError::AnalysisError(e.to_string()))
-}
+// pub async fn analyze_crawl_result<F>(
+//     url: &str,
+//     crawl_result: CrawlResult,
+//     progress_callback: F,
+//     lighthouse_enabled: bool,
+// ) -> Result<HashMap<String, PageAnalysis>, SeoError>
+// where
+//     F: FnMut(AnalysisProgress) + Send + Sync + 'static,
+// {
+//     let analyzer = Analyzer::new(url, lighthouse_enabled)
+//         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
+//     analyzer
+//         .analyze_crawl_result(crawl_result, progress_callback)
+//         .await
+//         .map_err(|e| SeoError::AnalysisError(e.to_string()))
+// }

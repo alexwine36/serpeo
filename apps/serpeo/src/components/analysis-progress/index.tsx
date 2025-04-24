@@ -59,8 +59,13 @@ export const AnalysisProgressDisplay = ({
             Object.entries(res?.results).map(([key, val]) => {
               return (
                 <div className="flex gap-2" key={key}>
-                  <StatusDisplay status={val?.status || "Pending"} />
-                  <p>/{val?.path}</p>
+                  <span className="s-8">
+                    <StatusDisplay status={val?.status || "Pending"} />
+                  </span>
+                  <div className="grid grid-cols-4">
+                    <p className="truncate">/{val?.path}</p>
+                    <p>{val?.meta_tags.title}</p>
+                  </div>
                 </div>
               );
             })}

@@ -6,15 +6,15 @@ use specta::Type;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use std::sync::Mutex;
 use tauri_specta::Event;
 use thiserror::Error;
+use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 use url::Url;
 
 use crate::crawler::CrawlResult;
 
-const MAX_CONCURRENT_ANALYSES: usize = 3;
+const MAX_CONCURRENT_ANALYSES: usize = 5;
 const ANALYSIS_DELAY_MS: u64 = 200;
 
 #[derive(Debug, Error)]
@@ -89,14 +89,15 @@ impl Analyzer {
     pub async fn analyze_crawl_result<F>(
         &self,
         crawl_result: CrawlResult,
-        mut progress_callback: F,
+        progress_callback: F,
     ) -> Result<HashMap<String, PageAnalysis>, AnalyzerError>
     where
-        F: FnMut(AnalysisProgress) + Send + 'static,
+        F: for<'a> FnMut(AnalysisProgress) + Send + Sync + 'static,
     {
         let total_urls = crawl_result.urls.len() as u32;
         let results = std::sync::Arc::new(tokio::sync::Mutex::new(HashMap::new()));
         let completed = std::sync::Arc::new(std::sync::atomic::AtomicU32::new(0));
+        let callback = Arc::new(Mutex::new(progress_callback));
 
         // Initialize results with pending status
         for url in crawl_result.urls.keys() {
@@ -116,59 +117,98 @@ impl Analyzer {
         }
 
         // Report initial state
-        progress_callback(AnalysisProgress {
+        callback.lock().await(AnalysisProgress {
             total_urls,
             completed_urls: 0,
             results: results.lock().await.clone(),
         });
 
-        let urls: Vec<_> = crawl_result.urls.keys().cloned().collect();
+        let urls: Vec<String> = crawl_result.urls.keys().cloned().collect();
+        let chunks: Vec<Vec<String>> = urls
+            .chunks(MAX_CONCURRENT_ANALYSES)
+            .map(|chunk| chunk.to_vec())
+            .collect();
 
-        for url in urls {
-            let mut results_lock = results.lock().await;
-            if let Some(analysis) = results_lock.get_mut(&url) {
-                analysis.status = AnalysisStatus::InProgress;
-            }
-            drop(results_lock);
+        for chunk in chunks {
+            let results = results.clone();
+            let completed = completed.clone();
+            let callback = callback.clone();
 
-            match self.analyze_page(&url, &self.client).await {
-                Ok(mut analysis) => {
-                    if self.lighthouse_enabled {
-                        if let Ok(score) = self.run_lighthouse(&url).await {
-                            analysis.lighthouse_score = Some(score);
+            let analyses = stream::iter(chunk)
+                .map(|url| {
+                    let client = self.client.clone();
+                    let url_clone = url.clone();
+                    let results = results.clone();
+                    let completed = completed.clone();
+                    let callback = callback.clone();
+
+                    async move {
+                        sleep(Duration::from_millis(ANALYSIS_DELAY_MS)).await;
+
+                        // Update status to InProgress
+                        {
+                            let mut results_lock = results.lock().await;
+                            if let Some(analysis) = results_lock.get_mut(&url_clone) {
+                                analysis.status = AnalysisStatus::InProgress;
+                            }
+                            callback.lock().await(AnalysisProgress {
+                                total_urls,
+                                completed_urls: completed.load(Ordering::Relaxed),
+                                results: results_lock.clone(),
+                            });
+                        }
+
+                        match self.analyze_page(&url_clone, &client).await {
+                            Ok(mut analysis) => {
+                                if self.lighthouse_enabled {
+                                    if let Ok(score) = self.run_lighthouse(&url_clone).await {
+                                        analysis.lighthouse_score = Some(score);
+                                    }
+                                }
+                                analysis.status = AnalysisStatus::Complete;
+                                Ok::<(String, PageAnalysis), AnalyzerError>((url_clone, analysis))
+                            }
+                            Err(e) => {
+                                let failed_analysis = PageAnalysis {
+                                    url: url_clone.clone(),
+                                    path: url.clone().replace(self.base_url.as_str(), ""),
+                                    meta_tags: MetaTagInfo::default(),
+                                    h1_count: 0,
+                                    image_alt_missing: 0,
+                                    broken_links: Vec::new(),
+                                    lighthouse_score: None,
+                                    status: AnalysisStatus::Failed(e.to_string()),
+                                };
+                                Ok::<(String, PageAnalysis), AnalyzerError>((
+                                    url_clone,
+                                    failed_analysis,
+                                ))
+                            }
                         }
                     }
-                    analysis.status = AnalysisStatus::Complete;
+                })
+                .buffer_unordered(MAX_CONCURRENT_ANALYSES)
+                .collect::<Vec<_>>()
+                .await;
+
+            for result in analyses {
+                if let Ok((url, analysis)) = result {
                     results.lock().await.insert(url, analysis);
-                }
-                Err(e) => {
-                    let failed_analysis = PageAnalysis {
-                        url: url.clone(),
-                        path: url.clone().replace(self.base_url.as_str(), ""),
-                        meta_tags: MetaTagInfo::default(),
-                        h1_count: 0,
-                        image_alt_missing: 0,
-                        broken_links: Vec::new(),
-                        lighthouse_score: None,
-                        status: AnalysisStatus::Failed(e.to_string()),
-                    };
-                    results.lock().await.insert(url, failed_analysis);
+                    completed.fetch_add(1, Ordering::Relaxed);
+
+                    callback.lock().await(AnalysisProgress {
+                        total_urls,
+                        completed_urls: completed.load(Ordering::Relaxed),
+                        results: results.lock().await.clone(),
+                    });
                 }
             }
-
-            completed.fetch_add(1, Ordering::Relaxed);
-            progress_callback(AnalysisProgress {
-                total_urls,
-                completed_urls: completed.load(Ordering::Relaxed),
-                results: results.lock().await.clone(),
-            });
         }
 
         Ok(Arc::try_unwrap(results)
             .expect("Arc still has multiple owners")
             .into_inner())
     }
-
     async fn analyze_page(
         &self,
         url: &str,
