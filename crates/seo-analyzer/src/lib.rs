@@ -2,13 +2,18 @@ mod analyze_html;
 mod crawler;
 mod lighthouse;
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 use thiserror::Error;
 use url::Url;
 
 pub use analyze_html::{analyze_html_content, Headings, Images, Links, MetaTags, Performance};
-pub use crawler::{CrawlResult, Crawler};
+pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
+pub mod analyzer;
+
+pub use analyzer::{
+    AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError, MetaTagInfo, PageAnalysis,
+};
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {
@@ -75,6 +80,21 @@ pub async fn crawl_url(url: &str) -> Result<CrawlResult, SeoError> {
     let crawler = Crawler::new(url).map_err(|e| SeoError::UrlParseError(e.to_string()))?;
     crawler
         .crawl()
+        .await
+        .map_err(|e| SeoError::AnalysisError(e.to_string()))
+}
+
+pub async fn analyze_crawl_result<F>(
+    crawl_result: CrawlResult,
+    progress_callback: F,
+    lighthouse_enabled: bool,
+) -> Result<HashMap<String, PageAnalysis>, SeoError>
+where
+    F: Fn(AnalysisProgress) + Send + Sync + 'static,
+{
+    let analyzer = Analyzer::new(lighthouse_enabled);
+    analyzer
+        .analyze_crawl_result(crawl_result, progress_callback)
         .await
         .map_err(|e| SeoError::AnalysisError(e.to_string()))
 }
