@@ -85,6 +85,7 @@ pub async fn crawl_url(url: &str) -> Result<CrawlResult, SeoError> {
 }
 
 pub async fn analyze_crawl_result<F>(
+    url: &str,
     crawl_result: CrawlResult,
     progress_callback: F,
     lighthouse_enabled: bool,
@@ -92,7 +93,8 @@ pub async fn analyze_crawl_result<F>(
 where
     F: Fn(AnalysisProgress) + Send + Sync + 'static,
 {
-    let analyzer = Analyzer::new(lighthouse_enabled);
+    let analyzer = Analyzer::new(url, lighthouse_enabled)
+        .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
     analyzer
         .analyze_crawl_result(crawl_result, progress_callback)
         .await

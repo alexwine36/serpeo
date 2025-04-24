@@ -9,6 +9,7 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { AnalysisProgressDisplay } from "../components/analysis-progress";
 import { type CrawlResult, commands } from "../generated/bindings";
 export const Route = createFileRoute("/about")({
   component: About,
@@ -57,12 +58,7 @@ function About() {
           </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Results</CardTitle>
-        </CardHeader>
-        <CardContent>{results?.total_pages}</CardContent>
-      </Card>
+      {results && <AnalysisProgressDisplay url={url} results={results} />}
     </div>
   );
 }

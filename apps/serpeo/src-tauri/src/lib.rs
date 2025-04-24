@@ -6,7 +6,7 @@ use specta_typescript::Typescript;
 use std::collections::HashMap;
 use tauri::Emitter;
 use tauri_plugin_shell::ShellExt;
-use tauri_specta::{collect_commands, Builder};
+use tauri_specta::{collect_commands, collect_events, Builder};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -57,10 +57,12 @@ async fn crawl_seo(url: String) -> Result<CrawlResult, String> {
 #[specta::specta]
 async fn analyze_crawl_seo(
     app: tauri::AppHandle,
+    url: String,
     crawl_result: CrawlResult,
     lighthouse_enabled: bool,
 ) -> Result<HashMap<String, PageAnalysis>, String> {
-    let analyzer = seo_analyzer::Analyzer::new(lighthouse_enabled);
+    let analyzer =
+        seo_analyzer::Analyzer::new(&url, lighthouse_enabled).map_err(|e| e.to_string())?;
     let app_handle = app.clone();
 
     analyzer
@@ -75,7 +77,8 @@ async fn analyze_crawl_seo(
 pub fn run() {
     let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![analyze_seo, crawl_seo, analyze_crawl_seo]);
+        .commands(collect_commands![analyze_seo, crawl_seo, analyze_crawl_seo])
+        .events(collect_events![AnalysisProgress]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder

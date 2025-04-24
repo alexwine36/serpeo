@@ -7,8 +7,10 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use std::sync::Mutex;
+use tauri_specta::Event;
 use thiserror::Error;
 use tokio::time::{sleep, Duration};
+use url::Url;
 
 use crate::crawler::CrawlResult;
 
@@ -23,6 +25,8 @@ pub enum AnalyzerError {
     HtmlParseError(String),
     #[error("Lighthouse analysis failed: {0}")]
     LighthouseError(String),
+    #[error("Failed to parse URL: {0}")]
+    UrlParseError(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type, Default)]
@@ -40,6 +44,7 @@ pub struct MetaTagInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, Type)]
 pub struct PageAnalysis {
     pub url: String,
+    pub path: String,
     pub meta_tags: MetaTagInfo,
     pub h1_count: u32,
     pub image_alt_missing: u32,
@@ -56,7 +61,7 @@ pub enum AnalysisStatus {
     Failed(String),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, Type, Event)]
 pub struct AnalysisProgress {
     pub total_urls: u32,
     pub completed_urls: u32,
@@ -65,15 +70,20 @@ pub struct AnalysisProgress {
 
 pub struct Analyzer {
     client: Client,
+    base_url: Url,
     lighthouse_enabled: bool,
 }
 
 impl Analyzer {
-    pub fn new(lighthouse_enabled: bool) -> Self {
-        Self {
+    pub fn new(base_url: &str, lighthouse_enabled: bool) -> Result<Self, AnalyzerError> {
+        let base_url =
+            Url::parse(base_url).map_err(|e| AnalyzerError::UrlParseError(e.to_string()))?;
+
+        Ok(Self {
+            base_url,
             client: Client::new(),
             lighthouse_enabled,
-        }
+        })
     }
 
     pub async fn analyze_crawl_result<F>(
@@ -94,6 +104,7 @@ impl Analyzer {
                 url.clone(),
                 PageAnalysis {
                     url: url.clone(),
+                    path: url.clone().replace(self.base_url.as_str(), ""),
                     meta_tags: MetaTagInfo::default(),
                     h1_count: 0,
                     image_alt_missing: 0,
@@ -133,6 +144,7 @@ impl Analyzer {
                 Err(e) => {
                     let failed_analysis = PageAnalysis {
                         url: url.clone(),
+                        path: url.clone().replace(self.base_url.as_str(), ""),
                         meta_tags: MetaTagInfo::default(),
                         h1_count: 0,
                         image_alt_missing: 0,
@@ -212,6 +224,7 @@ impl Analyzer {
 
         Ok(PageAnalysis {
             url: url_string,
+            path: url.clone().replace(self.base_url.as_str(), ""),
             meta_tags,
             h1_count,
             image_alt_missing,
