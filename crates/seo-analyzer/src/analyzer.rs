@@ -5,7 +5,7 @@ use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use tauri_specta::Event;
 use thiserror::Error;
@@ -256,7 +256,7 @@ impl Analyzer {
 
         Ok(PageAnalysis {
             url: url_string,
-            path: url.clone().replace(self.base_url.as_str(), ""),
+            path: url.replace(self.base_url.as_str(), ""),
             meta_tags,
             h1_count,
             image_alt_missing,

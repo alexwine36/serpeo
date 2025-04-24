@@ -1,16 +1,11 @@
-use futures::stream::{self, StreamExt};
+use futures::stream::{StreamExt};
 use reqwest::Client;
-use scraper::html::Select;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU32, Ordering};
-use tauri_specta::Event;
 use thiserror::Error;
-use tokio::sync::Mutex;
-use tokio::time::{Duration, sleep};
+use tokio::time::Duration;
 use url::Url;
 
 #[derive(Debug, Error)]

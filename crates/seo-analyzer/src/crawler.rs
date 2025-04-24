@@ -2,7 +2,6 @@ use futures::stream::{self, StreamExt};
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
-use specta::Type;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use thiserror::Error;
@@ -80,7 +79,7 @@ impl Crawler {
         // Start with the base URL
         let mut urls_to_crawl = vec![self.base_url.to_string()];
         let mut seen = HashSet::new();
-        seen.insert(Self::normalize_url(&self.base_url.to_string()));
+        seen.insert(Self::normalize_url(self.base_url.as_ref()));
 
         while !urls_to_crawl.is_empty() {
             let batch: Vec<_> = urls_to_crawl
@@ -176,7 +175,7 @@ impl Crawler {
     async fn discover_sitemap_url(&self) -> Result<Option<String>, CrawlerError> {
         let response = self
             .client
-            .get(&self.base_url.to_string())
+            .get(self.base_url.to_string())
             .send()
             .await
             .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
@@ -212,8 +211,7 @@ impl Crawler {
 
     async fn parse_sitemap_urls(&self, content: &str) -> Result<HashSet<String>, CrawlerError> {
         let content_clone = content.to_string();
-        Ok(
-            tokio::task::spawn_blocking(move || -> Result<HashSet<String>, CrawlerError> {
+        tokio::task::spawn_blocking(move || -> Result<HashSet<String>, CrawlerError> {
                 let document = match roxmltree::Document::parse(&content_clone) {
                     Ok(doc) => doc,
                     Err(_) => return Ok(HashSet::new()), // Return empty set on parse failure
@@ -230,8 +228,7 @@ impl Crawler {
                 Ok(urls)
             })
             .await
-            .map_err(|e| CrawlerError::SitemapError(e.to_string()))??,
-        )
+            .map_err(|e| CrawlerError::SitemapError(e.to_string()))?
     }
 
     async fn fetch_sitemap(&self) -> Result<HashSet<String>, CrawlerError> {
@@ -245,7 +242,7 @@ impl Crawler {
             // Fallback to common sitemap locations
             for path in &["/sitemap.xml", "/sitemap_index.xml", "/sitemap/sitemap.xml"] {
                 if let Ok(url) = self.base_url.join(path) {
-                    sitemap_urls.insert(Self::normalize_url(&url.to_string()));
+                    sitemap_urls.insert(Self::normalize_url(url.as_ref()));
                 }
             }
         }

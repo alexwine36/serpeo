@@ -1,5 +1,5 @@
 use html_parser::page_parser::{LinkType, MetaTagInfo, PageParser};
-use scraper::{Html, Selector};
+use scraper::Html;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use url::Url;
@@ -61,7 +61,7 @@ pub fn analyze_html_content(
 
     let images = parser.extract_images();
     let images = Images {
-        total: images.iter().count() as i32,
+        total: images.len() as i32,
         with_alt: images.iter().filter(|img| img.alt.is_some()).count() as i32,
         without_alt: images.iter().filter(|img| img.alt.is_none()).count() as i32,
     };

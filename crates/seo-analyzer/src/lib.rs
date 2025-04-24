@@ -3,7 +3,7 @@ mod crawler;
 mod lighthouse;
 use html_parser::page_parser::MetaTagInfo;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, time::Instant};
+use std::time::Instant;
 use thiserror::Error;
 use url::Url;
 
