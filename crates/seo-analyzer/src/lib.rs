@@ -10,7 +10,9 @@ pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 pub mod analyzer;
 
-pub use analyzer::{AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError, PageAnalysis};
+pub use html_parser::page_parser::PageAnalysis;
+
+pub use analyzer::{AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError};
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {

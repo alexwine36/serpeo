@@ -1,4 +1,5 @@
 use futures::stream::{self, StreamExt};
+use html_parser::page_parser::{LinkType, PageAnalysis, PageParser, PageParserError};
 use reqwest::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
@@ -16,6 +17,7 @@ const REQUEST_DELAY_MS: u64 = 100;
 pub struct UrlSource {
     pub found_in_links: bool,
     pub found_in_sitemap: bool,
+    pub analysis: Option<PageAnalysis>,
 }
 
 #[derive(Debug, Error)]
@@ -28,6 +30,8 @@ pub enum CrawlerError {
     HtmlParseError(String),
     #[error("Failed to parse sitemap: {0}")]
     SitemapError(String),
+    #[error("Page parser error: {0}")]
+    PageParserError(#[from] PageParserError),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
@@ -71,6 +75,7 @@ impl Crawler {
                     UrlSource {
                         found_in_links: false,
                         found_in_sitemap: true,
+                        analysis: None,
                     },
                 );
             }
@@ -89,10 +94,10 @@ impl Crawler {
             let results = stream::iter(batch)
                 .map(|url| {
                     let client = self.client.clone();
-                    let base_url = self.base_url.clone();
+
                     async move {
                         sleep(Duration::from_millis(REQUEST_DELAY_MS)).await;
-                        self.process_page(&url, &client, &base_url).await
+                        self.process_page(&url, &client).await
                     }
                 })
                 .buffer_unordered(MAX_CONCURRENT_REQUESTS)
@@ -100,11 +105,11 @@ impl Crawler {
                 .await;
 
             for result in results {
-                if let Ok(new_urls) = result {
+                if let Ok((new_urls, analysis)) = result {
                     for url in new_urls {
                         let normalized_url = Self::normalize_url(&url);
                         if !seen.contains(&normalized_url) {
-                            seen.insert(normalized_url);
+                            seen.insert(normalized_url.clone());
                             urls_to_crawl.push(url);
                         }
                     }
@@ -123,8 +128,8 @@ impl Crawler {
         &self,
         url: &str,
         client: &Client,
-        base_url: &Url,
-    ) -> Result<Vec<String>, CrawlerError> {
+        // base_url: &Url,
+    ) -> Result<(Vec<String>, Option<PageAnalysis>), CrawlerError> {
         let response = client
             .get(url)
             .send()
@@ -136,75 +141,80 @@ impl Crawler {
             .await
             .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
 
-        let base_url = base_url.clone();
-        let html_clone = html.clone();
+        // Create PageParser and analyze the page
+        let mut parser = PageParser::new(url)?;
+        parser.set_content(html);
+        let analysis = parser.analyze_page().await.ok();
+        let analysis_clone = analysis.clone();
 
-        let new_urls = tokio::task::spawn_blocking(move || {
-            let document = Html::parse_document(&html_clone);
-            let link_selector = Selector::parse("a[href]")
-                .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))?;
-
-            let mut urls = Vec::new();
-            for link in document.select(&link_selector) {
-                if let Some(href) = link.value().attr("href") {
-                    if let Ok(absolute_url) = base_url.join(href) {
-                        if absolute_url.domain() == base_url.domain() {
-                            urls.push(absolute_url.to_string());
-                        }
-                    }
+        let mut urls = Vec::new();
+        if let Some(analysis) = analysis {
+            for link in analysis.links {
+                if link.link_type == LinkType::Internal {
+                    urls.push(link.href);
                 }
             }
-            Ok::<_, CrawlerError>(urls)
-        })
-        .await
-        .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))??;
-
-        let mut visited = self.visited_urls.lock().await;
-        for url_string in &new_urls {
-            let normalized_url = Self::normalize_url(url_string);
-            let entry = visited.entry(normalized_url).or_insert(UrlSource {
-                found_in_links: true,
-                found_in_sitemap: false,
-            });
-            entry.found_in_links = true;
         }
 
-        Ok(new_urls)
+        // Update visited_urls with the analysis
+        {
+            let mut visited = self.visited_urls.lock().await;
+            let normalized_url = Self::normalize_url(url);
+            let entry = visited.entry(normalized_url).or_insert(UrlSource {
+                found_in_links: false,
+                found_in_sitemap: false,
+                analysis: None,
+            });
+            // Set found_in_links to true since we found this URL through crawling
+            entry.found_in_links = true;
+            entry.analysis = analysis_clone.clone();
+        }
+
+        Ok((urls, analysis_clone))
     }
 
     async fn discover_sitemap_url(&self) -> Result<Option<String>, CrawlerError> {
-        let response = self
-            .client
-            .get(self.base_url.to_string())
-            .send()
+        // let response = self
+        //     .client
+        //     .get(self.base_url.to_string())
+        //     .send()
+        //     .await
+        //     .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
+
+        // let html = response
+        //     .text()
+        //     .await
+        //     .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
+
+        // let html_clone = html.clone();
+        // let base_url = self.base_url.clone();
+
+        let mut parser = PageParser::new(&self.base_url.to_string())
+            .map_err(|e| CrawlerError::PageParserError(e))?;
+        parser
+            .fetch()
             .await
             .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
 
-        let html = response
-            .text()
-            .await
-            .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
+        let meta = parser.extract_meta_tags();
+        let sitemap_url = meta.sitemap;
+        // let sitemap_url = tokio::task::spawn_blocking(move || {
+        //     let document = Html::parse_document(&html_clone);
+        //     let link_selector =
+        //         Selector::parse("link[rel='sitemap'], link[type='application/xml+sitemap']")
+        //             .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))?;
 
-        let html_clone = html.clone();
-        let base_url = self.base_url.clone();
-
-        let sitemap_url = tokio::task::spawn_blocking(move || {
-            let document = Html::parse_document(&html_clone);
-            let link_selector =
-                Selector::parse("link[rel='sitemap'], link[type='application/xml+sitemap']")
-                    .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))?;
-
-            for link in document.select(&link_selector) {
-                if let Some(href) = link.value().attr("href") {
-                    if let Ok(absolute_url) = base_url.join(href) {
-                        return Ok(Some(absolute_url.to_string()));
-                    }
-                }
-            }
-            Ok(None)
-        })
-        .await
-        .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))??;
+        //     for link in document.select(&link_selector) {
+        //         if let Some(href) = link.value().attr("href") {
+        //             if let Ok(absolute_url) = base_url.join(href) {
+        //                 return Ok(Some(absolute_url.to_string()));
+        //             }
+        //         }
+        //     }
+        //     Ok(None)
+        // })
+        // .await
+        // .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))??;
 
         Ok(sitemap_url)
     }
@@ -212,23 +222,23 @@ impl Crawler {
     async fn parse_sitemap_urls(&self, content: &str) -> Result<HashSet<String>, CrawlerError> {
         let content_clone = content.to_string();
         tokio::task::spawn_blocking(move || -> Result<HashSet<String>, CrawlerError> {
-                let document = match roxmltree::Document::parse(&content_clone) {
-                    Ok(doc) => doc,
-                    Err(_) => return Ok(HashSet::new()), // Return empty set on parse failure
-                };
+            let document = match roxmltree::Document::parse(&content_clone) {
+                Ok(doc) => doc,
+                Err(_) => return Ok(HashSet::new()), // Return empty set on parse failure
+            };
 
-                let mut urls = HashSet::new();
-                for node in document.descendants() {
-                    if node.has_tag_name("loc") {
-                        if let Some(url) = node.text() {
-                            urls.insert(Self::normalize_url(url));
-                        }
+            let mut urls = HashSet::new();
+            for node in document.descendants() {
+                if node.has_tag_name("loc") {
+                    if let Some(url) = node.text() {
+                        urls.insert(Self::normalize_url(url));
                     }
                 }
-                Ok(urls)
-            })
-            .await
-            .map_err(|e| CrawlerError::SitemapError(e.to_string()))?
+            }
+            Ok(urls)
+        })
+        .await
+        .map_err(|e| CrawlerError::SitemapError(e.to_string()))?
     }
 
     async fn fetch_sitemap(&self) -> Result<HashSet<String>, CrawlerError> {
@@ -369,6 +379,7 @@ mod tests {
 
         // Page1 should be found in both links and sitemap
         let page1_source = result.urls.get(&format!("{}/page1", base_url)).unwrap();
+
         assert!(page1_source.found_in_links);
         assert!(page1_source.found_in_sitemap);
 

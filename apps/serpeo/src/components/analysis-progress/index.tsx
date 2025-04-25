@@ -10,11 +10,11 @@ import { cn } from "@repo/ui/lib/utils";
 import { Check, Loader, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  commands,
   events,
   type AnalysisProgress,
+  type AnalysisResult,
   type CrawlResult,
-  type PageAnalysis,
-  commands,
 } from "../../generated/bindings";
 
 type AnalysisProgressDisplayProps = {
@@ -63,8 +63,8 @@ export const AnalysisProgressDisplay = ({
                     <StatusDisplay status={val?.status || "Pending"} />
                   </span>
                   <div className="grid grid-cols-4">
-                    <p className="truncate">/{val?.path}</p>
-                    <p>{val?.meta_tags.title}</p>
+                    <p className="truncate">{val?.analysis.base_info.path}</p>
+                    <p>{val?.analysis.meta_tags.title}</p>
                   </div>
                 </div>
               );
@@ -75,7 +75,7 @@ export const AnalysisProgressDisplay = ({
   );
 };
 
-const StatusDisplay = ({ status }: { status: PageAnalysis["status"] }) => {
+const StatusDisplay = ({ status }: { status: AnalysisResult["status"] }) => {
   const baseClass = "s-10";
   if (status === "Complete") {
     return <Check className={cn(baseClass)} />;

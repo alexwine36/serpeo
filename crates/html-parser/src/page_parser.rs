@@ -40,26 +40,26 @@ pub struct MetaTagInfo {
     pub twitter_tags: HashMap<String, String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Type)]
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct Heading {
     pub tag: String,
     pub text: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Type)]
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct Image {
     pub src: String,
     pub alt: Option<String>,
     pub srcset: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Type, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq)]
 pub enum LinkType {
     Internal,
     External,
 }
 
-#[derive(Debug, Serialize, Deserialize, Type)]
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct Links {
     pub href: String,
     pub path: String,
@@ -72,12 +72,19 @@ pub struct Performance {
     pub mobile_responsive: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Type)]
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub struct BaseInfo {
+    pub base_url: String,
+    pub path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct PageAnalysis {
     pub meta_tags: MetaTagInfo,
     pub headings: Vec<Heading>,
     pub images: Vec<Image>,
     pub links: Vec<Links>,
+    pub base_info: BaseInfo,
 }
 
 fn normalize_url(url: &str) -> String {
@@ -189,6 +196,13 @@ impl PageParser {
                 "Document not set".to_string(),
             ))?;
         Ok(Html::parse_document(html))
+    }
+
+    pub fn extract_base(&self) -> BaseInfo {
+        BaseInfo {
+            base_url: self.base_url.to_string(),
+            path: self.path.clone(),
+        }
     }
 
     pub fn extract_meta_tags(&self) -> MetaTagInfo {
@@ -350,6 +364,7 @@ impl PageParser {
             headings,
             images,
             links,
+            base_info: self.extract_base(),
         })
     }
 }
@@ -413,7 +428,7 @@ mod tests {
                     </body>
                 </html>
             "#;
-        let document = Html::parse_document(html);
+
         let mut parser = PageParser::new(Url::parse("https://example.com").unwrap()).unwrap();
         parser.set_content(html.to_string());
 
