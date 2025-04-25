@@ -1,3 +1,4 @@
+import { Toaster } from "@repo/ui/components/sonner";
 import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
@@ -11,11 +12,15 @@ export const Route = createRootRoute({
         <Link to="/about" className="[&.active]:font-bold">
           About
         </Link>
+        <Link to="/settings" className="[&.active]:font-bold">
+          Settings
+        </Link>
       </div>
       <hr />
       <div className="m-2">
         <Outlet />
       </div>
+      <Toaster />
 
       <TanStackRouterDevtools />
     </>

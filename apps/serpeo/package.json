@@ -28,6 +28,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "recharts": "2.15.3",
+    "sonner": "^2.0.3",
     "tailwind-merge": "3.2.0",
     "tailwindcss": "4.1.4",
     "tw-animate-css": "1.2.8"
