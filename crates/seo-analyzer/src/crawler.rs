@@ -1,7 +1,6 @@
 use futures::stream::{self, StreamExt};
 use html_parser::page_parser::{LinkType, PageAnalysis, PageParser, PageParserError};
 use reqwest::Client;
-use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -189,8 +188,8 @@ impl Crawler {
         // let html_clone = html.clone();
         // let base_url = self.base_url.clone();
 
-        let mut parser = PageParser::new(&self.base_url.to_string())
-            .map_err(|e| CrawlerError::PageParserError(e))?;
+        let mut parser = PageParser::new(self.base_url.to_string())
+            .map_err(CrawlerError::PageParserError)?;
         parser
             .fetch()
             .await

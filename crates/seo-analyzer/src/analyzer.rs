@@ -1,5 +1,5 @@
 use futures::stream::{self, StreamExt};
-use html_parser::page_parser::{MetaTagInfo, PageAnalysis, PageParser, PageParserError};
+use html_parser::page_parser::{PageAnalysis, PageParser, PageParserError};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -95,7 +95,7 @@ impl Analyzer {
                 );
                 completed.fetch_add(1, Ordering::Relaxed);
             } else {
-                let mut parser = PageParser::new(&url)?;
+                let parser = PageParser::new(&url)?;
                 let analysis = parser.analyze_page().await?;
                 results.lock().await.insert(
                     url.clone(),
@@ -162,7 +162,7 @@ impl Analyzer {
                                 Ok::<(String, PageAnalysis), AnalyzerError>((url_clone, analysis))
                             }
                             Err(e) => {
-                                let mut parser = PageParser::new(&url_clone)?;
+                                let parser = PageParser::new(&url_clone)?;
                                 let analysis = parser.analyze_page().await?;
                                 Ok::<(String, PageAnalysis), AnalyzerError>((url_clone, analysis))
                             }

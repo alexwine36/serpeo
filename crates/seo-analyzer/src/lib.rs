@@ -4,7 +4,6 @@ use html_parser::page_parser::{Heading, Image, Links, MetaTagInfo, Performance};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use thiserror::Error;
-use url::Url;
 
 pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};

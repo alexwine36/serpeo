@@ -348,9 +348,11 @@ impl PageParser {
         headings
     }
 
-    pub async fn analyze_page(&self) -> Result<PageAnalysis, PageParserError> {
+    pub async fn analyze_page(mut self) -> Result<PageAnalysis, PageParserError> {
         // let document = self.get_document()?;
-
+        if self.html_content.is_none() {
+            self.fetch().await?;
+        }
         // Run all extractors concurrently
         let (meta_tags, headings, images, links) = tokio::join!(
             async { self.extract_meta_tags() },
