@@ -1,5 +1,7 @@
 use futures::stream::{self, StreamExt};
-use html_parser::page_parser::{LinkType, PageAnalysis, PageParser, PageParserError};
+use html_parser::page_parser::{
+    normalize_url, LinkType, PageAnalysis, PageParser, PageParserError,
+};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -46,10 +48,6 @@ pub struct Crawler {
 }
 
 impl Crawler {
-    fn normalize_url(url: &str) -> String {
-        url.trim_end_matches('/').to_string()
-    }
-
     pub fn new(base_url: &str) -> Result<Self, CrawlerError> {
         let base_url =
             Url::parse(base_url).map_err(|e| CrawlerError::UrlParseError(e.to_string()))?;
@@ -70,7 +68,7 @@ impl Crawler {
             let mut visited = self.visited_urls.lock().await;
             for url in &sitemap_urls {
                 visited.insert(
-                    Self::normalize_url(url),
+                    normalize_url(url),
                     UrlSource {
                         found_in_links: false,
                         found_in_sitemap: true,
@@ -83,7 +81,7 @@ impl Crawler {
         // Start with the base URL
         let mut urls_to_crawl = vec![self.base_url.to_string()];
         let mut seen = HashSet::new();
-        seen.insert(Self::normalize_url(self.base_url.as_ref()));
+        seen.insert(normalize_url(self.base_url.as_ref()));
 
         while !urls_to_crawl.is_empty() {
             let batch: Vec<_> = urls_to_crawl
@@ -106,7 +104,7 @@ impl Crawler {
             for result in results {
                 if let Ok((new_urls, analysis)) = result {
                     for url in new_urls {
-                        let normalized_url = Self::normalize_url(&url);
+                        let normalized_url = normalize_url(&url);
                         if !seen.contains(&normalized_url) {
                             seen.insert(normalized_url.clone());
                             urls_to_crawl.push(url);
@@ -158,7 +156,7 @@ impl Crawler {
         // Update visited_urls with the analysis
         {
             let mut visited = self.visited_urls.lock().await;
-            let normalized_url = Self::normalize_url(url);
+            let normalized_url = normalize_url(url);
             let entry = visited.entry(normalized_url).or_insert(UrlSource {
                 found_in_links: false,
                 found_in_sitemap: false,
@@ -173,23 +171,8 @@ impl Crawler {
     }
 
     async fn discover_sitemap_url(&self) -> Result<Option<String>, CrawlerError> {
-        // let response = self
-        //     .client
-        //     .get(self.base_url.to_string())
-        //     .send()
-        //     .await
-        //     .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
-
-        // let html = response
-        //     .text()
-        //     .await
-        //     .map_err(|e| CrawlerError::FetchError(e.to_string()))?;
-
-        // let html_clone = html.clone();
-        // let base_url = self.base_url.clone();
-
-        let mut parser = PageParser::new(self.base_url.to_string())
-            .map_err(CrawlerError::PageParserError)?;
+        let mut parser =
+            PageParser::new(self.base_url.to_string()).map_err(CrawlerError::PageParserError)?;
         parser
             .fetch()
             .await
@@ -197,23 +180,6 @@ impl Crawler {
 
         let meta = parser.extract_meta_tags();
         let sitemap_url = meta.sitemap;
-        // let sitemap_url = tokio::task::spawn_blocking(move || {
-        //     let document = Html::parse_document(&html_clone);
-        //     let link_selector =
-        //         Selector::parse("link[rel='sitemap'], link[type='application/xml+sitemap']")
-        //             .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))?;
-
-        //     for link in document.select(&link_selector) {
-        //         if let Some(href) = link.value().attr("href") {
-        //             if let Ok(absolute_url) = base_url.join(href) {
-        //                 return Ok(Some(absolute_url.to_string()));
-        //             }
-        //         }
-        //     }
-        //     Ok(None)
-        // })
-        // .await
-        // .map_err(|e| CrawlerError::HtmlParseError(e.to_string()))??;
 
         Ok(sitemap_url)
     }
@@ -230,7 +196,7 @@ impl Crawler {
             for node in document.descendants() {
                 if node.has_tag_name("loc") {
                     if let Some(url) = node.text() {
-                        urls.insert(Self::normalize_url(url));
+                        urls.insert(normalize_url(url));
                     }
                 }
             }
@@ -246,12 +212,12 @@ impl Crawler {
         // Try to find sitemap URL from HTML first
         let mut sitemap_urls = HashSet::new();
         if let Some(discovered_url) = self.discover_sitemap_url().await? {
-            sitemap_urls.insert(Self::normalize_url(&discovered_url));
+            sitemap_urls.insert(normalize_url(&discovered_url));
         } else {
             // Fallback to common sitemap locations
             for path in &["/sitemap.xml", "/sitemap_index.xml", "/sitemap/sitemap.xml"] {
                 if let Ok(url) = self.base_url.join(path) {
-                    sitemap_urls.insert(Self::normalize_url(url.as_ref()));
+                    sitemap_urls.insert(normalize_url(url.as_ref()));
                 }
             }
         }
@@ -320,6 +286,9 @@ mod tests {
                                     <body>
                                         <a href="/page1">Page 1</a>
                                         <a href="/page2">Page 2</a>
+                                        <a href="/page1?param=value">Page 1 with params</a>
+                                        <a href="/page1#section">Page 1 with hash</a>
+                                        <a href="/page1?param=value#section">Page 1 with both</a>
                                         <a href="https://external.com">External</a>
                                     </body>
                                 </html>
@@ -331,8 +300,11 @@ mod tests {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
 <url><loc>{}/page1</loc></url>
 <url><loc>{}/page3</loc></url>
+<url><loc>{}/page1?param=value</loc></url>
+<url><loc>{}/page1#section</loc></url>
+<url><loc>{}/page1?param=value#section</loc></url>
 </urlset>"#,
-                                    base_url, base_url
+                                    base_url, base_url, base_url, base_url, base_url
                                 );
                                 Ok(Response::new(Body::from(sitemap)))
                             }
@@ -378,7 +350,6 @@ mod tests {
 
         // Page1 should be found in both links and sitemap
         let page1_source = result.urls.get(&format!("{}/page1", base_url)).unwrap();
-
         assert!(page1_source.found_in_links);
         assert!(page1_source.found_in_sitemap);
 
@@ -394,5 +365,20 @@ mod tests {
 
         // External URLs should not be included
         assert!(!result.urls.contains_key("https://external.com"));
+
+        // Verify that URLs with query parameters and hash fragments are not included
+        for url in result.urls.keys() {
+            println!("url: {}", url);
+            assert!(
+                !url.contains('?'),
+                "URL should not contain query parameters: {}",
+                url
+            );
+            assert!(
+                !url.contains('#'),
+                "URL should not contain hash fragments: {}",
+                url
+            );
+        }
     }
 }

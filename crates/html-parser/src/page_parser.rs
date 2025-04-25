@@ -87,8 +87,17 @@ pub struct PageAnalysis {
     pub base_info: BaseInfo,
 }
 
-fn normalize_url(url: &str) -> String {
-    url.trim_end_matches('/').to_string()
+pub fn normalize_url(url: &str) -> String {
+    let mut url = url.trim_end_matches('/').to_string();
+    // Remove query parameters and hash fragments
+    if let Some(query_start) = url.find('?') {
+        url.truncate(query_start);
+    }
+    if let Some(hash_start) = url.find('#') {
+        url.truncate(hash_start);
+    }
+    println!("normalized url: {}", url);
+    url
 }
 
 pub trait FromBaseUrl {
