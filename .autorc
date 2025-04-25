@@ -1,0 +1,16 @@
+{
+  "plugins": [
+    "git-tag",
+    "all-contributors",
+    "first-time-contributor",
+    "released",
+    [
+      "pr-body-labels"
+    ]
+  ],
+  "owner": "alexwine36",
+  "repo": "serpeo",
+  "name": "AutoBot",
+  "email": "autobot@github.com",
+  "onlyPublishWithReleaseLabel": true
+}

@@ -28,11 +28,20 @@
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
+    "@auto-it/all-contributors": "^11.3.0",
+    "@auto-it/conventional-commits": "^11.3.0",
+    "@auto-it/first-time-contributor": "^11.3.0",
+    "@auto-it/git-tag": "^11.3.0",
+    "@auto-it/pr-body-labels": "^11.3.0",
+    "@auto-it/released": "^11.3.0",
     "@biomejs/biome": "^1.9.4",
     "@changesets/cli": "^2.29.2",
+    "@workspace/typescript-config": "workspace:*",
+    "auto": "^11.3.0",
     "npm-run-all": "^4.1.5",
     "syncpack": "^13.0.3",
     "turbo": "latest",
+    "typescript": "catalog:",
     "ultracite": "^4.2.1",
     "yaml": "^2.7.1"
   },

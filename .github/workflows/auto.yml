@@ -1,0 +1,57 @@
+name: Auto
+
+on:
+  push:
+    branches: [main, next]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Enabled permissions on GITHUB_TOKEN
+permissions:
+  # To be able to push to the repo
+  contents: write
+  # To update the pr description with canary info
+  pull-requests: write
+  # For pr-check to create a status
+  statuses: write
+  # Needed to create PR statuses/checks
+  checks: write
+  # To post comments on PRs
+  issues: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/ci-setup
+
+  pr-check:
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/ci-setup
+
+      - uses: 8BitJonny/gh-get-current-pr@2.2.0
+        id: PR
+      - run: yarn auto pr-check --pr $PR --url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+        env:
+          PR: ${{ steps.PR.outputs.number }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  shipit:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, 'ci skip') && !contains(github.event.head_commit.message, 'skip ci')"
+    needs: install
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/ci-setup
+      - name: Create release
+        run: pnpm auto shipit --dry-run
