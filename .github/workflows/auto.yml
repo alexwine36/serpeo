@@ -39,7 +39,7 @@ jobs:
 
       - uses: 8BitJonny/gh-get-current-pr@2.2.0
         id: PR
-      - run: yarn auto pr-check --pr $PR --url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+      - run: pnpm auto pr-check --pr $PR --url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
         env:
           PR: ${{ steps.PR.outputs.number }}
     env:
@@ -55,3 +55,5 @@ jobs:
       - uses: ./.github/actions/ci-setup
       - name: Create release
         run: pnpm auto shipit --dry-run
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
