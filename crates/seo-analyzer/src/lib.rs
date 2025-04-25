@@ -8,6 +8,7 @@ use thiserror::Error;
 pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 pub mod analyzer;
+pub mod config;
 
 pub use html_parser::page_parser::PageAnalysis;
 

@@ -1,17 +1,16 @@
 use seo_analyzer::{
-    analyze_url, crawl_url, AnalysisProgress, CommandOutput, CrawlResult, PageAnalysis,
-    SeoAnalysis, ShellCommand,
+    analyze_url, config::Config, crawl_url, AnalysisProgress, CommandOutput, CrawlResult,
+    PageAnalysis, SeoAnalysis, ShellCommand,
 };
 use specta_typescript::Typescript;
-use std::collections::HashMap;
-use tauri::Emitter;
+use std::{collections::HashMap, sync::Mutex};
+use tauri::{Emitter, Manager, State};
 use tauri_plugin_shell::ShellExt;
 use tauri_specta::{collect_commands, collect_events, Builder};
 
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+#[derive(Default)]
+struct AppData {
+    config: Config,
 }
 
 struct TauriShell(tauri::AppHandle);
@@ -55,6 +54,22 @@ async fn crawl_seo(url: String) -> Result<CrawlResult, String> {
 
 #[tauri::command]
 #[specta::specta]
+async fn get_config(state: State<'_, Mutex<AppData>>) -> Result<Config, String> {
+    // let mut app_data = app.state::<Mutex<AppData>>();
+    Ok(state.lock().unwrap().config.clone())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn set_config(state: State<'_, Mutex<AppData>>, config: Config) -> Result<(), String> {
+    // let app_data = app.state::<Mutex<AppData>>();
+    let mut state = state.lock().unwrap();
+    state.config = config;
+    Ok(())
+}
+
+#[tauri::command]
+#[specta::specta]
 async fn analyze_crawl_seo(
     app: tauri::AppHandle,
     url: String,
@@ -77,14 +92,26 @@ async fn analyze_crawl_seo(
 pub fn run() {
     let builder = Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![analyze_seo, crawl_seo, analyze_crawl_seo])
+        .commands(collect_commands![
+            analyze_seo,
+            crawl_seo,
+            analyze_crawl_seo,
+            get_config,
+            set_config,
+        ])
         .events(collect_events![AnalysisProgress]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder
         .export(Typescript::default(), "../src/generated/bindings.ts")
         .expect("Failed to export typescript bindings");
+
+    // Create the tauri app
     tauri::Builder::default()
+        .setup(|app| {
+            app.manage(Mutex::new(AppData::default()));
+            Ok(())
+        })
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(builder.invoke_handler())

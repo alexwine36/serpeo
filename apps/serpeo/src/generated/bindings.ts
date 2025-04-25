@@ -28,6 +28,22 @@ async analyzeCrawlSeo(url: string, crawlResult: CrawlResult, lighthouseEnabled: 
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getConfig() : Promise<Result<Config, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_config") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setConfig(config: Config) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_config", { config }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -50,6 +66,7 @@ export type AnalysisProgress = { total_urls: number; completed_urls: number; res
 export type AnalysisResult = { analysis: PageAnalysis; status: AnalysisStatus }
 export type AnalysisStatus = "Pending" | "InProgress" | "Complete" | { Failed: string }
 export type BaseInfo = { base_url: string; path: string }
+export type Config = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
 export type CrawlResult = { urls: Partial<{ [key in string]: UrlSource }>; total_pages: number }
 export type Heading = { tag: string; text: string }
 export type Image = { src: string; alt: string | null; srcset: string | null }
