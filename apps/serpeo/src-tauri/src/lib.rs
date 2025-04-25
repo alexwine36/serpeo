@@ -48,8 +48,10 @@ async fn analyze_seo(app: tauri::AppHandle, url: String) -> Result<SeoAnalysis, 
 
 #[tauri::command]
 #[specta::specta]
-async fn crawl_seo(url: String) -> Result<CrawlResult, String> {
-    crawl_url(&url).await.map_err(|e| e.to_string())
+async fn crawl_seo(state: State<'_, Mutex<AppData>>) -> Result<CrawlResult, String> {
+    let config = state.lock().unwrap().config.clone();
+    println!("Crawling with config: {:?}", config);
+    crawl_url(&config).await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -72,12 +74,14 @@ async fn set_config(state: State<'_, Mutex<AppData>>, config: Config) -> Result<
 #[specta::specta]
 async fn analyze_crawl_seo(
     app: tauri::AppHandle,
-    url: String,
+    // url: String,
     crawl_result: CrawlResult,
     lighthouse_enabled: bool,
 ) -> Result<HashMap<String, PageAnalysis>, String> {
+    let state = app.state::<Mutex<AppData>>();
+    let config = state.lock().unwrap().config.clone();
     let analyzer =
-        seo_analyzer::Analyzer::new(&url, lighthouse_enabled).map_err(|e| e.to_string())?;
+        seo_analyzer::Analyzer::new(&config, lighthouse_enabled).map_err(|e| e.to_string())?;
     let app_handle = app.clone();
 
     analyzer

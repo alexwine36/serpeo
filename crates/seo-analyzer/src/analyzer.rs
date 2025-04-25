@@ -1,3 +1,4 @@
+use crate::config::Config;
 use futures::stream::{self, StreamExt};
 use html_parser::page_parser::{PageAnalysis, PageParser, PageParserError};
 use reqwest::Client;
@@ -59,9 +60,9 @@ pub struct Analyzer {
 }
 
 impl Analyzer {
-    pub fn new(base_url: &str, lighthouse_enabled: bool) -> Result<Self, AnalyzerError> {
-        let base_url =
-            Url::parse(base_url).map_err(|e| AnalyzerError::UrlParseError(e.to_string()))?;
+    pub fn new(config: &Config, lighthouse_enabled: bool) -> Result<Self, AnalyzerError> {
+        let base_url = Url::parse(&config.base_url)
+            .map_err(|e| AnalyzerError::UrlParseError(e.to_string()))?;
 
         Ok(Self {
             base_url,

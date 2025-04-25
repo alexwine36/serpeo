@@ -20,7 +20,7 @@ impl Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            base_url: "https://example.com".to_string(),
+            base_url: "https://stem-programs.newspacenexus.org/".to_string(),
             max_concurrent_requests: 10,
             request_delay_ms: 100,
         }

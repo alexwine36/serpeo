@@ -13,17 +13,17 @@ async analyzeSeo(url: string) : Promise<Result<SeoAnalysis, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async crawlSeo(url: string) : Promise<Result<CrawlResult, string>> {
+async crawlSeo() : Promise<Result<CrawlResult, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("crawl_seo", { url }) };
+    return { status: "ok", data: await TAURI_INVOKE("crawl_seo") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async analyzeCrawlSeo(url: string, crawlResult: CrawlResult, lighthouseEnabled: boolean) : Promise<Result<Partial<{ [key in string]: PageAnalysis }>, string>> {
+async analyzeCrawlSeo(crawlResult: CrawlResult, lighthouseEnabled: boolean) : Promise<Result<Partial<{ [key in string]: PageAnalysis }>, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("analyze_crawl_seo", { url, crawlResult, lighthouseEnabled }) };
+    return { status: "ok", data: await TAURI_INVOKE("analyze_crawl_seo", { crawlResult, lighthouseEnabled }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
