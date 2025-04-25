@@ -80,7 +80,7 @@ export const SettingsCard = ({ collapsible = false }: SettingsCardProps) => {
         <CardHeader>
           {collapsible ? (
             <CollapsibleTrigger disabled={!collapsible} asChild>
-              <div className="flex w-full justify-between items-center gap-2">
+              <div className="flex w-full items-center justify-between gap-2">
                 <CardTitle>Settings</CardTitle>
                 <Button variant="ghost" size="icon">
                   <ChevronDownIcon

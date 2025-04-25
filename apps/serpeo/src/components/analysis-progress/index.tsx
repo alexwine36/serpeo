@@ -10,11 +10,11 @@ import { cn } from "@repo/ui/lib/utils";
 import { Check, Loader, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
-  commands,
   events,
   type AnalysisProgress,
   type AnalysisResult,
   type CrawlResult,
+  commands,
 } from "../../generated/bindings";
 
 type AnalysisProgressDisplayProps = {
