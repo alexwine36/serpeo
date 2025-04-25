@@ -4,7 +4,11 @@
 
   "files": {
     "ignoreUnknown": false,
-    "ignore": ["apps/serpeo/src-tauri/gen", "apps/serpeo/src/routeTree.gen.ts"]
+    "ignore": [
+      "apps/serpeo/src-tauri/gen",
+      "apps/serpeo/src/routeTree.gen.ts",
+      "apps/serpeo/src/generated/*"
+    ]
   },
   "formatter": {
     "enabled": true,

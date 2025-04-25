@@ -6,4 +6,4 @@ alwaysApply: true
 - By default use components using shadcn components when available, if not use tailwind styling
 - Routing is handled by @tanstack/react-router new pages should be placed in the routes folder
 
-[index.tsx](mdc:src/routes/index.tsx)
+[index.tsx](mdc:apps/serpeo/src/routes/index.tsx)

@@ -1,5 +1,12 @@
-use seo_analyzer::{analyze_url, CommandOutput, SeoAnalysis, ShellCommand};
+use seo_analyzer::{
+    analyze_url, crawl_url, AnalysisProgress, CommandOutput, CrawlResult, PageAnalysis,
+    SeoAnalysis, ShellCommand,
+};
+use specta_typescript::Typescript;
+use std::collections::HashMap;
+use tauri::Emitter;
 use tauri_plugin_shell::ShellExt;
+use tauri_specta::{collect_commands, collect_events, Builder};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -34,17 +41,53 @@ impl ShellCommand for TauriShell {
 }
 
 #[tauri::command]
+#[specta::specta]
 async fn analyze_seo(app: tauri::AppHandle, url: String) -> Result<SeoAnalysis, String> {
     let shell = TauriShell(app);
     analyze_url(&shell, url).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn crawl_seo(url: String) -> Result<CrawlResult, String> {
+    crawl_url(&url).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn analyze_crawl_seo(
+    app: tauri::AppHandle,
+    url: String,
+    crawl_result: CrawlResult,
+    lighthouse_enabled: bool,
+) -> Result<HashMap<String, PageAnalysis>, String> {
+    let analyzer =
+        seo_analyzer::Analyzer::new(&url, lighthouse_enabled).map_err(|e| e.to_string())?;
+    let app_handle = app.clone();
+
+    analyzer
+        .analyze_crawl_result(crawl_result, move |progress| {
+            let _ = app_handle.emit("analysis-progress", progress);
+        })
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let builder = Builder::<tauri::Wry>::new()
+        // Then register them (separated by a comma)
+        .commands(collect_commands![analyze_seo, crawl_seo, analyze_crawl_seo])
+        .events(collect_events![AnalysisProgress]);
+
+    #[cfg(debug_assertions)] // <- Only export on non-release builds
+    builder
+        .export(Typescript::default(), "../src/generated/bindings.ts")
+        .expect("Failed to export typescript bindings");
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![analyze_seo])
+        .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

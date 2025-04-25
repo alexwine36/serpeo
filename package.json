@@ -11,6 +11,7 @@
     "js-format": "ultracite format",
     "js-lint": "ultracite lint",
     "js-lint:ci": "biome check --diagnostic-level=error",
+    "js-test": "turbo run test",
     "lint": "turbo run js-lint rust-lint sync:lint",
     "rust-format": "cargo clippy --fix --allow-dirty",
     "rust-lint": "cargo clippy",
@@ -23,7 +24,6 @@
     "sync:format": "syncpack format",
     "sync:lint": "syncpack lint",
     "sync:list": "syncpack list",
-    "js-test": "turbo run test",
     "tauri:dev": "turbo run tauri:dev",
     "typecheck": "turbo run typecheck"
   },

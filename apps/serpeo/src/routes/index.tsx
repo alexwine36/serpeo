@@ -9,47 +9,8 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { RadialChart } from "@repo/ui/custom/radial-chart";
 import { createFileRoute } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
 import { useMemo, useState } from "react";
-
-interface SeoAnalysisResult {
-  meta_tags: {
-    title: string;
-    description: string;
-    keywords: string[];
-  };
-  headings: {
-    h1: number;
-    h2: number;
-    h3: number;
-  };
-  images: {
-    total: number;
-    withAlt: number;
-    withoutAlt: number;
-  };
-  links: {
-    internal: number;
-    external: number;
-  };
-  performance: {
-    load_time: string;
-    mobile_responsive: boolean;
-  };
-  lighthouse_metrics: {
-    performance_score: number;
-    accessibility_score: number;
-    best_practices_score: number;
-    seo_score: number;
-    pwa_score: number;
-    first_contentful_paint: number;
-    speed_index: number;
-    largest_contentful_paint: number;
-    time_to_interactive: number;
-    total_blocking_time: number;
-    cumulative_layout_shift: number;
-  };
-}
+import { type SeoAnalysis, commands } from "../generated/bindings";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -58,14 +19,16 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [url, setUrl] = useState("https://stem-programs.newspacenexus.org/");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<SeoAnalysisResult | null>(null);
+  const [result, setResult] = useState<SeoAnalysis | null>(null);
 
   const analyzeSeo = async () => {
     try {
       setLoading(true);
-      const analysis = await invoke("analyze_seo", { url });
+      const analysis = await commands.analyzeSeo(url);
       console.log("Analysis", analysis);
-      setResult(analysis as SeoAnalysisResult);
+      if (analysis.status === "ok") {
+        setResult(analysis.data);
+      }
     } catch (error) {
       console.error("Error analyzing SEO:", error);
     } finally {
@@ -77,7 +40,7 @@ function Index() {
     label: string;
     value: number;
   }[] => {
-    if (!result) {
+    if (!result?.lighthouse_metrics) {
       return [];
     }
     const {
@@ -175,8 +138,7 @@ function Index() {
                       {result.meta_tags.description}
                     </p>
                     <p>
-                      <strong>Keywords:</strong>{" "}
-                      {result.meta_tags.keywords.join(", ")}
+                      <strong>Keywords:</strong> {result.meta_tags.keywords}
                     </p>
                   </div>
                 </CardContent>
@@ -189,16 +151,19 @@ function Index() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h3 className="font-semibold">Headings</h3>
-                      <p>H1: {result.headings.h1}</p>
+                      <h3 className="font-semibold">
+                        Headings {result.headings.length}
+                      </h3>
+
+                      {/* <p>H1: {result.headings.h1}</p>
                       <p>H2: {result.headings.h2}</p>
-                      <p>H3: {result.headings.h3}</p>
+                      <p>H3: {result.headings.h3}</p> */}
                     </div>
                     <div>
                       <h3 className="font-semibold">Images</h3>
-                      <p>Total: {result.images.total}</p>
-                      <p>With Alt: {result.images.withAlt}</p>
-                      <p>Without Alt: {result.images.withoutAlt}</p>
+                      <p>Total: {result.images.length}</p>
+                      {/* <p>With Alt: {result.images.with_alt}</p>
+                      <p>Without Alt: {result.images.without_alt}</p> */}
                     </div>
                   </div>
                 </CardContent>
@@ -211,9 +176,11 @@ function Index() {
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h3 className="font-semibold">Links</h3>
-                      <p>Internal: {result.links.internal}</p>
-                      <p>External: {result.links.external}</p>
+                      <h3 className="font-semibold">
+                        Links {result.links.length}
+                      </h3>
+                      {/* <p>Internal: {result.links.internal}</p>
+                      <p>External: {result.links.external}</p> */}
                     </div>
                     <div>
                       <h3 className="font-semibold">Performance</h3>
