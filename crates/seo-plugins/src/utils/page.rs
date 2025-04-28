@@ -1,7 +1,11 @@
 use std::{collections::HashMap, time::Duration};
 
+use markup5ever::QualName;
 use reqwest::Client;
-use scraper::{Html, Selector, node::Element};
+use scraper::{
+    ElementRef, Html, Selector,
+    node::{Attributes, Element},
+};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use thiserror::Error;
@@ -17,6 +21,8 @@ pub enum PageError {
     DocumentNotSet(String),
     #[error("Config not set")]
     ConfigNotSet,
+    #[error("Element not found")]
+    ElementNotFound,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -97,10 +103,32 @@ impl Page {
     pub fn get_element(&self, selector: &str) -> Result<Element, PageError> {
         let document = self.get_document().unwrap();
         let selector = Selector::parse(selector).unwrap();
-        let element = document.select(&selector).next().unwrap();
+        let element = document
+            .select(&selector)
+            .next()
+            .ok_or(PageError::ElementNotFound)?;
         Ok(element.value().clone())
     }
 
+    fn format_element(&self, element: &ElementRef) -> StaticElement {
+        let mut element = element.clone();
+        StaticElement {
+            name: element.value().name.clone(),
+            attrs: element.value().attrs.clone(),
+            text: element.text().collect::<String>(),
+        }
+    }
+
+    pub fn get_elements(&self, selector: &str) -> Vec<StaticElement> {
+        let document = self.get_document().unwrap();
+        let selector = Selector::parse(selector).unwrap();
+        let mut elements: Vec<StaticElement> = Vec::new();
+        for element in document.select(&selector) {
+            // println!("element: {:?}", element.text());
+            elements.push(self.format_element(&element));
+        }
+        elements
+    }
     fn set_images(&mut self) {
         let document = self.get_document().unwrap();
         let img_selector = Selector::parse("img").unwrap();
@@ -246,6 +274,18 @@ pub struct Image {
     pub alt: Option<String>,
     pub srcset: Option<String>,
 }
+
+pub struct StaticElement {
+    pub name: QualName,
+    pub attrs: Attributes,
+    pub text: String,
+}
+
+// impl StaticElement {
+//     pub fn attr(&self, name: &str) -> Option<&str> {
+//         self.attrs.get(name).map(|v| v.as_ref())
+//     }
+// }
 
 pub trait FromUrl {
     fn to_url(self) -> Result<Url, PageError>;
