@@ -4,7 +4,7 @@ use crate::utils::{
     config::{CheckResult, Rule, RuleCategory, SeoPlugin, Severity},
     registry::PluginRegistry,
 };
-use scraper::{Html, Selector, node::Element};
+use scraper::Selector;
 
 // Axe Plugin
 pub struct AxePlugin {}
@@ -99,7 +99,7 @@ impl SeoPlugin for AxePlugin {
                     let disables_zoom = viewport.contains("user-scalable=no")
                         || viewport.contains("maximum-scale=1.0")
                         || viewport.contains("maximum-scale=1")
-                        || viewport.eq("");
+                        || viewport.is_empty();
 
                     CheckResult {
                         rule_id: "axe.meta_viewport".to_string(),
@@ -251,7 +251,7 @@ impl SeoPlugin for AxePlugin {
                                 .iter()
                                 .filter(|(name, _)| name.local.to_string().starts_with("aria-"))
                                 .filter(|(name, _)| {
-                                    !is_valid_aria_attribute(&name.local.to_string())
+                                    !is_valid_aria_attribute(name.local.as_ref())
                                 })
                                 .cloned()
                                 .collect();

@@ -111,7 +111,7 @@ impl Page {
     }
 
     fn format_element(&self, element: &ElementRef) -> StaticElement {
-        let mut element = element.clone();
+        let element = *element;
         StaticElement {
             name: element.value().name.clone(),
             attrs: element.value().attrs.clone(),

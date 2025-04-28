@@ -123,8 +123,8 @@ mod tests {
         let results = plugin.analyze(&page, &config);
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].rule_id, "images.alt_text");
-        assert_eq!(results[0].passed, true);
+        assert!(results[0].passed);
         assert_eq!(results[1].rule_id, "images.responsive");
-        assert_eq!(results[1].passed, false);
+        assert!(!results[1].passed);
     }
 }

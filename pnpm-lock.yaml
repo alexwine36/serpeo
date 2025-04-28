@@ -51,7 +51,7 @@ importers:
         specifier: ^4.1.5
         version: 4.1.5
       remeda:
-        specifier: 2.21.3
+        specifier: ^2.21.3
         version: 2.21.3
       syncpack:
         specifier: ^13.0.3
