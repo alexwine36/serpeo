@@ -15,5 +15,16 @@ tauri = { workspace = true }
 tauri-specta = { workspace = true }
 url = { workspace = true }
 markup5ever = { version = "0.14.1" }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+
+
+[[bench]]
+name = "analyze_bench"
+harness = false
+
+
 [dev-dependencies]
 hyper = { workspace = true }
+criterion = { workspace = true }

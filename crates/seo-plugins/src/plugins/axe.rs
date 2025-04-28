@@ -250,9 +250,7 @@ impl SeoPlugin for AxePlugin {
                             let invalid: Vec<_> = attrs
                                 .iter()
                                 .filter(|(name, _)| name.local.to_string().starts_with("aria-"))
-                                .filter(|(name, _)| {
-                                    !is_valid_aria_attribute(name.local.as_ref())
-                                })
+                                .filter(|(name, _)| !is_valid_aria_attribute(name.local.as_ref()))
                                 .cloned()
                                 .collect();
                             if invalid.is_empty() {

@@ -1,9 +1,9 @@
-use std::any::TypeId;
-use std::collections::HashMap;
-
 use crate::plugins::axe::AxePlugin;
 use crate::plugins::image::ImagePlugin;
 use crate::plugins::seo_basic::SeoBasicPlugin;
+use futures::stream::{self, StreamExt};
+use std::any::TypeId;
+use std::collections::HashMap;
 
 use super::config::{Rule, RuleConfig, RuleResult, SeoPlugin};
 use super::page::{Page, PageError};
@@ -51,6 +51,20 @@ impl PluginRegistry {
         self.plugins
             .values()
             .flat_map(|plugin| plugin.available_rules())
+            .collect()
+    }
+
+    pub async fn analyze_async(&self, page: &Page) -> Vec<RuleResult> {
+        let config = self.get_config().unwrap();
+        let futures = self
+            .plugins
+            .values()
+            .map(|plugin| plugin.analyze_async(page, config));
+
+        futures::future::join_all(futures)
+            .await
+            .into_iter()
+            .flatten()
             .collect()
     }
 
