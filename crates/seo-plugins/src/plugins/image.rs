@@ -3,7 +3,6 @@ use std::any::{Any, TypeId};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::plugins::html::HtmlPlugin;
 use crate::utils::config::{CheckResult, Rule, RuleCategory, SeoPlugin, Severity};
 use crate::utils::registry::PluginRegistry;
 
@@ -42,7 +41,7 @@ impl SeoPlugin for ImagePlugin {
     }
 
     fn dependencies(&self) -> Vec<TypeId> {
-        vec![TypeId::of::<HtmlPlugin>()]
+        vec![]
     }
 
     fn initialize(&mut self, _registry: &PluginRegistry) -> Result<(), String> {

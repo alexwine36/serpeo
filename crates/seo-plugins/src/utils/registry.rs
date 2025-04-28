@@ -1,8 +1,8 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use crate::plugins::html::HtmlPlugin;
 use crate::plugins::image::ImagePlugin;
+use crate::plugins::seo_basic::SeoBasicPlugin;
 
 use super::config::{Rule, RuleConfig, RuleResult, SeoPlugin};
 use super::page::{Page, PageError};
@@ -65,8 +65,8 @@ impl PluginRegistry {
 impl Default for PluginRegistry {
     fn default() -> Self {
         let mut registry = Self::new();
-        let _ = registry.register(HtmlPlugin::new());
         let _ = registry.register(ImagePlugin::new());
+        let _ = registry.register(SeoBasicPlugin::new());
         registry
     }
 }

@@ -39,6 +39,10 @@ impl Page {
         self.url = Some(url.to_url().unwrap());
     }
 
+    pub fn get_url(&self) -> Option<Url> {
+        self.url.clone()
+    }
+
     pub fn set_content(&mut self, html: String) {
         self.html = Some(html);
     }
