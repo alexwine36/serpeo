@@ -11,6 +11,8 @@ use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 use url::Url;
 
+use crate::config::Config;
+
 const MAX_CONCURRENT_REQUESTS: usize = 5;
 const REQUEST_DELAY_MS: u64 = 100;
 
@@ -48,9 +50,9 @@ pub struct Crawler {
 }
 
 impl Crawler {
-    pub fn new(base_url: &str) -> Result<Self, CrawlerError> {
+    pub fn new(config: &Config) -> Result<Self, CrawlerError> {
         let base_url =
-            Url::parse(base_url).map_err(|e| CrawlerError::UrlParseError(e.to_string()))?;
+            Url::parse(&config.base_url).map_err(|e| CrawlerError::UrlParseError(e.to_string()))?;
 
         Ok(Self {
             client: Client::new(),
@@ -340,7 +342,12 @@ mod tests {
         let addr = start_test_server().await;
         let base_url = format!("http://{}", addr);
 
-        let crawler = Crawler::new(&base_url).unwrap();
+        let config = Config {
+            base_url: base_url.clone(),
+            max_concurrent_requests: 5,
+            request_delay_ms: 100,
+        };
+        let crawler = Crawler::new(&config).unwrap();
         let result = crawler.crawl().await.unwrap();
 
         // Should find pages from both links and sitemap

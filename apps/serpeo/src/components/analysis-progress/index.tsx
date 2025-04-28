@@ -19,17 +19,15 @@ import {
 
 type AnalysisProgressDisplayProps = {
   results: CrawlResult;
-  url: string;
 };
 export const AnalysisProgressDisplay = ({
   results,
-  url,
 }: AnalysisProgressDisplayProps) => {
   const [res, setRes] = useState<AnalysisProgress | undefined>();
   // const [analysisResult, setAnalysisResult] = useState<>([])
   useEffect(() => {
-    commands.analyzeCrawlSeo(url, results, false);
-  }, [url, results]);
+    commands.analyzeCrawlSeo(results, false);
+  }, [results]);
 
   useEffect(() => {
     events.analysisProgress.listen((e) => {

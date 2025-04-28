@@ -1,5 +1,6 @@
 mod crawler;
 mod lighthouse;
+use config::Config;
 use html_parser::page_parser::{Heading, Image, Links, MetaTagInfo, Performance};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -8,6 +9,7 @@ use thiserror::Error;
 pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 pub mod analyzer;
+pub mod config;
 
 pub use html_parser::page_parser::PageAnalysis;
 
@@ -75,8 +77,8 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     })
 }
 
-pub async fn crawl_url(url: &str) -> Result<CrawlResult, SeoError> {
-    let crawler = Crawler::new(url).map_err(|e| SeoError::UrlParseError(e.to_string()))?;
+pub async fn crawl_url(config: &Config) -> Result<CrawlResult, SeoError> {
+    let crawler = Crawler::new(config).map_err(|e| SeoError::UrlParseError(e.to_string()))?;
     crawler
         .crawl()
         .await
