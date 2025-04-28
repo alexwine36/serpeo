@@ -57,7 +57,8 @@ impl SeoPlugin for ImagePlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let images = page.extract_images(&page.get_document().unwrap());
+                    let mut page = page.clone();
+                    let images = page.extract_images();
                     let images_without_alt = images
                         .iter()
                         .filter(|img| img.alt.is_none())
@@ -81,7 +82,8 @@ impl SeoPlugin for ImagePlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let images = page.extract_images(&page.get_document().unwrap());
+                    let mut page = page.clone();
+                    let images = page.extract_images();
                     let images_without_srcset = images
                         .iter()
                         .filter(|img| img.srcset.is_none())

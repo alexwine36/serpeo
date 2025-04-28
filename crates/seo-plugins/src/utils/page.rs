@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use reqwest::Client;
-use scraper::{Html, Selector};
+use scraper::{Html, Selector, node::Element};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use thiserror::Error;
@@ -24,6 +24,7 @@ pub struct Page {
     url: Option<Url>,
     html: Option<String>,
     meta_tags: Option<MetaTagInfo>,
+    images: Option<Vec<Image>>,
 }
 
 impl Page {
@@ -32,6 +33,7 @@ impl Page {
             url: None,
             html: Some(html),
             meta_tags: None,
+            images: None,
         }
     }
 
@@ -80,6 +82,7 @@ impl Page {
             url: Some(url),
             html: Some(body),
             meta_tags: None,
+            images: None,
         })
     }
 
@@ -91,7 +94,15 @@ impl Page {
         Ok(Html::parse_document(html))
     }
 
-    pub fn extract_images(&self, document: &Html) -> Vec<Image> {
+    pub fn get_element(&self, selector: &str) -> Result<Element, PageError> {
+        let document = self.get_document().unwrap();
+        let selector = Selector::parse(selector).unwrap();
+        let element = document.select(&selector).next().unwrap();
+        Ok(element.value().clone())
+    }
+
+    fn set_images(&mut self) {
+        let document = self.get_document().unwrap();
         let img_selector = Selector::parse("img").unwrap();
         let mut images = Vec::new();
 
@@ -102,7 +113,18 @@ impl Page {
             images.push(Image { src, alt, srcset });
         }
 
-        images
+        self.images = Some(images);
+    }
+
+    fn get_images(&mut self) -> Option<Vec<Image>> {
+        if self.images.is_none() {
+            self.set_images();
+        }
+        self.images.clone()
+    }
+
+    pub fn extract_images(&mut self) -> Vec<Image> {
+        self.get_images().unwrap_or_default()
     }
 }
 

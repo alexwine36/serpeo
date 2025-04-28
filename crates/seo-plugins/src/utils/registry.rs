@@ -1,6 +1,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
+use crate::plugins::axe::AxePlugin;
 use crate::plugins::image::ImagePlugin;
 use crate::plugins::seo_basic::SeoBasicPlugin;
 
@@ -67,6 +68,7 @@ impl Default for PluginRegistry {
         let mut registry = Self::new();
         let _ = registry.register(ImagePlugin::new());
         let _ = registry.register(SeoBasicPlugin::new());
+        let _ = registry.register(AxePlugin::new());
         registry
     }
 }
