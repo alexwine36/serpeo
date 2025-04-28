@@ -19,9 +19,11 @@ pub enum PageError {
     ConfigNotSet,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Page {
     url: Option<Url>,
     html: Option<String>,
+    meta_tags: Option<MetaTagInfo>,
 }
 
 impl Page {
@@ -29,6 +31,7 @@ impl Page {
         Self {
             url: None,
             html: Some(html),
+            meta_tags: None,
         }
     }
 
@@ -36,34 +39,6 @@ impl Page {
         self.url = Some(url.to_url().unwrap());
     }
 
-    async fn fetch(&mut self, url: &Url) -> Result<(), PageError> {
-        let client = Client::builder()
-            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
-            .timeout(Duration::from_secs(10))
-            .build()
-            .map_err(|e| PageError::FetchError(e.to_string()))?;
-
-        let response = client
-            .get(url.clone())
-            .send()
-            .await
-            .map_err(|e| PageError::FetchError(e.to_string()))?;
-
-        if !response.status().is_success() {
-            return Err(PageError::FetchError(format!(
-                "Failed to fetch URL: {}",
-                response.status()
-            )));
-        }
-
-        let body = response
-            .text()
-            .await
-            .map_err(|e| PageError::FetchError(e.to_string()))?;
-
-        self.set_content(body);
-        Ok(())
-    }
     pub fn set_content(&mut self, html: String) {
         self.html = Some(html);
     }
@@ -100,6 +75,7 @@ impl Page {
         Ok(Self {
             url: Some(url),
             html: Some(body),
+            meta_tags: None,
         })
     }
 
@@ -124,8 +100,11 @@ impl Page {
 
         images
     }
+}
 
-    pub fn extract_meta_tags(&self, document: &Html) -> MetaTagInfo {
+impl Page {
+    fn set_meta_tags(&mut self) {
+        let document = self.get_document().unwrap();
         let mut meta_tags = MetaTagInfo::default();
 
         let title_selector = Selector::parse("title").unwrap();
@@ -202,7 +181,18 @@ impl Page {
             }
         }
 
-        meta_tags
+        self.meta_tags = Some(meta_tags);
+    }
+
+    fn get_meta_tags(&mut self) -> MetaTagInfo {
+        if self.meta_tags.is_none() {
+            self.set_meta_tags();
+        }
+        self.meta_tags.clone().unwrap_or_default()
+    }
+
+    pub fn extract_meta_tags(&mut self) -> MetaTagInfo {
+        self.get_meta_tags()
     }
 }
 

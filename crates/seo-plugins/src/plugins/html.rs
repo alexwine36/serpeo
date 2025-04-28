@@ -1,19 +1,17 @@
 use std::any::Any;
-use std::collections::HashMap;
-
-use scraper::{Html, Selector};
-use serde::{Deserialize, Serialize};
-use specta::Type;
 
 use crate::utils::{
-    config::{CheckResult, Rule, RuleCategory, RuleConfig, SeoPlugin, Severity},
-    page::Page,
+    config::{CheckResult, Rule, RuleCategory, SeoPlugin, Severity},
     registry::PluginRegistry,
 };
 
 // HTML Plugin
-pub struct HtmlPlugin {
-    // html_content: Option<String>,
+pub struct HtmlPlugin {}
+
+impl Default for HtmlPlugin {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl HtmlPlugin {
@@ -46,7 +44,8 @@ impl SeoPlugin for HtmlPlugin {
                 default_severity: Severity::Error,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let meta_tags = page.extract_meta_tags(&page.get_document().unwrap());
+                    let mut page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
                     let has_title = meta_tags.title.is_some();
 
                     CheckResult {
@@ -58,8 +57,25 @@ impl SeoPlugin for HtmlPlugin {
                             "Page is missing a title tag"
                         }
                         .to_string(),
-                        severity: Severity::Error,
-                        details: None,
+                    }
+                },
+            },
+            Rule {
+                id: "html.title_length",
+                name: "Title length is less than 60 characters",
+                description: "Checks if the title length is less than 60 characters",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let mut page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let title = meta_tags.title.unwrap_or_default();
+                    let title_length = title.len();
+                    let passed = title_length < 60;
+                    CheckResult {
+                        rule_id: "html.title_length".to_string(),
+                        passed,
+                        message: format!("Title length is {} characters", title_length),
                     }
                 },
             },
@@ -70,7 +86,8 @@ impl SeoPlugin for HtmlPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let meta_tags = page.extract_meta_tags(&page.get_document().unwrap());
+                    let mut page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
                     let has_description = meta_tags.description.is_some();
 
                     CheckResult {
@@ -82,12 +99,58 @@ impl SeoPlugin for HtmlPlugin {
                             "Page is missing a meta description"
                         }
                         .to_string(),
-                        severity: Severity::Warning,
-                        details: None,
                     }
                 },
             },
-            // More rules...
+            Rule {
+                id: "html.meta_description_length",
+                name: "Meta description length is less than 155 characters",
+                description: "Checks if the meta description length is less than 155 characters",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let mut page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let description = meta_tags.description.unwrap_or_default();
+                    let description_length = description.len();
+                    let passed = description_length < 155;
+                    CheckResult {
+                        rule_id: "html.meta_description_length".to_string(),
+                        passed,
+                        message: format!(
+                            "Meta description length is {} characters",
+                            description_length
+                        ),
+                    }
+                },
+            },
         ]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils::config::RuleConfig;
+    use crate::utils::page::Page;
+
+    #[test]
+    fn test_html_plugin() {
+        let plugin = HtmlPlugin::new();
+        let page = Page::from_html(
+            "<html><head><title>Test Page</title></head><body><h1>Test Page</h1></body></html>"
+                .to_string(),
+        );
+        let mut config = RuleConfig::new();
+
+        for rule in plugin.available_rules() {
+            config.enable_rule(rule.id);
+        }
+        let results = plugin.analyze(&page, &config);
+        assert_eq!(results.len(), 4);
+        assert_eq!(results[0].rule_id, "html.title");
+        assert_eq!(results[0].passed, true);
+        assert_eq!(results[1].rule_id, "html.title_length");
+        assert_eq!(results[1].passed, true);
     }
 }

@@ -8,13 +8,21 @@ use specta::Type;
 use super::page::Page;
 use super::registry::PluginRegistry;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CheckResult {
     pub rule_id: String,
     pub passed: bool,
     pub message: String,
+    // pub severity: Option<Severity>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub struct RuleResult {
+    pub rule_id: String,
+    pub passed: bool,
+    pub message: String,
     pub severity: Severity,
-    pub details: Option<Box<dyn Any>>,
+    pub category: RuleCategory,
 }
 
 // Severity level of an SEO issue
@@ -44,22 +52,25 @@ pub trait SeoPlugin: Send + Sync + 'static {
     fn available_rules(&self) -> Vec<Rule>;
 
     // Run enabled rules on the given page
-    fn analyze(&self, page: &Page, config: &RuleConfig) -> Vec<CheckResult> {
+    fn analyze(&self, page: &Page, config: &RuleConfig) -> Vec<RuleResult> {
         self.available_rules()
             .iter()
             .filter(|rule| config.is_rule_enabled(rule.id))
-            .map(|rule| (rule.check)(page))
+            .map(|rule| {
+                let result = (rule.check)(page);
+                RuleResult {
+                    rule_id: rule.id.to_string(),
+                    passed: result.passed,
+                    message: result.message,
+                    severity: rule.default_severity.clone(),
+                    category: rule.category.clone(),
+                }
+            })
             .collect()
     }
-
-    // Hooks
-    // async fn after_url_set(&self, url: &str) -> Result<(), String>;
-
-    // fn after_html_set(&mut self, html: &str) -> Result<(), String> {
-    //     Ok(())
-    // }
 }
 
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub enum RuleCategory {
     Accessibility,
     Performance,
@@ -68,6 +79,7 @@ pub enum RuleCategory {
 }
 
 // Rule definition
+#[derive(Clone)]
 pub struct Rule {
     pub id: &'static str,
     pub name: &'static str,
@@ -82,6 +94,12 @@ pub struct Rule {
 pub struct RuleConfig {
     enabled_rules: HashMap<String, bool>,
     rule_severities: HashMap<String, Severity>,
+}
+
+impl Default for RuleConfig {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RuleConfig {

@@ -2,6 +2,11 @@ mod crawler;
 mod lighthouse;
 use config::Config;
 use html_parser::page_parser::{Heading, Image, Links, MetaTagInfo, Performance};
+use seo_plugins::utils::{
+    config::{RuleConfig, RuleResult},
+    page::Page,
+    registry::PluginRegistry,
+};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use thiserror::Error;
@@ -17,6 +22,7 @@ pub use analyzer::{AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError};
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {
+    results: Vec<RuleResult>,
     meta_tags: MetaTagInfo,
     headings: Vec<Heading>,
     images: Vec<Image>,
@@ -43,6 +49,17 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     // Create and fetch page using PageParser
     let mut parser = html_parser::page_parser::PageParser::new(&url)
         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
+    let mut registry = PluginRegistry::default();
+    let mut config = RuleConfig::new();
+    let rules = registry.get_available_rules();
+    for rule in rules {
+        config.enable_rule(rule.id);
+    }
+    registry.set_config(config);
+    let page = Page::from_url(&url)
+        .await
+        .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
+    let results = registry.analyze(&page);
     parser
         .fetch()
         .await
@@ -68,6 +85,7 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     let lighthouse_metrics = run_lighthouse_analysis(shell, url).await.ok();
 
     Ok(SeoAnalysis {
+        results,
         meta_tags: page_analysis.meta_tags,
         headings: page_analysis.headings,
         images: page_analysis.images,

@@ -1,9 +1,7 @@
 // Core plugin traits
-use std::any::{Any, TypeId};
-use std::collections::HashMap;
 
-mod plugins;
-mod utils;
+pub mod plugins;
+pub mod utils;
 // Result of an SEO check
 
 // Example plugins

@@ -1,9 +1,10 @@
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::collections::HashMap;
 
 use crate::plugins::html::HtmlPlugin;
+use crate::plugins::image::ImagePlugin;
 
-use super::config::{CheckResult, Rule, RuleConfig, SeoPlugin};
+use super::config::{Rule, RuleConfig, RuleResult, SeoPlugin};
 use super::page::{Page, PageError};
 
 // Registry to store and provide access to plugins
@@ -52,7 +53,7 @@ impl PluginRegistry {
             .collect()
     }
 
-    pub fn analyze(&self, page: &Page) -> Vec<CheckResult> {
+    pub fn analyze(&self, page: &Page) -> Vec<RuleResult> {
         let config = self.get_config().unwrap();
         self.plugins
             .values()
@@ -65,6 +66,7 @@ impl Default for PluginRegistry {
     fn default() -> Self {
         let mut registry = Self::new();
         let _ = registry.register(HtmlPlugin::new());
+        let _ = registry.register(ImagePlugin::new());
         registry
     }
 }
