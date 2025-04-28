@@ -32,6 +32,7 @@ pub struct Page {
     meta_tags: Option<MetaTagInfo>,
     images: Option<Vec<Image>>,
     content_length: Option<u64>,
+    redirected: Option<bool>,
 }
 
 impl Page {
@@ -42,6 +43,7 @@ impl Page {
             meta_tags: None,
             images: None,
             content_length: None,
+            redirected: None,
         }
     }
 
@@ -55,6 +57,10 @@ impl Page {
 
     pub fn get_content_length(&self) -> Option<u64> {
         self.content_length.clone()
+    }
+
+    pub fn get_redirected(&self) -> Option<bool> {
+        self.redirected.clone()
     }
 
     pub fn set_content(&mut self, html: String) {
@@ -78,6 +84,7 @@ impl Page {
             .await
             .map_err(|e| PageError::FetchError(e.to_string()))?;
 
+        let redirected = response.status().is_redirection();
         let content_length = response
             .headers()
             .get("content-length")
@@ -101,6 +108,7 @@ impl Page {
             meta_tags: None,
             images: None,
             content_length,
+            redirected: Some(redirected),
         })
     }
 
