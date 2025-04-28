@@ -1,0 +1,30 @@
+[package]
+name = "seo-plugins"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = { workspace = true }
+scraper = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+specta = { workspace = true }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+tauri = { workspace = true }
+tauri-specta = { workspace = true }
+url = { workspace = true }
+markup5ever = { version = "0.14.1" }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+
+
+[[bench]]
+name = "analyze_bench"
+harness = false
+
+
+[dev-dependencies]
+hyper = { workspace = true }
+criterion = { workspace = true }

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 html-parser = { path = "../html-parser" }
+seo-plugins = { path = "../seo-plugins" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

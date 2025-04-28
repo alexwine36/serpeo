@@ -76,7 +76,10 @@ export type Links = { href: string; path: string; link_type: LinkType }
 export type MetaTagInfo = { title: string | null; description: string | null; keywords: string | null; robots: string | null; canonical: string | null; sitemap: string | null; favicon: string | null; viewport: string | null; generators: string[]; webmanifest: string | null; og_tags: Partial<{ [key in string]: string }>; scripts: string[]; styles: string[]; twitter_tags: Partial<{ [key in string]: string }> }
 export type PageAnalysis = { meta_tags: MetaTagInfo; headings: Heading[]; images: Image[]; links: Links[]; base_info: BaseInfo }
 export type Performance = { load_time: string; mobile_responsive: boolean }
-export type SeoAnalysis = { meta_tags: MetaTagInfo; headings: Heading[]; images: Image[]; links: Links[]; performance: Performance; lighthouse_metrics: LighthouseMetrics | null }
+export type RuleCategory = "Accessibility" | "Performance" | "BestPractices" | "SEO"
+export type RuleResult = { rule_id: string; passed: boolean; message: string; severity: Severity; category: RuleCategory }
+export type SeoAnalysis = { results: RuleResult[]; meta_tags: MetaTagInfo; headings: Heading[]; images: Image[]; links: Links[]; performance: Performance; lighthouse_metrics: LighthouseMetrics | null }
+export type Severity = "Info" | "Warning" | "Error" | "Critical"
 export type UrlSource = { found_in_links: boolean; found_in_sitemap: boolean; analysis: PageAnalysis | null }
 
 /** tauri-specta globals **/
