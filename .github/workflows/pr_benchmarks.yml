@@ -1,3 +1,5 @@
+name: Continuous Benchmarking PRs with Bencher
+
 on:
   pull_request:
     types: [opened, reopened, edited, synchronize]
@@ -10,10 +12,15 @@ jobs:
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
+    env:
+      BENCHER_PROJECT: serpeo
+      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Install rust deps
         run: sudo apt install libwebkit2gtk-4.1-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - uses: bencherdev/bencher@main
 
       - name: Track PR Benchmarks with Bencher
@@ -28,6 +35,6 @@ jobs:
           --start-point-reset \
           --testbed ubuntu-latest \
           --err \
-          --adapter json \
+          --adapter rust_criterion \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
           cargo bench
