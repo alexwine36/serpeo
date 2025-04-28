@@ -31,6 +31,7 @@ pub struct Page {
     html: Option<String>,
     meta_tags: Option<MetaTagInfo>,
     images: Option<Vec<Image>>,
+    content_length: Option<u64>,
 }
 
 impl Page {
@@ -40,6 +41,7 @@ impl Page {
             html: Some(html),
             meta_tags: None,
             images: None,
+            content_length: None,
         }
     }
 
@@ -49,6 +51,10 @@ impl Page {
 
     pub fn get_url(&self) -> Option<Url> {
         self.url.clone()
+    }
+
+    pub fn get_content_length(&self) -> Option<u64> {
+        self.content_length.clone()
     }
 
     pub fn set_content(&mut self, html: String) {
@@ -72,6 +78,11 @@ impl Page {
             .await
             .map_err(|e| PageError::FetchError(e.to_string()))?;
 
+        let content_length = response
+            .headers()
+            .get("content-length")
+            .and_then(|value| value.to_str().ok().and_then(|s| s.parse::<u64>().ok()));
+
         if !response.status().is_success() {
             return Err(PageError::FetchError(format!(
                 "Failed to fetch URL: {}",
@@ -89,6 +100,7 @@ impl Page {
             html: Some(body),
             meta_tags: None,
             images: None,
+            content_length,
         })
     }
 

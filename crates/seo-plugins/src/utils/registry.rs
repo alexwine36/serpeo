@@ -1,5 +1,6 @@
 use crate::plugins::axe::AxePlugin;
 use crate::plugins::image::ImagePlugin;
+use crate::plugins::request::RequestPlugin;
 use crate::plugins::seo_basic::SeoBasicPlugin;
 use futures::stream::{self, StreamExt};
 use std::any::TypeId;
@@ -83,6 +84,7 @@ impl Default for PluginRegistry {
         let _ = registry.register(ImagePlugin::new());
         let _ = registry.register(SeoBasicPlugin::new());
         let _ = registry.register(AxePlugin::new());
+        let _ = registry.register(RequestPlugin::new());
         registry
     }
 }
