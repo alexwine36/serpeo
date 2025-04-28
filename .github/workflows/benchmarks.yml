@@ -12,7 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install rust deps
+        run: sudo apt install libwebkit2gtk-4.1-dev
       - uses: bencherdev/bencher@main
+
       - name: Track PR Benchmarks with Bencher
         run: |
           bencher run \
