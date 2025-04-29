@@ -37,6 +37,8 @@ pub struct Page {
     elapsed: Option<f32>,
 }
 
+const FALLBACK_URL: &str = "https://example.com";
+
 impl Page {
     pub fn from_html(html: String) -> Self {
         Self {
@@ -287,6 +289,36 @@ impl Page {
     pub fn extract_meta_tags(&mut self) -> MetaTagInfo {
         self.get_meta_tags()
     }
+
+    // Links
+    pub fn extract_links(&self) -> Vec<Links> {
+        let document = self.get_document().unwrap();
+        let link_selector = Selector::parse("a").unwrap();
+        let mut links = Vec::new();
+
+        for link in document.select(&link_selector) {
+            if let Some(href) = link.value().attr("href") {
+                let base_url = self
+                    .url
+                    .clone()
+                    .unwrap_or(Url::parse(FALLBACK_URL).unwrap());
+                let url = base_url.join(href).unwrap_or_else(|_| base_url.clone());
+                let link_type = if url.host_str() == Some(base_url.host_str().unwrap()) {
+                    LinkType::Internal
+                } else {
+                    LinkType::External
+                };
+                let path = url.path().to_string();
+                links.push(Links {
+                    href: url.to_string(),
+                    path,
+                    link_type,
+                });
+            }
+        }
+
+        links
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Type, Default)]
@@ -313,6 +345,19 @@ pub struct Image {
     pub src: String,
     pub alt: Option<String>,
     pub srcset: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq)]
+pub enum LinkType {
+    Internal,
+    External,
+}
+
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub struct Links {
+    pub href: String,
+    pub path: String,
+    pub link_type: LinkType,
 }
 
 pub struct StaticElement {
@@ -346,5 +391,60 @@ impl FromUrl for &String {
 impl FromUrl for &str {
     fn to_url(self) -> Result<Url, PageError> {
         Url::parse(self).map_err(|e| PageError::UrlParseError(e.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_document_extract_links_no_base_url() {
+        let page = Page::from_html(
+            r#"
+            <html>
+                <body>
+                    <a href="/test">Test</a>
+                    <a href="https://cool-site.com/test">Test</a>
+                </body>
+            </html>
+            "#
+            .to_string(),
+        );
+        let links = page.extract_links();
+        println!("links: {:?}", links);
+        assert_eq!(links.len(), 2);
+        assert_eq!(links[0].href, format!("{}/test", FALLBACK_URL));
+        assert_eq!(links[0].path, "/test");
+        assert_eq!(links[0].link_type, LinkType::Internal);
+        assert_eq!(links[1].href, "https://cool-site.com/test");
+        assert_eq!(links[1].path, "/test");
+        assert_eq!(links[1].link_type, LinkType::External);
+    }
+    #[test]
+    fn test_document_extract_links_with_base_url() {
+        let mut page = Page::from_html(
+            r#"
+            <html>
+                <body>
+                    <a href="/test">Test</a>    
+                    <a href="https://cool-site.com/test">Test</a>
+                </body>
+            </html>
+            "#
+            .to_string(),
+        );
+        const TEST_URL: &str = "https://sample.com";
+        page.set_url(TEST_URL);
+        let links = page.extract_links();
+        println!("links: {:?}", links);
+        assert_eq!(links.len(), 2);
+        assert_eq!(links[0].href, format!("{}/test", TEST_URL));
+        assert_eq!(links[0].path, "/test");
+        assert_eq!(links[0].link_type, LinkType::Internal);
+        assert_eq!(links[1].href, "https://cool-site.com/test");
+        assert_eq!(links[1].path, "/test");
+        assert_eq!(links[1].link_type, LinkType::External);
     }
 }
