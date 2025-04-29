@@ -9,6 +9,7 @@ use scraper::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use thiserror::Error;
+use tokio::time::Instant;
 use url::Url;
 
 #[derive(Debug, Error)]
@@ -31,6 +32,9 @@ pub struct Page {
     html: Option<String>,
     meta_tags: Option<MetaTagInfo>,
     images: Option<Vec<Image>>,
+    content_length: Option<u64>,
+    redirected: Option<bool>,
+    elapsed: Option<f32>,
 }
 
 impl Page {
@@ -40,6 +44,9 @@ impl Page {
             html: Some(html),
             meta_tags: None,
             images: None,
+            content_length: None,
+            redirected: None,
+            elapsed: None,
         }
     }
 
@@ -51,8 +58,24 @@ impl Page {
         self.url.clone()
     }
 
+    pub fn get_html(&self) -> Option<String> {
+        self.html.clone()
+    }
+
+    pub fn get_content_length(&self) -> Option<u64> {
+        self.content_length.clone()
+    }
+
+    pub fn get_redirected(&self) -> Option<bool> {
+        self.redirected.clone()
+    }
+
     pub fn set_content(&mut self, html: String) {
         self.html = Some(html);
+    }
+
+    pub fn get_elapsed(&self) -> Option<f32> {
+        self.elapsed.clone()
     }
 
     pub async fn from_url<T: FromUrl>(url: T) -> Result<Self, PageError> {
@@ -65,12 +88,19 @@ impl Page {
              .timeout(Duration::from_secs(10))
             .build()
             .map_err(|e| PageError::FetchError(e.to_string()))?;
-
+        let start_time = Instant::now();
         let response = client
             .get(url.clone())
             .send()
             .await
             .map_err(|e| PageError::FetchError(e.to_string()))?;
+
+        let elapsed = start_time.elapsed().as_millis() as f32;
+        let redirected = response.status().is_redirection();
+        let content_length = response
+            .headers()
+            .get("content-length")
+            .and_then(|value| value.to_str().ok().and_then(|s| s.parse::<u64>().ok()));
 
         if !response.status().is_success() {
             return Err(PageError::FetchError(format!(
@@ -89,6 +119,9 @@ impl Page {
             html: Some(body),
             meta_tags: None,
             images: None,
+            content_length,
+            redirected: Some(redirected),
+            elapsed: Some(elapsed),
         })
     }
 
@@ -129,6 +162,10 @@ impl Page {
         }
         elements
     }
+}
+
+impl Page {
+    // Images
     fn set_images(&mut self) {
         let document = self.get_document().unwrap();
         let img_selector = Selector::parse("img").unwrap();
@@ -154,9 +191,8 @@ impl Page {
     pub fn extract_images(&mut self) -> Vec<Image> {
         self.get_images().unwrap_or_default()
     }
-}
 
-impl Page {
+    // Meta Tags
     fn set_meta_tags(&mut self) {
         let document = self.get_document().unwrap();
         let mut meta_tags = MetaTagInfo::default();
@@ -218,6 +254,9 @@ impl Page {
                     _ => {}
                 }
             }
+            if let Some(charset) = meta.value().attr("charset") {
+                meta_tags.charset = Some(charset.to_string());
+            }
             if let Some(property) = meta.value().attr("property") {
                 if property.starts_with("og:") {
                     let key = property.trim_start_matches("og:");
@@ -266,6 +305,7 @@ pub struct MetaTagInfo {
     pub scripts: Vec<String>,
     pub styles: Vec<String>,
     pub twitter_tags: HashMap<String, String>,
+    pub charset: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
@@ -280,12 +320,6 @@ pub struct StaticElement {
     pub attrs: Attributes,
     pub text: String,
 }
-
-// impl StaticElement {
-//     pub fn attr(&self, name: &str) -> Option<&str> {
-//         self.attrs.get(name).map(|v| v.as_ref())
-//     }
-// }
 
 pub trait FromUrl {
     fn to_url(self) -> Result<Url, PageError>;
