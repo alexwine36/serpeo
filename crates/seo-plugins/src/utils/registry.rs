@@ -6,9 +6,9 @@ use futures::stream::{self, StreamExt};
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use super::config::{Rule, RuleConfig, RuleResult, SeoPlugin};
+use super::config::{Rule, RuleConfig, RuleResult};
 use super::page::{Page, PageError};
-
+use super::page_plugin::SeoPlugin;
 // Registry to store and provide access to plugins
 pub struct PluginRegistry {
     plugins: HashMap<TypeId, Box<dyn SeoPlugin>>,

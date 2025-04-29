@@ -3,7 +3,8 @@ use std::any::Any;
 use scraper::Selector;
 
 use crate::utils::{
-    config::{CheckResult, Rule, RuleCategory, SeoPlugin, Severity},
+    config::{CheckResult, Rule, RuleCategory, Severity},
+    page_plugin::SeoPlugin,
     registry::PluginRegistry,
 };
 
@@ -247,10 +248,7 @@ impl SeoPlugin for SeoBasicPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::{
-        config::{RuleConfig, SeoPlugin},
-        page::Page,
-    };
+    use crate::utils::{config::RuleConfig, page::Page, page_plugin::SeoPlugin};
     use hyper::service::{make_service_fn, service_fn};
     use hyper::{Body, Response, Server};
 
