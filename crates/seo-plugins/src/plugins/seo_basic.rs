@@ -1,5 +1,7 @@
 use std::any::Any;
 
+use scraper::Selector;
+
 use crate::utils::{
     config::{CheckResult, Rule, RuleCategory, SeoPlugin, Severity},
     registry::PluginRegistry,
@@ -171,6 +173,73 @@ impl SeoPlugin for SeoBasicPlugin {
                     }
                 },
             },
+            Rule {
+                id: "seo_basic.is_scrapeable",
+                name: "Page is scrapeable",
+                description: "Checks if the page is scrapeable",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let mut page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let is_scrapeable =
+                        meta_tags.robots.is_some() && meta_tags.robots.unwrap().contains("noindex");
+                    CheckResult {
+                        rule_id: "seo_basic.is_scrapeable".to_string(),
+                        passed: !is_scrapeable,
+                        message: if is_scrapeable {
+                            "Page is not scrapeable"
+                        } else {
+                            "Page is scrapeable"
+                        }
+                        .to_string(),
+                    }
+                },
+            },
+            Rule {
+                id: "seo_basic.has_valid_charset",
+                name: "Page has valid charset",
+                description: "Checks if the page has a valid charset",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let mut page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let has_valid_charset = meta_tags.charset.is_some();
+                    CheckResult {
+                        rule_id: "seo_basic.has_valid_charset".to_string(),
+                        passed: has_valid_charset,
+                        message: if has_valid_charset {
+                            "Page has a valid charset"
+                        } else {
+                            "Page is missing a valid charset"
+                        }
+                        .to_string(),
+                    }
+                },
+            },
+            Rule {
+                id: "seo_basic.has_html_doctype",
+                name: "Page has html doctype",
+                description: "Checks if the page has an html doctype",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let page = page.clone();
+                    let html = page.get_html().unwrap();
+                    let has_doctype = html.contains("<!DOCTYPE html>");
+                    CheckResult {
+                        rule_id: "seo_basic.has_html_doctype".to_string(),
+                        passed: has_doctype,
+                        message: if has_doctype {
+                            "Page has an html doctype"
+                        } else {
+                            "Page is missing an html doctype"
+                        }
+                        .to_string(),
+                    }
+                },
+            },
         ]
     }
 }
@@ -252,8 +321,10 @@ mod tests {
                         match req.uri().path() {
                             "/success" => Ok::<_, Infallible>(Response::new(Body::from(format!(
                                 r#"
+                                <!DOCTYPE html>
                                 <html>
                                     <head>
+                                        <meta charset="utf-8">
                                         <title>Test Page</title>
                                         <meta name="description" content="Test description">
                                         <link rel="canonical" href="{}/success">
@@ -274,7 +345,7 @@ mod tests {
                                 r#"
                                 <html>
                                     <head>
-
+                                        <meta name="robots" content="noindex">
                                     </head>
                                     <body>
 

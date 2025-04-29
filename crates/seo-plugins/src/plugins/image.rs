@@ -51,31 +51,6 @@ impl SeoPlugin for ImagePlugin {
     fn available_rules(&self) -> Vec<Rule> {
         vec![
             Rule {
-                id: "images.alt_text",
-                name: "Images have alt text",
-                description: "Checks if all images have alt text attributes",
-                default_severity: Severity::Warning,
-                category: RuleCategory::SEO,
-                check: |page| {
-                    let mut page = page.clone();
-                    let images = page.extract_images();
-                    let images_without_alt = images
-                        .iter()
-                        .filter(|img| img.alt.is_none())
-                        .collect::<Vec<_>>();
-
-                    CheckResult {
-                        rule_id: "images.alt_text".to_string(),
-                        passed: images_without_alt.is_empty(),
-                        message: if images_without_alt.is_empty() {
-                            "All images have alt text".to_string()
-                        } else {
-                            format!("{} images missing alt text", images_without_alt.len())
-                        },
-                    }
-                },
-            },
-            Rule {
                 id: "images.responsive",
                 name: "Images are responsive",
                 description: "Checks if images use srcset for responsive design",
@@ -108,23 +83,128 @@ impl SeoPlugin for ImagePlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::config::RuleConfig;
-    use crate::utils::page::Page;
-    #[test]
-    fn test_image_plugin() {
-        let html = "<html><body><img src='test.jpg' alt='Test Image' /></body></html>";
+    use crate::utils::{
+        config::{RuleConfig, SeoPlugin},
+        page::Page,
+    };
+    use hyper::service::{make_service_fn, service_fn};
+    use hyper::{Body, Response, Server};
+
+    use std::convert::Infallible;
+    use std::net::SocketAddr;
+    use tokio::net::TcpListener;
+
+    #[tokio::test]
+    async fn test_image_plugin_success() {
+        let addr = start_test_server().await;
+        let base_url = format!("http://{}/success", addr);
+
         let plugin = ImagePlugin::new();
-        let page = Page::from_html(html.to_string());
+        let page = Page::from_url(url::Url::parse(&base_url).unwrap())
+            .await
+            .unwrap();
         let mut config = RuleConfig::new();
 
         for rule in plugin.available_rules() {
             config.enable_rule(rule.id);
         }
         let results = plugin.analyze(&page, &config);
-        assert_eq!(results.len(), 2);
-        assert_eq!(results[0].rule_id, "images.alt_text");
-        assert!(results[0].passed);
-        assert_eq!(results[1].rule_id, "images.responsive");
-        assert!(!results[1].passed);
+        for result in results {
+            assert!(
+                result.passed,
+                "Rule {} should have passed, Message: {}",
+                result.rule_id, result.message
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_image_plugin_failure() {
+        let addr = start_test_server().await;
+        let base_url = format!("http://{}/failure", addr);
+
+        let plugin = ImagePlugin::new();
+        let page = Page::from_url(url::Url::parse(&base_url).unwrap())
+            .await
+            .unwrap();
+
+        let mut config = RuleConfig::new();
+
+        for rule in plugin.available_rules() {
+            config.enable_rule(rule.id);
+        }
+        let results = plugin.analyze(&page, &config);
+
+        for result in results {
+            assert!(
+                !result.passed,
+                "Rule {} should have failed, Message: {}",
+                result.rule_id, result.message
+            );
+        }
+    }
+
+    async fn start_test_server() -> SocketAddr {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+        let listener = TcpListener::bind(addr).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let base_url = format!("http://{}", addr);
+
+        let make_svc = make_service_fn(move |_conn| {
+            let base_url = base_url.clone();
+            async move {
+                Ok::<_, Infallible>(service_fn(move |req| {
+                    let base_url = base_url.clone();
+                    async move {
+                        match req.uri().path() {
+                            "/success" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                                r#"
+                                <html>
+                                    <head>
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        <link rel="canonical" href="{}/success">
+                                    </head>
+                                    <body>
+                                        <img src="https://example.com/image.jpg" alt="Test image" srcset="https://example.com/image.jpg 1x, https://example.com/image@2x.jpg 2x">
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page2">Page 2</a>
+                                        <a href="/page1?param=value">Page 1 with params</a>
+                                        <a href="/page1#section">Page 1 with hash</a>
+                                        <a href="/page1?param=value#section">Page 1 with both</a>
+                                        <a href="https://external.com">External</a>
+                                    </body>
+                                </html>
+                            "#,
+                                base_url
+                            )))),
+                            "/failure" => Ok::<_, Infallible>(Response::new(Body::from(
+                                r#"
+                                <html>
+                                    <head>
+
+                                    </head>
+                                    <body>
+                                        <img src="https://example.com/image.jpg" >
+                                    </body>
+                                </html>
+                            "#,
+                            ))),
+                            _ => Ok(Response::new(Body::from("404"))),
+                        }
+                    }
+                }))
+            }
+        });
+
+        tokio::spawn(async move {
+            Server::from_tcp(listener.into_std().unwrap())
+                .unwrap()
+                .serve(make_svc)
+                .await
+                .unwrap();
+        });
+
+        addr
     }
 }

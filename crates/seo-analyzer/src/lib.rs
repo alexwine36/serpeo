@@ -65,12 +65,6 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
         .await
         .map_err(|e| SeoError::FetchError(e.to_string()))?;
 
-    // Extract all information using PageParser
-    // let meta_tags = parser.extract_meta_tags();
-    // let headings = parser.extract_headings();
-    // let images = parser.extract_images();
-    // let links = parser.extract_links();
-
     let page_analysis = parser
         .analyze_page()
         .await
@@ -102,20 +96,3 @@ pub async fn crawl_url(config: &Config) -> Result<CrawlResult, SeoError> {
         .await
         .map_err(|e| SeoError::AnalysisError(e.to_string()))
 }
-
-// pub async fn analyze_crawl_result<F>(
-//     url: &str,
-//     crawl_result: CrawlResult,
-//     progress_callback: F,
-//     lighthouse_enabled: bool,
-// ) -> Result<HashMap<String, PageAnalysis>, SeoError>
-// where
-//     F: FnMut(AnalysisProgress) + Send + Sync + 'static,
-// {
-//     let analyzer = Analyzer::new(url, lighthouse_enabled)
-//         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
-//     analyzer
-//         .analyze_crawl_result(crawl_result, progress_callback)
-//         .await
-//         .map_err(|e| SeoError::AnalysisError(e.to_string()))
-// }
