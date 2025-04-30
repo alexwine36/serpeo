@@ -6,6 +6,7 @@ use seo_plugins::utils::{
     config::{RuleConfig, RuleResult},
     page::Page,
     registry::PluginRegistry,
+    site::Site,
 };
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -45,7 +46,7 @@ pub enum SeoError {
 
 pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoAnalysis, SeoError> {
     let start_time = Instant::now();
-
+    let url2 = url.clone();
     // Create and fetch page using PageParser
     let mut parser = html_parser::page_parser::PageParser::new(&url)
         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
@@ -56,7 +57,14 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
         config.enable_rule(rule.id);
     }
     registry.set_config(config);
-    let page = Page::from_url(&url)
+    let mut site = Site::new(url, PluginRegistry::default_with_config())
+        .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
+    let results = site
+        .crawl()
+        .await
+        .map_err(|e| SeoError::AnalysisError(e.to_string()))?;
+    println!("results: {:#?}", results);
+    let page = Page::from_url(&url2)
         .await
         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
     let results = registry.analyze(&page);
@@ -76,7 +84,7 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     };
 
     // Run lighthouse analysis
-    let lighthouse_metrics = run_lighthouse_analysis(shell, url).await.ok();
+    let lighthouse_metrics = run_lighthouse_analysis(shell, url2).await.ok();
 
     Ok(SeoAnalysis {
         results,

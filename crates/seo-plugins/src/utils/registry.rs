@@ -76,6 +76,18 @@ impl PluginRegistry {
             .flat_map(|plugin| plugin.analyze(page, config))
             .collect()
     }
+    pub fn default_with_config() -> Self {
+        let mut config = RuleConfig::new();
+        let mut registry = Self::default();
+        let rules = registry.get_available_rules();
+        for rule in rules {
+            if !rule.id.starts_with("axe") {
+                config.enable_rule(rule.id);
+            }
+        }
+        registry.set_config(config);
+        registry
+    }
 }
 
 impl Default for PluginRegistry {

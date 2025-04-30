@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, num::NonZeroU16, time::Duration};
 
 use markup5ever::QualName;
 use reqwest::Client;
@@ -12,6 +12,8 @@ use thiserror::Error;
 use tokio::time::Instant;
 use url::Url;
 
+use super::link_parser::{FromUrl, Link, parse_link};
+
 #[derive(Debug, Error)]
 pub enum PageError {
     #[error("Failed to parse URL: {0}")]
@@ -24,6 +26,10 @@ pub enum PageError {
     ConfigNotSet,
     #[error("Element not found")]
     ElementNotFound,
+    #[error("Selector parse error: {0}")]
+    SelectorParseError(String),
+    #[error("Link parse error: {0}")]
+    LinkParseError(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -35,6 +41,7 @@ pub struct Page {
     content_length: Option<u64>,
     redirected: Option<bool>,
     elapsed: Option<f32>,
+    status_code: Option<NonZeroU16>,
 }
 
 const FALLBACK_URL: &str = "https://example.com";
@@ -49,6 +56,7 @@ impl Page {
             content_length: None,
             redirected: None,
             elapsed: None,
+            status_code: None,
         }
     }
 
@@ -80,6 +88,10 @@ impl Page {
         self.elapsed.clone()
     }
 
+    pub fn get_status_code(&self) -> Option<NonZeroU16> {
+        self.status_code.clone()
+    }
+
     pub async fn from_url<T: FromUrl>(url: T) -> Result<Self, PageError> {
         let url = url.to_url().unwrap();
         // let html = self.fetch(&url).await;
@@ -98,6 +110,7 @@ impl Page {
             .map_err(|e| PageError::FetchError(e.to_string()))?;
 
         let elapsed = start_time.elapsed().as_millis() as f32;
+        let status_code = u16::from(response.status());
         let redirected = response.status().is_redirection();
         let content_length = response
             .headers()
@@ -124,6 +137,7 @@ impl Page {
             content_length,
             redirected: Some(redirected),
             elapsed: Some(elapsed),
+            status_code: NonZeroU16::new(status_code),
         })
     }
 
@@ -137,7 +151,8 @@ impl Page {
 
     pub fn get_element(&self, selector: &str) -> Result<Element, PageError> {
         let document = self.get_document().unwrap();
-        let selector = Selector::parse(selector).unwrap();
+        let selector =
+            Selector::parse(selector).map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         let element = document
             .select(&selector)
             .next()
@@ -291,7 +306,7 @@ impl Page {
     }
 
     // Links
-    pub fn extract_links(&self) -> Vec<Links> {
+    pub fn extract_links(&self) -> Result<Vec<Link>, PageError> {
         let document = self.get_document().unwrap();
         let link_selector = Selector::parse("a").unwrap();
         let mut links = Vec::new();
@@ -302,22 +317,13 @@ impl Page {
                     .url
                     .clone()
                     .unwrap_or(Url::parse(FALLBACK_URL).unwrap());
-                let url = base_url.join(href).unwrap_or_else(|_| base_url.clone());
-                let link_type = if url.host_str() == Some(base_url.host_str().unwrap()) {
-                    LinkType::Internal
-                } else {
-                    LinkType::External
-                };
-                let path = url.path().to_string();
-                links.push(Links {
-                    href: url.to_string(),
-                    path,
-                    link_type,
-                });
+                let link = parse_link(href, base_url)
+                    .map_err(|e| PageError::LinkParseError(e.to_string()))?;
+                links.push(link);
             }
         }
 
-        links
+        Ok(links)
     }
 }
 
@@ -347,55 +353,16 @@ pub struct Image {
     pub srcset: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq)]
-pub enum LinkType {
-    Internal,
-    External,
-}
-
-#[derive(Debug, Serialize, Deserialize, Type, Clone)]
-pub struct Links {
-    pub href: String,
-    pub path: String,
-    pub link_type: LinkType,
-}
-
 pub struct StaticElement {
     pub name: QualName,
     pub attrs: Attributes,
     pub text: String,
 }
 
-pub trait FromUrl {
-    fn to_url(self) -> Result<Url, PageError>;
-}
-
-impl FromUrl for Url {
-    fn to_url(self) -> Result<Url, PageError> {
-        Ok(self)
-    }
-}
-
-impl FromUrl for String {
-    fn to_url(self) -> Result<Url, PageError> {
-        Url::parse(&self).map_err(|e| PageError::UrlParseError(e.to_string()))
-    }
-}
-
-impl FromUrl for &String {
-    fn to_url(self) -> Result<Url, PageError> {
-        Url::parse(self).map_err(|e| PageError::UrlParseError(e.to_string()))
-    }
-}
-
-impl FromUrl for &str {
-    fn to_url(self) -> Result<Url, PageError> {
-        Url::parse(self).map_err(|e| PageError::UrlParseError(e.to_string()))
-    }
-}
-
 #[cfg(test)]
 mod tests {
+
+    use crate::utils::link_parser::LinkType;
 
     use super::*;
 
@@ -412,7 +379,7 @@ mod tests {
             "#
             .to_string(),
         );
-        let links = page.extract_links();
+        let links = page.extract_links().unwrap();
         println!("links: {:?}", links);
         assert_eq!(links.len(), 2);
         assert_eq!(links[0].href, format!("{}/test", FALLBACK_URL));
@@ -437,7 +404,7 @@ mod tests {
         );
         const TEST_URL: &str = "https://sample.com";
         page.set_url(TEST_URL);
-        let links = page.extract_links();
+        let links = page.extract_links().unwrap();
         println!("links: {:?}", links);
         assert_eq!(links.len(), 2);
         assert_eq!(links[0].href, format!("{}/test", TEST_URL));

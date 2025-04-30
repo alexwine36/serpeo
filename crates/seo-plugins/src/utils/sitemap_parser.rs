@@ -16,7 +16,8 @@ use tokio::sync::Mutex;
 use tokio::time::Instant;
 use url::Url;
 
-use super::page::{FromUrl, Page, PageError};
+use super::link_parser::FromUrl;
+use super::page::{Page, PageError};
 
 #[derive(Debug, Error)]
 pub enum SitemapParserError {
@@ -199,6 +200,15 @@ mod tests {
             );
         }
     }
+    #[tokio::test]
+    async fn test_empty_sitemap_server() {
+        let addr = start_empty_sitemap_server().await;
+        let base_url = format!("http://{}", addr);
+        let sitemap_parser = SitemapParser::new(base_url).unwrap();
+        let sitemap_urls = sitemap_parser.get_sitemap().await.unwrap();
+        println!("Sitemap URLs: {:?}", sitemap_urls);
+        assert!(sitemap_urls.is_empty());
+    }
 
     async fn start_base_sitemap_server() -> SocketAddr {
         let addr = SocketAddr::from(([127, 0, 0, 1], 0));
@@ -323,6 +333,85 @@ mod tests {
                                     base_url,
                                 );
                                 Ok(Response::new(Body::from(sitemap)))
+                            }
+
+                            _ => Ok(Response::new(Body::from("404"))),
+                        }
+                    }
+                }))
+            }
+        });
+
+        tokio::spawn(async move {
+            Server::from_tcp(listener.into_std().unwrap())
+                .unwrap()
+                .serve(make_svc)
+                .await
+                .unwrap();
+        });
+
+        addr
+    }
+
+    async fn start_empty_sitemap_server() -> SocketAddr {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+        let listener = TcpListener::bind(addr).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let base_url = format!("http://{}", addr);
+
+        let make_svc = make_service_fn(move |_conn| {
+            let base_url = base_url.clone();
+            async move {
+                Ok::<_, Infallible>(service_fn(move |req| {
+                    let base_url = base_url.clone();
+                    async move {
+                        match req.uri().path() {
+                            "/" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                                r#"
+                                <!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8">
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        
+                                        
+                                    </head>
+                                    <body>
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page2">Page 2</a>
+                                        <a href="/page1?param=value">Page 1 with params</a>
+                                        <a href="/page1#section">Page 1 with hash</a>
+                                        <a href="/page1?param=value#section">Page 1 with both</a>
+                                        <a href="https://external.com">External</a>
+                                    </body>
+                                </html>
+                            "#,
+                            )))),
+                            "/other-path" => {
+                                Ok::<_, Infallible>(Response::new(Body::from(format!(
+                                    r#"
+                                <!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8">
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        <link rel="canonical" href="{}/success">
+                                        <link rel="sitemap" href="{}/defined.xml">
+                                    </head>
+                                    <body>
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page2">Page 2</a>
+                                        <a href="/page1?param=value">Page 1 with params</a>
+                                        <a href="/page1#section">Page 1 with hash</a>
+                                        <a href="/page1?param=value#section">Page 1 with both</a>
+                                        <a href="https://external.com">External</a>
+                                    </body>
+                                </html>
+                            "#,
+                                    base_url, base_url
+                                ))))
                             }
 
                             _ => Ok(Response::new(Body::from("404"))),
