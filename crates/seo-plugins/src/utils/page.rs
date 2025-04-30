@@ -301,6 +301,10 @@ impl Page {
         self.meta_tags.clone().unwrap_or_default()
     }
 
+    pub fn get_stored_meta_tags(&self) -> MetaTagInfo {
+        self.meta_tags.clone().unwrap_or_default()
+    }
+
     pub fn extract_meta_tags(&mut self) -> MetaTagInfo {
         self.get_meta_tags()
     }

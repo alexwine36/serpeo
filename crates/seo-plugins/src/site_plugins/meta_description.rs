@@ -1,0 +1,108 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+// use hashbrown::HashMap;
+
+use crate::utils::{
+    config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
+    page::Page,
+    registry::PluginRegistry,
+    site::Site,
+    site_plugin::SitePlugin,
+};
+
+struct PageDescription {
+    pub url: String,
+    pub description: String,
+}
+
+#[derive(Clone)]
+pub struct MetaDescriptionPlugin {
+    page_descriptions: Arc<Mutex<HashMap<String, PageDescription>>>,
+}
+
+impl MetaDescriptionPlugin {
+    pub fn new() -> Self {
+        Self {
+            page_descriptions: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+}
+
+impl SitePlugin for MetaDescriptionPlugin {
+    fn name(&self) -> &str {
+        "Meta Description Plugin"
+    }
+
+    fn description(&self) -> &str {
+        "Checks if meta descriptions are unique across pages"
+    }
+    fn initialize(&mut self, registry: &mut PluginRegistry) -> Result<(), String> {
+        Ok(())
+    }
+    fn after_page_hook(&mut self, page: &Page, _results: &Vec<RuleResult>) -> Result<(), String> {
+        let page_descriptions = Arc::clone(&self.page_descriptions);
+        let url = page.get_url().unwrap().to_string();
+        let meta_tags = page.get_stored_meta_tags();
+        let description = meta_tags.description.clone();
+        if let Some(description) = description {
+            page_descriptions
+                .lock()
+                .unwrap()
+                .insert(url.clone(), PageDescription { url, description });
+        }
+
+        Ok(())
+    }
+
+    fn available_rules(&self) -> Vec<SiteRule> {
+        vec![SiteRule {
+            id: "meta_description_uniqueness",
+            name: "Meta Description Uniqueness",
+            description: "Checks if meta descriptions are unique 90% of the time",
+            default_severity: Severity::Warning,
+            category: RuleCategory::SEO,
+        }]
+    }
+    fn check(&self, rule: &SiteRule, site: &Site) -> CheckResult {
+        match rule.id {
+            "meta_description_uniqueness" => {
+                // let plugin = self.clone();
+                // plugin.check_meta_description_uniqueness()
+                let page_descriptions = self.page_descriptions.lock().unwrap();
+                let mut found_descriptions = HashMap::new();
+                for (url, page_description) in page_descriptions.iter() {
+                    found_descriptions
+                        .entry(page_description.description.clone())
+                        .or_insert(Vec::new())
+                        .push(page_description.url.clone());
+                }
+                let total_pages = page_descriptions.len();
+                let unique_descriptions = found_descriptions.len();
+                let percentage = (unique_descriptions as f64 / total_pages as f64) * 100.0;
+                if percentage < 90.0 {
+                    CheckResult {
+                        rule_id: rule.id.to_string(),
+                        passed: false,
+                        message: "Meta description is unique across pages".to_string(),
+                    }
+                } else {
+                    CheckResult {
+                        rule_id: rule.id.to_string(),
+                        passed: true,
+                        message: "Meta description is unique across pages".to_string(),
+                    }
+                }
+            }
+            _ => CheckResult {
+                rule_id: rule.id.to_string(),
+                passed: false,
+                message: "Unknown rule".to_string(),
+            },
+        }
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}

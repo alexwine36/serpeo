@@ -22,6 +22,7 @@ use super::{
     link_parser::{FromUrl, LinkType, parse_link},
     page::{Page, PageError},
     registry::PluginRegistry,
+    site_plugin::SitePlugin,
     sitemap_parser::SitemapParser,
 };
 
@@ -60,6 +61,7 @@ pub struct PageLink {
     pub result: Option<PageResult>,
 }
 
+#[derive(Debug)]
 pub struct Site {
     url: Url,
     links: Arc<Mutex<HashMap<String, PageLink>>>,
@@ -78,6 +80,14 @@ impl Site {
             registry: Arc::new(Mutex::new(registry)),
         })
     }
+
+    // pub fn analyze_site(&self, config: &RuleConfig) -> Vec<RuleResult> {
+    //     let plugins = self.site_plugins.lock().unwrap();
+    //     plugins
+    //         .iter()
+    //         .flat_map(|plugin| plugin.analyze(self, config))
+    //         .collect()
+    // }
 
     async fn fetch_sitemap(&self) -> Result<HashSet<String>, SiteError> {
         let sitemap_parser = SitemapParser::new(self.url.clone()).unwrap();
@@ -195,7 +205,7 @@ impl Site {
 
             // TODO: Run plugins on the page
             let results = {
-                let registry = self.registry.lock().await;
+                let mut registry = self.registry.lock().await;
                 registry.analyze(&page)
             };
             // println!("results: {:#?}", results);

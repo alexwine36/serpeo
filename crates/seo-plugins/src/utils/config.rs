@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use super::page::Page;
 use super::registry::PluginRegistry;
+use super::site::Site;
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CheckResult {
@@ -50,6 +51,17 @@ pub struct Rule {
     pub description: &'static str,
     pub default_severity: Severity,
     pub check: fn(&Page) -> CheckResult,
+    pub category: RuleCategory,
+}
+
+// Rule definition
+#[derive(Clone)]
+pub struct SiteRule {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub description: &'static str,
+    pub default_severity: Severity,
+    // pub check: fn(&Site) -> CheckResult,
     pub category: RuleCategory,
 }
 
