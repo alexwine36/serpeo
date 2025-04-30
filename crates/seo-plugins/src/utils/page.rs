@@ -1,5 +1,3 @@
-use std::{collections::HashMap, num::NonZeroU16, time::Duration};
-
 use markup5ever::QualName;
 use reqwest::Client;
 use scraper::{
@@ -8,6 +6,8 @@ use scraper::{
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::sync::{Arc, Mutex as StdMutex};
+use std::{collections::HashMap, num::NonZeroU16, time::Duration};
 use thiserror::Error;
 use tokio::time::Instant;
 use url::Url;
@@ -36,8 +36,8 @@ pub enum PageError {
 pub struct Page {
     url: Option<Url>,
     html: Option<String>,
-    meta_tags: Option<MetaTagInfo>,
-    images: Option<Vec<Image>>,
+    meta_tags: Arc<StdMutex<Option<MetaTagInfo>>>,
+    images: Arc<StdMutex<Option<Vec<Image>>>>,
     content_length: Option<u64>,
     redirected: Option<bool>,
     elapsed: Option<f32>,
@@ -51,8 +51,8 @@ impl Page {
         Self {
             url: None,
             html: Some(html),
-            meta_tags: None,
-            images: None,
+            meta_tags: Arc::new(StdMutex::new(None)),
+            images: Arc::new(StdMutex::new(None)),
             content_length: None,
             redirected: None,
             elapsed: None,
@@ -132,8 +132,8 @@ impl Page {
         Ok(Self {
             url: Some(url),
             html: Some(body),
-            meta_tags: None,
-            images: None,
+            meta_tags: Arc::new(StdMutex::new(None)),
+            images: Arc::new(StdMutex::new(None)),
             content_length,
             redirected: Some(redirected),
             elapsed: Some(elapsed),
@@ -183,7 +183,7 @@ impl Page {
 
 impl Page {
     // Images
-    fn set_images(&mut self) {
+    fn set_images(&self) {
         let document = self.get_document().unwrap();
         let img_selector = Selector::parse("img").unwrap();
         let mut images = Vec::new();
@@ -195,22 +195,26 @@ impl Page {
             images.push(Image { src, alt, srcset });
         }
 
-        self.images = Some(images);
+        let _ = self.images.lock().unwrap().insert(images);
     }
 
-    fn get_images(&mut self) -> Option<Vec<Image>> {
-        if self.images.is_none() {
+    fn get_images(&self) -> Option<Vec<Image>> {
+        if self.images.lock().unwrap().is_none() {
             self.set_images();
         }
-        self.images.clone()
+        self.images.lock().unwrap().clone()
     }
 
-    pub fn extract_images(&mut self) -> Vec<Image> {
+    pub fn extract_images(&self) -> Vec<Image> {
         self.get_images().unwrap_or_default()
     }
 
     // Meta Tags
-    fn set_meta_tags(&mut self) {
+    fn set_meta_tags(&self) {
+        println!(
+            "setting meta tags for page: {:?}",
+            self.url.clone().unwrap().to_string()
+        );
         let document = self.get_document().unwrap();
         let mut meta_tags = MetaTagInfo::default();
 
@@ -291,21 +295,17 @@ impl Page {
             }
         }
 
-        self.meta_tags = Some(meta_tags);
+        let _ = self.meta_tags.lock().unwrap().insert(meta_tags);
     }
 
-    fn get_meta_tags(&mut self) -> MetaTagInfo {
-        if self.meta_tags.is_none() {
+    fn get_meta_tags(&self) -> MetaTagInfo {
+        if self.meta_tags.lock().unwrap().is_none() {
             self.set_meta_tags();
         }
-        self.meta_tags.clone().unwrap_or_default()
+        self.meta_tags.lock().unwrap().clone().unwrap_or_default()
     }
 
-    pub fn get_stored_meta_tags(&self) -> MetaTagInfo {
-        self.meta_tags.clone().unwrap_or_default()
-    }
-
-    pub fn extract_meta_tags(&mut self) -> MetaTagInfo {
+    pub fn extract_meta_tags(&self) -> MetaTagInfo {
         self.get_meta_tags()
     }
 

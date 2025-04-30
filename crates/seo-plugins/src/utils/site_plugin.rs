@@ -1,23 +1,29 @@
 use std::any::Any;
+use std::sync::{Arc, Mutex as StdMutex};
 
 use futures::stream::{self, StreamExt};
+use tokio::sync::Mutex;
 
 use super::config::{CheckResult, Rule, RuleConfig, RuleResult, SiteRule};
 use super::page::Page;
 use super::site::Site;
-
+use crate::site_analyzer::SiteAnalyzer;
 #[async_trait::async_trait]
-pub trait SitePlugin: Send + Sync {
+pub trait SitePlugin: Send + Sync + 'static {
     fn name(&self) -> &str;
     fn description(&self) -> &str;
     fn as_any(&self) -> &dyn Any;
     fn initialize(&mut self, registry: &mut super::registry::PluginRegistry) -> Result<(), String>;
     fn available_rules(&self) -> Vec<SiteRule>;
-    fn after_page_hook(&mut self, _page: &Page, _results: &Vec<RuleResult>) -> Result<(), String> {
+    fn after_page_hook(
+        &mut self,
+        _page: Arc<StdMutex<Page>>,
+        _results: &Vec<RuleResult>,
+    ) -> Result<(), String> {
         Ok(())
     }
-    fn check(&self, rule: &SiteRule, site: &Site) -> CheckResult;
-    fn analyze(&self, site: &Site, config: &RuleConfig) -> Vec<RuleResult> {
+    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> CheckResult;
+    fn analyze(&self, site: &SiteAnalyzer, config: &RuleConfig) -> Vec<RuleResult> {
         self.available_rules()
             .iter()
             .filter(|rule| config.is_rule_enabled(rule.id))
@@ -33,7 +39,7 @@ pub trait SitePlugin: Send + Sync {
             })
             .collect()
     }
-    async fn async_analyze(&self, site: &Site, config: &RuleConfig) -> Vec<RuleResult> {
+    async fn async_analyze(&self, site: &SiteAnalyzer, config: &RuleConfig) -> Vec<RuleResult> {
         let available_rules = self.available_rules();
         let rules: Vec<&SiteRule> = available_rules
             .iter()

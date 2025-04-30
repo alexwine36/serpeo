@@ -1,5 +1,5 @@
 use seo_analyzer::{
-    analyze_url, config::Config, crawl_url, AnalysisProgress, CommandOutput, CrawlResult,
+    analyze_url, config::Config, crawl_url, crawler::CrawlResult, AnalysisProgress, CommandOutput,
     PageAnalysis, SeoAnalysis, ShellCommand,
 };
 use specta_typescript::Typescript;

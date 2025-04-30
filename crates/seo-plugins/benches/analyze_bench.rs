@@ -2,17 +2,17 @@ use criterion::async_executor::FuturesExecutor;
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use seo_plugins::utils::{config::RuleConfig, page::Page, registry::PluginRegistry};
 
-fn analyze_benchmark(c: &mut Criterion) {
+async fn analyze_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("analyze");
 
     // Setup
-    let mut registry = PluginRegistry::default();
-    let mut config = RuleConfig::new();
-    for rule in registry.get_available_rules() {
-        config.enable_rule(rule.id);
-    }
+    let mut registry = PluginRegistry::default_with_config();
+    // let mut config = RuleConfig::new();
+    // for rule in registry.get_available_rules().await {
+    //     config.enable_rule(rule.id);
+    // }
 
-    registry.set_config(config);
+    // registry.set_config(config);
 
     let page = Page::from_html(
         r#"

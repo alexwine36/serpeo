@@ -1,8 +1,9 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex as StdMutex};
 
 // use hashbrown::HashMap;
 
+use crate::site_analyzer::SiteAnalyzer;
 use crate::utils::{
     config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
@@ -11,6 +12,7 @@ use crate::utils::{
     site_plugin::SitePlugin,
 };
 
+#[derive(Debug)]
 struct PageDescription {
     pub url: String,
     pub description: String,
@@ -18,13 +20,13 @@ struct PageDescription {
 
 #[derive(Clone)]
 pub struct MetaDescriptionPlugin {
-    page_descriptions: Arc<Mutex<HashMap<String, PageDescription>>>,
+    page_descriptions: Arc<StdMutex<HashMap<String, PageDescription>>>,
 }
 
 impl MetaDescriptionPlugin {
     pub fn new() -> Self {
         Self {
-            page_descriptions: Arc::new(Mutex::new(HashMap::new())),
+            page_descriptions: Arc::new(StdMutex::new(HashMap::new())),
         }
     }
 }
@@ -37,19 +39,24 @@ impl SitePlugin for MetaDescriptionPlugin {
     fn description(&self) -> &str {
         "Checks if meta descriptions are unique across pages"
     }
-    fn initialize(&mut self, registry: &mut PluginRegistry) -> Result<(), String> {
+    fn initialize(&mut self, _registry: &mut PluginRegistry) -> Result<(), String> {
         Ok(())
     }
-    fn after_page_hook(&mut self, page: &Page, _results: &Vec<RuleResult>) -> Result<(), String> {
-        let page_descriptions = Arc::clone(&self.page_descriptions);
+    fn after_page_hook(
+        &mut self,
+        page: Arc<StdMutex<Page>>,
+        _results: &Vec<RuleResult>,
+    ) -> Result<(), String> {
+        let mut page = page.lock().unwrap();
+
+        let mut page_descriptions = self.page_descriptions.lock().unwrap();
         let url = page.get_url().unwrap().to_string();
-        let meta_tags = page.get_stored_meta_tags();
+        let meta_tags = page.extract_meta_tags();
+
         let description = meta_tags.description.clone();
+
         if let Some(description) = description {
-            page_descriptions
-                .lock()
-                .unwrap()
-                .insert(url.clone(), PageDescription { url, description });
+            page_descriptions.insert(url.clone(), PageDescription { url, description });
         }
 
         Ok(())
@@ -64,11 +71,9 @@ impl SitePlugin for MetaDescriptionPlugin {
             category: RuleCategory::SEO,
         }]
     }
-    fn check(&self, rule: &SiteRule, site: &Site) -> CheckResult {
+    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> CheckResult {
         match rule.id {
             "meta_description_uniqueness" => {
-                // let plugin = self.clone();
-                // plugin.check_meta_description_uniqueness()
                 let page_descriptions = self.page_descriptions.lock().unwrap();
                 let mut found_descriptions = HashMap::new();
                 for (url, page_description) in page_descriptions.iter() {
@@ -79,6 +84,8 @@ impl SitePlugin for MetaDescriptionPlugin {
                 }
                 let total_pages = page_descriptions.len();
                 let unique_descriptions = found_descriptions.len();
+                // println!("unique_descriptions: {:#?}", found_descriptions);
+                // println!("page_descriptions: {:#?}", page_descriptions);
                 let percentage = (unique_descriptions as f64 / total_pages as f64) * 100.0;
                 if percentage < 90.0 {
                     CheckResult {

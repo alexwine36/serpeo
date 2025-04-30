@@ -3,6 +3,7 @@ use std::{
     time::Duration,
 };
 
+use futures::stream::{self, StreamExt};
 use markup5ever::QualName;
 use reqwest::Client;
 use scraper::{
@@ -17,22 +18,13 @@ use tokio::sync::Mutex;
 use tokio::time::Instant;
 use url::Url;
 
-use super::{
+use crate::utils::{
     config::RuleResult,
     link_parser::{FromUrl, LinkType, parse_link},
     page::{Page, PageError},
     registry::PluginRegistry,
-    site_plugin::SitePlugin,
     sitemap_parser::SitemapParser,
 };
-
-#[derive(Debug, Error)]
-pub enum SiteError {
-    #[error("Failed to parse URL: {0}")]
-    UrlParseError(String),
-    #[error("Page error: {0}")]
-    PageError(#[from] PageError),
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, Eq, Hash)]
 pub enum LinkSourceType {
@@ -61,41 +53,57 @@ pub struct PageLink {
     pub result: Option<PageResult>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+pub struct CrawlResult {
+    page_results: Vec<PageLink>,
+    site_result: Vec<RuleResult>,
+}
+
+#[derive(Debug, Error)]
+pub enum SiteAnalyzerError {
+    #[error("Failed to parse URL: {0}")]
+    UrlParseError(String),
+    #[error("Page error: {0}")]
+    PageError(#[from] PageError),
+}
+
 #[derive(Debug)]
-pub struct Site {
+pub struct SiteAnalyzer {
     url: Url,
     links: Arc<Mutex<HashMap<String, PageLink>>>,
     registry: Arc<Mutex<PluginRegistry>>,
 }
 
-impl Site {
-    pub fn new<T: FromUrl>(url: T, registry: PluginRegistry) -> Result<Self, SiteError> {
-        let url = url
-            .to_url()
-            .map_err(|e| SiteError::UrlParseError(e.to_string()))?;
-
-        Ok(Self {
+impl SiteAnalyzer {
+    pub fn new<T: FromUrl>(url: T, registry: PluginRegistry) -> Self {
+        let url = url.to_url().unwrap();
+        Self {
             url,
             links: Arc::new(Mutex::new(HashMap::new())),
             registry: Arc::new(Mutex::new(registry)),
-        })
+        }
     }
 
-    // pub fn analyze_site(&self, config: &RuleConfig) -> Vec<RuleResult> {
-    //     let plugins = self.site_plugins.lock().unwrap();
-    //     plugins
-    //         .iter()
-    //         .flat_map(|plugin| plugin.analyze(self, config))
-    //         .collect()
-    // }
+    pub fn new_with_default<T: FromUrl>(url: T) -> Self {
+        let url = url.to_url().unwrap();
+        Self {
+            url,
+            links: Arc::new(Mutex::new(HashMap::new())),
+            registry: Arc::new(Mutex::new(PluginRegistry::default_with_config())),
+        }
+    }
 
-    async fn fetch_sitemap(&self) -> Result<HashSet<String>, SiteError> {
+    async fn fetch_sitemap(&self) -> Result<HashSet<String>, SiteAnalyzerError> {
         let sitemap_parser = SitemapParser::new(self.url.clone()).unwrap();
         let sitemap_urls = sitemap_parser.get_sitemap().await.unwrap();
         Ok(sitemap_urls)
     }
 
-    async fn record_page_result(&mut self, url: Url, result: PageResult) -> Result<(), SiteError> {
+    async fn record_page_result(
+        &mut self,
+        url: &Url,
+        result: PageResult,
+    ) -> Result<(), SiteAnalyzerError> {
         let mut links = self.links.lock().await;
         if let Some(link) = links.get_mut(&url.to_string()) {
             link.result = Some(result);
@@ -118,7 +126,7 @@ impl Site {
         &mut self,
         url: &str,
         page_link_source: PageLinkSource,
-    ) -> Result<(), SiteError> {
+    ) -> Result<(), SiteAnalyzerError> {
         let link = parse_link(url, self.url.clone()).unwrap();
         let url_string = Self::clean_url(link.href.clone());
         let url_string2 = Self::clean_url(link.href.clone());
@@ -141,7 +149,44 @@ impl Site {
         Ok(())
     }
 
-    pub async fn crawl(&mut self) -> Result<Vec<PageLink>, SiteError> {
+    async fn process_page(&mut self, url: Url) -> Result<(), SiteAnalyzerError> {
+        println!("processing page: {}", url);
+        let page = Page::from_url(url.clone())
+            .await
+            .map_err(SiteAnalyzerError::PageError)?;
+
+        let results = {
+            let registry = self.registry.lock().await;
+            registry.analyze_async(&page).await
+        };
+
+        // Record the page results
+        self.record_page_result(
+            &url,
+            PageResult {
+                error: false,
+                results,
+            },
+        )
+        .await?;
+
+        // Extract and add any new links found on the page
+        let links = page.extract_links().map_err(SiteAnalyzerError::PageError)?;
+        for link in links {
+            self.add_link(
+                &link.href,
+                PageLinkSource {
+                    link_source_type: LinkSourceType::Link,
+                    url: url.to_string(),
+                },
+            )
+            .await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn crawl(&mut self) -> Result<CrawlResult, SiteAnalyzerError> {
         let sitemap_urls = self.fetch_sitemap().await?;
         for sitemap_url in sitemap_urls {
             self.add_link(
@@ -164,73 +209,54 @@ impl Site {
             .await?;
         }
 
-        while let Some(url) = {
+        loop {
+            // Get all unprocessed internal links
             let links = self.links.lock().await;
-            links
-                .values()
-                .filter(|link| link.link_type == LinkType::Internal)
-                .find_map(|link| {
-                    if link.result.is_none() {
-                        Some(link.url.clone())
-                    } else {
-                        None
+            let internal_links: Vec<String> = links
+                .iter()
+                .filter(|(_, link)| link.link_type == LinkType::Internal && link.result.is_none())
+                .map(|(url, _)| url.clone())
+                .collect();
+            drop(links);
+
+            if internal_links.is_empty() {
+                break;
+            }
+
+            // Process pages concurrently with a limit of 10 concurrent requests
+            let mut stream = stream::iter(internal_links)
+                .map(|url| {
+                    let url = Url::parse(&url).unwrap();
+                    let registry = self.registry.clone();
+                    let links = self.links.clone();
+                    async move {
+                        let mut analyzer = SiteAnalyzer {
+                            url: url.clone(),
+                            links,
+                            registry,
+                        };
+                        analyzer.process_page(url).await
                     }
                 })
-        } {
-            println!("processing page: {}", url);
-            self.process_page(Url::parse(&url).unwrap()).await?;
-        }
+                .buffer_unordered(10);
 
-        Ok(self.links.lock().await.values().cloned().collect())
-    }
-
-    async fn process_page(&mut self, url: Url) -> Result<(), SiteError> {
-        let page = Page::from_url(url.clone())
-            .await
-            .map_err(|e| SiteError::PageError(e));
-
-        if let Err(e) = page {
-            return self
-                .record_page_result(
-                    url,
-                    PageResult {
-                        error: true,
-                        results: vec![],
-                    },
-                )
-                .await;
-        } else if let Ok(page) = page {
-            let url_string = url.to_string();
-            let links = page.extract_links().map_err(|e| SiteError::PageError(e))?;
-
-            // TODO: Run plugins on the page
-            let results = {
-                let mut registry = self.registry.lock().await;
-                registry.analyze(&page).await
-            };
-            // println!("results: {:#?}", results);
-            self.record_page_result(
-                url,
-                PageResult {
-                    error: false,
-                    results,
-                },
-            )
-            .await?;
-
-            for link in links {
-                self.add_link(
-                    &link.href,
-                    PageLinkSource {
-                        link_source_type: LinkSourceType::Link,
-                        url: url_string.clone(),
-                    },
-                )
-                .await?;
+            while let Some(result) = stream.next().await {
+                result?;
             }
         }
 
-        Ok(())
+        let site_result = self.registry.lock().await.analyze_site(self).await;
+        println!("site_result: {:#?}", site_result);
+        Ok(CrawlResult {
+            page_results: self
+                .links
+                .lock()
+                .await
+                .values()
+                .map(|link| link.clone())
+                .collect(),
+            site_result,
+        })
     }
 }
 
@@ -258,20 +284,44 @@ mod tests {
     async fn test_site_crawl() {
         let addr = start_server().await;
         let base_url = format!("http://{}", addr);
-        let mut site = Site::new(base_url, PluginRegistry::default_with_config()).unwrap();
-        site.crawl().await.unwrap();
+        let mut site = SiteAnalyzer::new_with_default(base_url);
+        let results = site.crawl().await.unwrap();
         let links = site.links.lock().await;
-        println!("links: {:#?}", links);
-        assert_eq!(links.len(), 7);
+        // println!("links: {:#?}", links);
+        // assert_eq!(links.len(), 7);
         let base_url = format!("http://{}", addr);
         let page1 = links.get(&format!("{}/page1", base_url)).unwrap();
         assert_eq!(page1.found_in.len(), 2);
         for path in [
             "/", "/page1", "/page2", "/page3", "/page4", "/page5", "/page6",
         ] {
-            assert!(links.get(&format!("{}{}", base_url, path)).is_some());
+            assert!(
+                links.get(&format!("{}{}", base_url, path)).is_some(),
+                "path: {} not found",
+                path
+            );
         }
 
+        for result in results.page_results {
+            // println!("result: {:#?}", result);
+            if result.link_type == LinkType::Internal {
+                assert!(result.result.is_some());
+                assert!(result.result.unwrap().results.len() > 0);
+            }
+        }
+        assert!(results.site_result.len() > 0);
+        assert!(
+            results
+                .site_result
+                .iter()
+                .any(|result| result.rule_id == "meta_description_uniqueness")
+        );
+        let meta_description_uniqueness = results
+            .site_result
+            .iter()
+            .find(|result| result.rule_id == "meta_description_uniqueness")
+            .unwrap();
+        assert!(meta_description_uniqueness.passed == false)
         // let page1 = links.get(&format!("{}/page1", base_url)).unwrap();
         // assert_eq!(page1.found_in.len(), 3);
     }

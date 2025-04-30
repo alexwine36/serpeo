@@ -1,29 +1,26 @@
-mod crawler;
+pub mod crawler;
 mod lighthouse;
 use config::Config;
 use html_parser::page_parser::{Heading, Image, Links, MetaTagInfo, Performance};
-use seo_plugins::utils::{
-    config::{RuleConfig, RuleResult},
-    page::Page,
-    registry::PluginRegistry,
-    site::Site,
+use seo_plugins::{
+    site_analyzer::{CrawlResult, PageLink, SiteAnalyzer},
+    utils::{config::RuleConfig, page::Page, registry::PluginRegistry, site::Site},
 };
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 use thiserror::Error;
 
-pub use crawler::{CrawlResult, Crawler, CrawlerError, UrlSource};
+pub use crawler::{Crawler, CrawlerError, UrlSource};
 pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 pub mod analyzer;
 pub mod config;
-
 pub use html_parser::page_parser::PageAnalysis;
 
 pub use analyzer::{AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError};
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {
-    results: Vec<RuleResult>,
+    results: CrawlResult,
     meta_tags: MetaTagInfo,
     headings: Vec<Heading>,
     images: Vec<Image>,
@@ -50,15 +47,14 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     // Create and fetch page using PageParser
     let mut parser = html_parser::page_parser::PageParser::new(&url)
         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
-    let mut registry = PluginRegistry::default();
-    let mut config = RuleConfig::new();
-    let rules = registry.get_available_rules();
-    for rule in rules {
-        config.enable_rule(rule.id);
-    }
-    registry.set_config(config);
-    let mut site = Site::new(url, PluginRegistry::default_with_config())
-        .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
+    // let mut registry = PluginRegistry::default();
+    // let mut config = RuleConfig::new();
+    // let rules = registry.get_available_rules();
+    // for rule in rules {
+    //     config.enable_rule(rule.id);
+    // }
+    // registry.set_config(config);
+    let mut site = SiteAnalyzer::new_with_default(url);
     let results = site
         .crawl()
         .await
@@ -67,7 +63,7 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     let page = Page::from_url(&url2)
         .await
         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
-    let results = registry.analyze(&page);
+    // let results = registry.analyze(&page);
     parser
         .fetch()
         .await
@@ -88,6 +84,13 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
 
     Ok(SeoAnalysis {
         results,
+        // results: site
+        //     .links
+        //     .lock()
+        //     .await
+        //     .values()
+        //     .map(|link| link.clone())
+        //     .collect(),
         meta_tags: page_analysis.meta_tags,
         headings: page_analysis.headings,
         images: page_analysis.images,
@@ -97,7 +100,7 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     })
 }
 
-pub async fn crawl_url(config: &Config) -> Result<CrawlResult, SeoError> {
+pub async fn crawl_url(config: &Config) -> Result<crate::crawler::CrawlResult, SeoError> {
     let crawler = Crawler::new(config).map_err(|e| SeoError::UrlParseError(e.to_string()))?;
     crawler
         .crawl()
