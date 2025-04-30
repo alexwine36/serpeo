@@ -1,7 +1,6 @@
 use criterion::async_executor::FuturesExecutor;
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use seo_plugins::utils::{config::RuleConfig, page::Page, registry::PluginRegistry};
-use tokio::runtime::Runtime;
 
 fn analyze_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("analyze");
