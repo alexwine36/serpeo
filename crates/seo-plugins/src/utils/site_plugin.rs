@@ -13,7 +13,7 @@ pub trait SitePlugin: Send + Sync {
     fn as_any(&self) -> &dyn Any;
     fn initialize(&mut self, registry: &mut super::registry::PluginRegistry) -> Result<(), String>;
     fn available_rules(&self) -> Vec<SiteRule>;
-    fn after_page_hook(&mut self, page: &Page, results: &Vec<RuleResult>) -> Result<(), String> {
+    fn after_page_hook(&mut self, _page: &Page, _results: &Vec<RuleResult>) -> Result<(), String> {
         Ok(())
     }
     fn check(&self, rule: &SiteRule, site: &Site) -> CheckResult;
