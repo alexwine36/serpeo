@@ -73,55 +73,18 @@ impl PluginRegistry {
         Ok(())
     }
 
-    // pub fn add_before_page_hook<F>(&mut self, hook: F)
-    // where
-    //     F: Fn(&Page) -> Result<(), PageError> + Send + Sync + 'static,
-    // {
-    //     self.before_page_hooks.push(Box::new(hook));
-    // }
-
-    // pub fn add_after_page_hook<F>(&mut self, hook: F)
-    // where
-    //     F: Fn(&Page, &Vec<RuleResult>) -> Result<(), PageError> + Send + Sync + 'static,
-    // {
-    //     self.after_page_hooks.push(Box::new(hook));
-    // }
-
-    // pub fn get<P: SeoPlugin + 'static>(&self) -> Option<Box<P>> {
-    //     self.plugins
-    //         .lock()
-    //         .unwrap()
-    //         .get(&TypeId::of::<P>())
-    //         .and_then(|plugin| plugin.as_any().downcast_ref::<P>())
-    //         .map(|p| Box::new(p.clone()))
-    // }
-
-    // pub fn get_plugins(&self) -> Vec<Box<dyn SeoPlugin>> {
-    //     let plugins = self.plugins.lock().unwrap();
-    //     plugins.values().map(|boxed| (**boxed).clone()).collect()
-    // }
-
     pub fn get_available_rules(&self) -> Vec<RuleDisplay> {
         let plugins = self.plugins.lock().unwrap();
         let page_rules: Vec<RuleDisplay> = plugins
             .values()
-            .flat_map(|plugin| {
-                plugin.available_rules()
-                // .iter()
-                // .map(|rule| rule.to_display())
-                // .collect()
-            })
+            .flat_map(|plugin| plugin.available_rules())
             .collect();
         let site_rules = self
             .site_plugins
             .lock()
             .unwrap()
             .iter()
-            .flat_map(|plugin| {
-                plugin.available_rules()
-                // .iter()
-                // .map(|rule| rule.to_display())
-            })
+            .flat_map(|plugin| plugin.available_rules())
             .collect();
         [page_rules, site_rules].concat()
     }
@@ -132,21 +95,20 @@ impl PluginRegistry {
         let futures = plugins
             .values()
             .map(|plugin| plugin.analyze_async(page, config));
-        futures::future::join_all(futures)
+        let results = futures::future::join_all(futures)
             .await
             .into_iter()
             .flatten()
-            .collect()
+            .collect();
+
+        // Run site plugins
+        for plugin in self.site_plugins.lock().unwrap().iter_mut() {
+            let _ = plugin.after_page_hook(&page, &results);
+        }
+        results
     }
 
     pub fn analyze(&self, page: &Page) -> Vec<RuleResult> {
-        // Run before page hooks
-        // for hook in &mut self.before_page_hooks {
-        //     if let Err(e) = hook(page) {
-        //         eprintln!("Error in before page hook: {}", e);
-        //     }
-        // }
-
         let config = self.get_config().unwrap();
         let results = self
             .plugins
@@ -158,15 +120,8 @@ impl PluginRegistry {
 
         // Run site plugins
         for plugin in self.site_plugins.lock().unwrap().iter_mut() {
-            plugin.after_page_hook(&page, &results);
+            let _ = plugin.after_page_hook(&page, &results);
         }
-
-        // Run after page hooks
-        // for hook in &mut self.after_page_hooks {
-        //     if let Err(e) = hook(page, &results) {
-        //         eprintln!("Error in after page hook: {}", e);
-        //     }
-        // }
 
         results
     }
