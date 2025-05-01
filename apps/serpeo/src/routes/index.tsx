@@ -6,10 +6,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
-import { Input } from "@repo/ui/components/input";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AnalysisStatus } from "../components/analysis-status";
+import { SettingsCard } from "../components/settings/card";
 import { type CrawlResult, commands } from "../generated/bindings";
 
 export const Route = createFileRoute("/")({
@@ -17,14 +17,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const [url, setUrl] = useState("https://stem-programs.newspacenexus.org/");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CrawlResult | null>(null);
 
   const analyzeSeo = async () => {
     try {
       setLoading(true);
-      const analysis = await commands.analyzeUrlSeo(url);
+      const analysis = await commands.analyzeUrlSeo();
       console.log("Analysis", analysis);
       if (analysis.status === "ok") {
         setResult(analysis.data);
@@ -69,24 +68,18 @@ function Index() {
   //   ];
   // }, [result]);
   return (
-    <div className="container mx-auto max-w-4xl p-4">
+    <div className="container mx-auto flex max-w-4xl flex-col gap-4 p-4">
+      <SettingsCard collapsible />
       <Card>
         <CardHeader>
           <CardTitle>SEO Analysis Tool</CardTitle>
           <CardDescription>
-            Enter a URL to analyze its SEO performance and get detailed insights
+            Run a full SEO analysis on the website configured in settings.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            <Input
-              type="url"
-              placeholder="Enter website URL..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="flex-1"
-            />
-            <Button onClick={analyzeSeo} disabled={loading || !url}>
+            <Button onClick={analyzeSeo} disabled={loading}>
               {loading ? "Analyzing..." : "Analyze"}
             </Button>
           </div>

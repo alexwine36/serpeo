@@ -188,6 +188,11 @@ impl SiteAnalyzer {
         page_link_source: PageLinkSource,
     ) -> Result<(), SiteAnalyzerError> {
         let link = parse_link(url, self.url.clone()).unwrap();
+        {
+            if page_link_source.link_source_type == LinkSourceType::Sitemap {
+                println!("adding link: {}", url);
+            }
+        }
         let url_string = Self::clean_url(link.href.clone());
         let url_string2 = Self::clean_url(link.href.clone());
         let url_string3 = Self::clean_url(link.href.clone());
@@ -216,8 +221,22 @@ impl SiteAnalyzer {
         println!("processing page: {}", url);
         let page = Page::from_url(url.clone())
             .await
-            .map_err(SiteAnalyzerError::PageError)?;
+            .map_err(SiteAnalyzerError::PageError);
 
+        if let Err(e) = page {
+            let _ = self
+                .record_page_result(
+                    &url,
+                    PageResult {
+                        error: true,
+                        results: vec![],
+                    },
+                )
+                .await;
+            return Ok(());
+        }
+
+        let page = page.unwrap();
         let results = {
             let registry = self.registry.lock().await;
             registry.analyze_async(&page).await
@@ -251,6 +270,7 @@ impl SiteAnalyzer {
 
     pub async fn crawl(&mut self) -> Result<CrawlResult, SiteAnalyzerError> {
         let sitemap_urls = self.fetch_sitemap().await?;
+        println!("sitemap_urls: {:#?}", sitemap_urls);
         for sitemap_url in sitemap_urls {
             self.add_link(
                 &sitemap_url,

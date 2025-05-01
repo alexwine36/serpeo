@@ -12,16 +12,16 @@ import { useEffect } from "react";
 import { type SubmitHandler, useForm, useWatch } from "react-hook-form";
 import { isDeepEqual } from "remeda";
 import { z } from "zod";
-import type { Config } from "../../../generated/bindings";
-const schema: z.ZodSchema<Config> = z.object({
+import type { CrawlConfig } from "../../../generated/bindings";
+const schema: z.ZodSchema<CrawlConfig> = z.object({
   base_url: z.string().url(),
   max_concurrent_requests: z.coerce.number().min(1), //.max(20),
   request_delay_ms: z.coerce.number().min(0).max(1000),
 });
 
 type SettingsFormProps = {
-  config: Config;
-  setConfig: (config: Config) => void;
+  config: CrawlConfig;
+  setConfig: (config: CrawlConfig) => void;
   isLoading: boolean;
 };
 
@@ -30,7 +30,7 @@ export const SettingsForm = ({
   setConfig,
   isLoading,
 }: SettingsFormProps) => {
-  const form = useForm<Config>({
+  const form = useForm<CrawlConfig>({
     resolver: zodResolver(schema),
     defaultValues: config,
   });
@@ -41,7 +41,7 @@ export const SettingsForm = ({
   // }, [config]);
   const watchedValues = useWatch({ control: form.control });
 
-  const onSubmit: SubmitHandler<Config> = (data) => {
+  const onSubmit: SubmitHandler<CrawlConfig> = (data) => {
     if (isDeepEqual(data, config)) {
       return;
     }

@@ -5,31 +5,7 @@
 
 
 export const commands = {
-async analyzeSeo(url: string) : Promise<Result<SeoAnalysis, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("analyze_seo", { url }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async crawlSeo() : Promise<Result<CrawlResultOrig, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("crawl_seo") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async analyzeCrawlSeo(crawlResult: CrawlResultOrig, lighthouseEnabled: boolean) : Promise<Result<Partial<{ [key in string]: PageAnalysis }>, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("analyze_crawl_seo", { crawlResult, lighthouseEnabled }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async getConfig() : Promise<Result<Config, string>> {
+async getConfig() : Promise<Result<CrawlConfig, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_config") };
 } catch (e) {
@@ -37,7 +13,7 @@ async getConfig() : Promise<Result<Config, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async setConfig(config: Config) : Promise<Result<null, string>> {
+async setConfig(config: CrawlConfig) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("set_config", { config }) };
 } catch (e) {
@@ -45,9 +21,9 @@ async setConfig(config: Config) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async analyzeUrlSeo(url: string) : Promise<Result<CrawlResult, string>> {
+async analyzeUrlSeo() : Promise<Result<CrawlResult, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("analyze_url_seo", { url }) };
+    return { status: "ok", data: await TAURI_INVOKE("analyze_url_seo") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -72,28 +48,16 @@ analysisProgress: "analysis-progress"
 
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
 export type AnalysisProgressType = "FoundLink" | "AnalyzedPage"
-export type BaseInfo = { base_url: string; path: string }
-export type Config = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
+export type CrawlConfig = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
-export type CrawlResultOrig = { urls: Partial<{ [key in string]: UrlSource }>; total_pages: number }
-export type Heading = { tag: string; text: string }
-export type Image = { src: string; alt: string | null; srcset: string | null }
-export type LighthouseMetrics = { performance_score: number; accessibility_score: number; best_practices_score: number; seo_score: number; pwa_score: number; first_contentful_paint: number; speed_index: number; largest_contentful_paint: number; time_to_interactive: number; total_blocking_time: number; cumulative_layout_shift: number }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
 export type LinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
-export type LinkTypeOrig = "Internal" | "External"
-export type Links = { href: string; path: string; link_type: LinkTypeOrig }
-export type MetaTagInfo = { title: string | null; description: string | null; keywords: string | null; robots: string | null; canonical: string | null; sitemap: string | null; favicon: string | null; viewport: string | null; generators: string[]; webmanifest: string | null; og_tags: Partial<{ [key in string]: string }>; scripts: string[]; styles: string[]; twitter_tags: Partial<{ [key in string]: string }> }
-export type PageAnalysis = { meta_tags: MetaTagInfo; headings: Heading[]; images: Image[]; links: Links[]; base_info: BaseInfo }
 export type PageLink = { url: string; link_type: LinkType; found_in: PageLinkSource[]; result: PageResult | null }
 export type PageLinkSource = { link_source_type: LinkSourceType; url: string }
 export type PageResult = { error: boolean; results: RuleResult[] }
-export type Performance = { load_time: string; mobile_responsive: boolean }
 export type RuleCategory = "Accessibility" | "Performance" | "BestPractices" | "SEO"
 export type RuleResult = { rule_id: string; passed: boolean; message: string; severity: Severity; category: RuleCategory }
-export type SeoAnalysis = { results: CrawlResult; meta_tags: MetaTagInfo; headings: Heading[]; images: Image[]; links: Links[]; performance: Performance; lighthouse_metrics: LighthouseMetrics | null }
 export type Severity = "Info" | "Warning" | "Error" | "Critical"
-export type UrlSource = { found_in_links: boolean; found_in_sitemap: boolean; analysis: PageAnalysis | null }
 
 /** tauri-specta globals **/
 

@@ -17,7 +17,7 @@ import { cn } from "@repo/ui/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { Config } from "../../../generated/bindings";
+import type { CrawlConfig } from "../../../generated/bindings";
 import { commands } from "../../../generated/bindings";
 import { SettingsForm } from "../form";
 
@@ -27,7 +27,7 @@ type SettingsCardProps = {
 };
 
 export const SettingsCard = ({ collapsible = false }: SettingsCardProps) => {
-  const [config, setConfig] = useState<Config | undefined>();
+  const [config, setConfig] = useState<CrawlConfig | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
   const [isOpen, setIsOpen] = useState(!collapsible);
@@ -50,7 +50,7 @@ export const SettingsCard = ({ collapsible = false }: SettingsCardProps) => {
     }
   };
 
-  const handleSave = async (data: Config) => {
+  const handleSave = async (data: CrawlConfig) => {
     setIsLoading(true);
     try {
       const result = await commands.setConfig(data);

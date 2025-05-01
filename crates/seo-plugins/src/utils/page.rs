@@ -99,15 +99,14 @@ impl Page {
         let client = Client::
         builder()
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
-             .timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(10))
             .build()
             .map_err(|e| PageError::FetchError(e.to_string()))?;
         let start_time = Instant::now();
-        let response = client
-            .get(url.clone())
-            .send()
-            .await
-            .map_err(|e| PageError::FetchError(e.to_string()))?;
+        let response =
+            client.get(url.clone()).send().await.map_err(|e| {
+                PageError::FetchError(format!("Failed to fetch URL: {} {}", url, e))
+            })?;
 
         let elapsed = start_time.elapsed().as_millis() as f32;
         let status_code = u16::from(response.status());
