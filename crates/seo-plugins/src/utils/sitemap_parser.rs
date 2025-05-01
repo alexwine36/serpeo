@@ -1,22 +1,10 @@
-use std::{
-    collections::{HashMap, HashSet},
-    time::Duration,
-};
+use std::collections::HashSet;
 
-use markup5ever::QualName;
 use reqwest::Client;
-use scraper::{
-    ElementRef, Html, Selector,
-    node::{Attributes, Element},
-};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use thiserror::Error;
-use tokio::sync::Mutex;
-use tokio::time::Instant;
 use url::Url;
 
-use super::link_parser::FromUrl;
+use super::link_parser::{FromUrl, parse_link};
 use super::page::{Page, PageError};
 
 #[derive(Debug, Error)]
@@ -32,7 +20,7 @@ pub enum SitemapParserError {
 }
 
 pub struct SitemapParser {
-    url: Url,
+    _url: Url,
     base_url: Url,
     client: Client,
 }
@@ -44,7 +32,7 @@ impl SitemapParser {
             .map_err(|e| SitemapParserError::UrlParseError(e.to_string()))?;
         let base_url = url.clone();
         Ok(Self {
-            url,
+            _url: url,
             base_url,
             client: Client::new(),
         })
@@ -58,7 +46,7 @@ impl SitemapParser {
     }
 
     async fn discover_sitemap_url(&self) -> Result<Option<String>, SitemapParserError> {
-        let mut parser = Page::from_url(self.base_url.clone())
+        let parser = Page::from_url(self.base_url.clone())
             .await
             .map_err(SitemapParserError::PageError)?;
 
@@ -99,7 +87,8 @@ impl SitemapParser {
         // Try to find sitemap URL from HTML first
         let mut sitemap_urls = HashSet::new();
         if let Some(discovered_url) = self.discover_sitemap_url().await? {
-            sitemap_urls.insert(normalize_url(&discovered_url));
+            let link = parse_link(&discovered_url, self.base_url.clone()).unwrap();
+            sitemap_urls.insert(normalize_url(&link.href));
         } else {
             // Fallback to common sitemap locations
             for path in &[
@@ -116,6 +105,7 @@ impl SitemapParser {
 
         // Process each potential sitemap URL
         for sitemap_url in sitemap_urls {
+            println!("Fetching sitemap: {}", sitemap_url);
             let response = match self.client.get(&sitemap_url).send().await {
                 Ok(resp) => resp,
                 Err(_) => continue,
@@ -130,6 +120,7 @@ impl SitemapParser {
 
             // Check if this is a sitemap index
             let is_index = text.contains("<sitemapindex");
+            println!("Is index: {}", is_index);
             if is_index {
                 // Fetch each referenced sitemap
                 for url in urls {
@@ -157,13 +148,21 @@ fn normalize_url(url: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::{config::RuleConfig, page::Page, page_plugin::SeoPlugin};
     use hyper::service::{make_service_fn, service_fn};
     use hyper::{Body, Response, Server};
 
     use std::convert::Infallible;
     use std::net::SocketAddr;
     use tokio::net::TcpListener;
+
+    #[tokio::test]
+    async fn test_remote_sitemap_parse() {
+        let base_url = "https://employer.directory.boomerang-nm.com/";
+        let sitemap_parser = SitemapParser::new(base_url).unwrap();
+        let sitemap_urls = sitemap_parser.get_sitemap().await.unwrap();
+        println!("Sitemap URLs: {:?}", sitemap_urls);
+        assert!(!sitemap_urls.is_empty());
+    }
 
     #[tokio::test]
     async fn test_basic_sitemap_parse() {
@@ -192,7 +191,8 @@ mod tests {
         println!("Sitemap URLs: {:?}", sitemap_urls);
         assert!(!sitemap_urls.is_empty());
         let base_url_clone = format!("http://{}", addr);
-        for path in &["/defined"] {
+        {
+            let path = &"/defined";
             assert!(
                 sitemap_urls.contains(&format!("{}{}", base_url_clone, path)),
                 "Sitemap URL not found: {}",
@@ -210,6 +210,16 @@ mod tests {
         assert!(sitemap_urls.is_empty());
     }
 
+    #[tokio::test]
+    async fn test_relative_sitemap_parse() {
+        let addr = start_base_sitemap_server().await;
+        let base_url = format!("http://{}/relative-sitemap", addr);
+        let sitemap_parser = SitemapParser::new(base_url).unwrap();
+        let sitemap_urls = sitemap_parser.get_sitemap().await.unwrap();
+        println!("Sitemap URLs: {:?}", sitemap_urls);
+        assert!(!sitemap_urls.is_empty());
+    }
+
     async fn start_base_sitemap_server() -> SocketAddr {
         let addr = SocketAddr::from(([127, 0, 0, 1], 0));
         let listener = TcpListener::bind(addr).await.unwrap();
@@ -223,7 +233,7 @@ mod tests {
                     let base_url = base_url.clone();
                     async move {
                         match req.uri().path() {
-                            "/" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                            "/" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <!DOCTYPE html>
                                 <html>
@@ -243,8 +253,9 @@ mod tests {
                                         <a href="https://external.com">External</a>
                                     </body>
                                 </html>
-                            "#,
-                            )))),
+                            "#
+                                .to_string(),
+                            ))),
                             "/other-path" => {
                                 Ok::<_, Infallible>(Response::new(Body::from(format!(
                                     r#"
@@ -270,6 +281,31 @@ mod tests {
                                     base_url, base_url
                                 ))))
                             }
+                            "/relative-sitemap" => {
+                                Ok::<_, Infallible>(Response::new(Body::from(format!(
+                                    r#"
+                                <!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8">
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        <link rel="canonical" href="{}/success">
+                                        <link rel="sitemap" href="/relative-sitemap.xml">
+                                    </head>
+                                    <body>
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page2">Page 2</a>
+                                        <a href="/page1?param=value">Page 1 with params</a>
+                                        <a href="/page1#section">Page 1 with hash</a>
+                                        <a href="/page1?param=value#section">Page 1 with both</a>
+                                        <a href="https://external.com">External</a>
+                                    </body>
+                                </html>
+                            "#,
+                                    base_url,
+                                ))))
+                            }
                             "/sitemap_index.xml" => {
                                 let sitemap_index = format!(
                                     r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -281,6 +317,16 @@ mod tests {
                                 Ok(Response::new(Body::from(sitemap_index)))
                             }
                             "/sitemap-index.xml" => {
+                                let sitemap_index = format!(
+                                    r#"<?xml version="1.0" encoding="UTF-8"?>
+                                    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                                        <sitemap><loc>{}/sitemap-1.xml</loc></sitemap>
+                                    </sitemapindex>"#,
+                                    base_url
+                                );
+                                Ok(Response::new(Body::from(sitemap_index)))
+                            }
+                            "/relative-sitemap.xml" => {
                                 let sitemap_index = format!(
                                     r#"<?xml version="1.0" encoding="UTF-8"?>
                                     <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -366,7 +412,7 @@ mod tests {
                     let base_url = base_url.clone();
                     async move {
                         match req.uri().path() {
-                            "/" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                            "/" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <!DOCTYPE html>
                                 <html>
@@ -386,8 +432,9 @@ mod tests {
                                         <a href="https://external.com">External</a>
                                     </body>
                                 </html>
-                            "#,
-                            )))),
+                            "#
+                                .to_string(),
+                            ))),
                             "/other-path" => {
                                 Ok::<_, Infallible>(Response::new(Body::from(format!(
                                     r#"
