@@ -1,6 +1,6 @@
 use futures::stream::{self, StreamExt};
 use html_parser::page_parser::{
-    normalize_url, LinkType, PageAnalysis, PageParser, PageParserError,
+    normalize_url, LinkTypeOrig, PageAnalysis, PageParser, PageParserError,
 };
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ pub enum CrawlerError {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-pub struct CrawlResult {
+pub struct CrawlResultOrig {
     pub urls: HashMap<String, UrlSource>,
     pub total_pages: u32,
 }
@@ -61,7 +61,7 @@ impl Crawler {
         })
     }
 
-    pub async fn crawl(&self) -> Result<CrawlResult, CrawlerError> {
+    pub async fn crawl(&self) -> Result<CrawlResultOrig, CrawlerError> {
         // First try to fetch and parse sitemap
         let sitemap_urls = self.fetch_sitemap().await?;
 
@@ -117,7 +117,7 @@ impl Crawler {
         }
 
         let visited = self.visited_urls.lock().await;
-        Ok(CrawlResult {
+        Ok(CrawlResultOrig {
             urls: visited.clone(),
             total_pages: visited.len() as u32,
         })
@@ -149,7 +149,7 @@ impl Crawler {
         let mut urls = Vec::new();
         if let Some(analysis) = analysis {
             for link in analysis.links {
-                if link.link_type == LinkType::Internal {
+                if link.link_type == LinkTypeOrig::Internal {
                     urls.push(link.href);
                 }
             }

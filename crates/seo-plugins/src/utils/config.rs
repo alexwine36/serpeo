@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use super::page::Page;
 use super::registry::PluginRegistry;
+use super::site::Site;
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CheckResult {
@@ -53,6 +54,95 @@ pub struct Rule {
     pub category: RuleCategory,
 }
 
+// Rule definition
+#[derive(Clone)]
+pub struct SiteRule {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub description: &'static str,
+    pub default_severity: Severity,
+    // pub check: fn(&Site) -> CheckResult,
+    pub category: RuleCategory,
+}
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub enum RuleType {
+    Page,
+    Site,
+}
+
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub struct RuleDisplay {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub severity: Severity,
+    pub category: RuleCategory,
+    pub rule_type: RuleType,
+}
+
+impl Rule {
+    pub fn to_display(&self) -> RuleDisplay {
+        RuleDisplay::from(self)
+    }
+}
+
+impl SiteRule {
+    pub fn to_display(&self) -> RuleDisplay {
+        RuleDisplay::from(self)
+    }
+}
+
+impl From<Rule> for RuleDisplay {
+    fn from(rule: Rule) -> Self {
+        RuleDisplay {
+            id: rule.id.to_string(),
+            name: rule.name.to_string(),
+            description: rule.description.to_string(),
+            severity: rule.default_severity,
+            category: rule.category,
+            rule_type: RuleType::Page,
+        }
+    }
+}
+
+impl From<&Rule> for RuleDisplay {
+    fn from(rule: &Rule) -> Self {
+        let rule = rule.clone();
+        RuleDisplay::from(rule)
+    }
+}
+impl From<SiteRule> for RuleDisplay {
+    fn from(rule: SiteRule) -> Self {
+        RuleDisplay {
+            id: rule.id.to_string(),
+            name: rule.name.to_string(),
+            description: rule.description.to_string(),
+            severity: rule.default_severity,
+            category: rule.category,
+            rule_type: RuleType::Site,
+        }
+    }
+}
+
+impl From<&SiteRule> for RuleDisplay {
+    fn from(rule: &SiteRule) -> Self {
+        let rule = rule.clone();
+        RuleDisplay::from(rule)
+    }
+}
+
+impl FromIterator<SiteRule> for Vec<RuleDisplay> {
+    fn from_iter<T: IntoIterator<Item = SiteRule>>(iter: T) -> Self {
+        iter.into_iter().map(|rule| rule.to_display()).collect()
+    }
+}
+
+impl FromIterator<Rule> for Vec<RuleDisplay> {
+    fn from_iter<T: IntoIterator<Item = Rule>>(iter: T) -> Self {
+        iter.into_iter().map(|rule| rule.to_display()).collect()
+    }
+}
+
 // Configuration for which rules to run
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct RuleConfig {
@@ -74,8 +164,9 @@ impl RuleConfig {
         }
     }
 
-    pub fn enable_rule(&mut self, rule_id: &str) {
-        self.enabled_rules.insert(rule_id.to_string(), true);
+    pub fn enable_rule<S: AsRef<str>>(&mut self, rule_id: S) {
+        self.enabled_rules
+            .insert(rule_id.as_ref().to_string(), true);
     }
 
     pub fn disable_rule(&mut self, rule_id: &str) {

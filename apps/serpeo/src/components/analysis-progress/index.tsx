@@ -13,12 +13,12 @@ import {
   events,
   type AnalysisProgress,
   type AnalysisResult,
-  type CrawlResult,
+  type CrawlResultOrig,
   commands,
 } from "../../generated/bindings";
 
 type AnalysisProgressDisplayProps = {
-  results: CrawlResult;
+  results: CrawlResultOrig;
 };
 export const AnalysisProgressDisplay = ({
   results,

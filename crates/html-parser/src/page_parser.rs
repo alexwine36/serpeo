@@ -54,7 +54,7 @@ pub struct Image {
 }
 
 #[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq)]
-pub enum LinkType {
+pub enum LinkTypeOrig {
     Internal,
     External,
 }
@@ -63,7 +63,7 @@ pub enum LinkType {
 pub struct Links {
     pub href: String,
     pub path: String,
-    pub link_type: LinkType,
+    pub link_type: LinkTypeOrig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Type)]
@@ -306,9 +306,9 @@ impl PageParser {
                     .join(href)
                     .unwrap_or_else(|_| self.base_url.clone());
                 let link_type = if url.host_str() == Some(self.base_url.host_str().unwrap()) {
-                    LinkType::Internal
+                    LinkTypeOrig::Internal
                 } else {
-                    LinkType::External
+                    LinkTypeOrig::External
                 };
                 let path = url.path().to_string();
                 links.push(Links {
@@ -447,9 +447,9 @@ mod tests {
 
         assert_eq!(links.len(), 2);
         assert_eq!(links[0].href, "https://example.com/internal-link");
-        assert_eq!(links[0].link_type, LinkType::Internal);
+        assert_eq!(links[0].link_type, LinkTypeOrig::Internal);
         assert_eq!(links[1].href, "https://external.com/");
-        assert_eq!(links[1].link_type, LinkType::External);
+        assert_eq!(links[1].link_type, LinkTypeOrig::External);
     }
 
     #[tokio::test]

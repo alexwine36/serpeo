@@ -10,14 +10,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AnalysisProgressDisplay } from "../components/analysis-progress";
 import { SettingsCard } from "../components/settings/card";
-import { type CrawlResult, commands } from "../generated/bindings";
+import { type CrawlResultOrig, commands } from "../generated/bindings";
 export const Route = createFileRoute("/about")({
   component: About,
 });
 
 function About() {
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<CrawlResult | null>(null);
+  const [results, setResults] = useState<CrawlResultOrig | null>(null);
 
   const crawlSeo = async () => {
     try {
