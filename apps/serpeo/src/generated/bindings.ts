@@ -13,7 +13,7 @@ async analyzeSeo(url: string) : Promise<Result<SeoAnalysis, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async crawlSeo() : Promise<Result<CrawlResult, string>> {
+async crawlSeo() : Promise<Result<CrawlResultOrig, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("crawl_seo") };
 } catch (e) {
@@ -21,7 +21,7 @@ async crawlSeo() : Promise<Result<CrawlResult, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async analyzeCrawlSeo(crawlResult: CrawlResult, lighthouseEnabled: boolean) : Promise<Result<Partial<{ [key in string]: PageAnalysis }>, string>> {
+async analyzeCrawlSeo(crawlResult: CrawlResultOrig, lighthouseEnabled: boolean) : Promise<Result<Partial<{ [key in string]: PageAnalysis }>, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("analyze_crawl_seo", { crawlResult, lighthouseEnabled }) };
 } catch (e) {
@@ -67,15 +67,15 @@ export type AnalysisResult = { analysis: PageAnalysis; status: AnalysisStatus }
 export type AnalysisStatus = "Pending" | "InProgress" | "Complete" | { Failed: string }
 export type BaseInfo = { base_url: string; path: string }
 export type Config = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
-export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[] }
-export type CrawlResult = { urls: Partial<{ [key in string]: UrlSource }>; total_pages: number }
+export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
+export type CrawlResultOrig = { urls: Partial<{ [key in string]: UrlSource }>; total_pages: number }
 export type Heading = { tag: string; text: string }
 export type Image = { src: string; alt: string | null; srcset: string | null }
 export type LighthouseMetrics = { performance_score: number; accessibility_score: number; best_practices_score: number; seo_score: number; pwa_score: number; first_contentful_paint: number; speed_index: number; largest_contentful_paint: number; time_to_interactive: number; total_blocking_time: number; cumulative_layout_shift: number }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
 export type LinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
-export type LinkType = "Internal" | "External"
-export type Links = { href: string; path: string; link_type: LinkType }
+export type LinkTypeOrig = "Internal" | "External"
+export type Links = { href: string; path: string; link_type: LinkTypeOrig }
 export type MetaTagInfo = { title: string | null; description: string | null; keywords: string | null; robots: string | null; canonical: string | null; sitemap: string | null; favicon: string | null; viewport: string | null; generators: string[]; webmanifest: string | null; og_tags: Partial<{ [key in string]: string }>; scripts: string[]; styles: string[]; twitter_tags: Partial<{ [key in string]: string }> }
 export type PageAnalysis = { meta_tags: MetaTagInfo; headings: Heading[]; images: Image[]; links: Links[]; base_info: BaseInfo }
 export type PageLink = { url: string; link_type: LinkType; found_in: PageLinkSource[]; result: PageResult | null }

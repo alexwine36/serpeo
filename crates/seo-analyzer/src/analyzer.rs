@@ -13,7 +13,7 @@ use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 use url::Url;
 
-use crate::crawler::CrawlResult;
+use crate::crawler::CrawlResultOrig;
 
 const MAX_CONCURRENT_ANALYSES: usize = 5;
 const ANALYSIS_DELAY_MS: u64 = 200;
@@ -73,7 +73,7 @@ impl Analyzer {
 
     pub async fn analyze_crawl_result<F>(
         &self,
-        crawl_result: CrawlResult,
+        crawl_result: CrawlResultOrig,
         progress_callback: F,
     ) -> Result<HashMap<String, PageAnalysis>, AnalyzerError>
     where

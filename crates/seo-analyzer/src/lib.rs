@@ -3,8 +3,8 @@ mod lighthouse;
 use config::Config;
 use html_parser::page_parser::{Heading, Image, Links, MetaTagInfo, Performance};
 use seo_plugins::{
-    site_analyzer::{CrawlResult, PageLink, SiteAnalyzer},
-    utils::{config::RuleConfig, page::Page, registry::PluginRegistry, site::Site},
+    site_analyzer::{CrawlResult, SiteAnalyzer},
+    utils::page::Page,
 };
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
@@ -100,7 +100,7 @@ pub async fn analyze_url<S: ShellCommand>(shell: &S, url: String) -> Result<SeoA
     })
 }
 
-pub async fn crawl_url(config: &Config) -> Result<crate::crawler::CrawlResult, SeoError> {
+pub async fn crawl_url(config: &Config) -> Result<crate::crawler::CrawlResultOrig, SeoError> {
     let crawler = Crawler::new(config).map_err(|e| SeoError::UrlParseError(e.to_string()))?;
     crawler
         .crawl()

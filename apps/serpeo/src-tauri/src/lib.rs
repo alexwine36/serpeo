@@ -1,6 +1,6 @@
 use seo_analyzer::{
-    analyze_url, config::Config, crawl_url, crawler::CrawlResult, AnalysisProgress, CommandOutput,
-    PageAnalysis, SeoAnalysis, ShellCommand,
+    analyze_url, config::Config, crawl_url, crawler::CrawlResultOrig, AnalysisProgress,
+    CommandOutput, PageAnalysis, SeoAnalysis, ShellCommand,
 };
 use specta_typescript::Typescript;
 use std::{collections::HashMap, sync::Mutex};
@@ -48,7 +48,7 @@ async fn analyze_seo(app: tauri::AppHandle, url: String) -> Result<SeoAnalysis, 
 
 #[tauri::command]
 #[specta::specta]
-async fn crawl_seo(state: State<'_, Mutex<AppData>>) -> Result<CrawlResult, String> {
+async fn crawl_seo(state: State<'_, Mutex<AppData>>) -> Result<CrawlResultOrig, String> {
     let config = state.lock().unwrap().config.clone();
     println!("Crawling with config: {:?}", config);
     crawl_url(&config).await.map_err(|e| e.to_string())
@@ -75,7 +75,7 @@ async fn set_config(state: State<'_, Mutex<AppData>>, config: Config) -> Result<
 async fn analyze_crawl_seo(
     app: tauri::AppHandle,
     // url: String,
-    crawl_result: CrawlResult,
+    crawl_result: CrawlResultOrig,
     lighthouse_enabled: bool,
 ) -> Result<HashMap<String, PageAnalysis>, String> {
     let state = app.state::<Mutex<AppData>>();
@@ -92,9 +92,8 @@ async fn analyze_crawl_seo(
         .map_err(|e| e.to_string())
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    let builder = Builder::<tauri::Wry>::new()
+fn builder() -> Builder<tauri::Wry> {
+    Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
         .commands(collect_commands![
             analyze_seo,
@@ -103,8 +102,12 @@ pub fn run() {
             get_config,
             set_config,
         ])
-        .events(collect_events![AnalysisProgress]);
+        .events(collect_events![AnalysisProgress])
+}
 
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    let builder = builder();
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder
         .export(Typescript::default(), "../src/generated/bindings.ts")
@@ -121,4 +124,16 @@ pub fn run() {
         .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn export_types() {
+        builder()
+            .export(Typescript::default(), "../src/generated/bindings.ts")
+            .expect("Failed to export typescript bindings");
+    }
 }

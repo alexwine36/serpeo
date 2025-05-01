@@ -57,6 +57,7 @@ pub struct PageLink {
 pub struct CrawlResult {
     page_results: Vec<PageLink>,
     site_result: Vec<RuleResult>,
+    total_pages: u32,
 }
 
 #[derive(Debug, Error)]
@@ -247,15 +248,12 @@ impl SiteAnalyzer {
 
         let site_result = self.registry.lock().await.analyze_site(self).await;
         println!("site_result: {:#?}", site_result);
+        let links = self.links.lock().await;
+        let page_results: Vec<PageLink> = links.values().map(|link| link.clone()).collect();
         Ok(CrawlResult {
-            page_results: self
-                .links
-                .lock()
-                .await
-                .values()
-                .map(|link| link.clone())
-                .collect(),
+            page_results,
             site_result,
+            total_pages: links.len() as u32,
         })
     }
 }
