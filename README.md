@@ -79,10 +79,16 @@ See `contributing.md` for ways to get started.
 Please adhere to this project's `code of conduct`.
 
 ### Generate new plugin
-
+#### Page Plugin
 ```bash
 pnpm turbo gen plugin
 ```
+
+#### Site Plugin
+```bash
+pnpm turbo gen site-plugin
+```
+
 ## Issues
 
 If you have any issues, please add them [here](https://github.com/alexwine36/serpeo/issues?q=sort%3Aupdated-desc+is%3Aissue+is%3Aopen)

@@ -1,5 +1,3 @@
-use std::{collections::HashMap, time::Duration};
-
 use markup5ever::QualName;
 use reqwest::Client;
 use scraper::{
@@ -8,9 +6,13 @@ use scraper::{
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::sync::{Arc, Mutex as StdMutex};
+use std::{collections::HashMap, num::NonZeroU16, time::Duration};
 use thiserror::Error;
 use tokio::time::Instant;
 use url::Url;
+
+use super::link_parser::{FromUrl, Link, parse_link};
 
 #[derive(Debug, Error)]
 pub enum PageError {
@@ -24,29 +26,37 @@ pub enum PageError {
     ConfigNotSet,
     #[error("Element not found")]
     ElementNotFound,
+    #[error("Selector parse error: {0}")]
+    SelectorParseError(String),
+    #[error("Link parse error: {0}")]
+    LinkParseError(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Page {
     url: Option<Url>,
     html: Option<String>,
-    meta_tags: Option<MetaTagInfo>,
-    images: Option<Vec<Image>>,
+    meta_tags: Arc<StdMutex<Option<MetaTagInfo>>>,
+    images: Arc<StdMutex<Option<Vec<Image>>>>,
     content_length: Option<u64>,
     redirected: Option<bool>,
     elapsed: Option<f32>,
+    status_code: Option<NonZeroU16>,
 }
+
+const FALLBACK_URL: &str = "https://example.com";
 
 impl Page {
     pub fn from_html(html: String) -> Self {
         Self {
             url: None,
             html: Some(html),
-            meta_tags: None,
-            images: None,
+            meta_tags: Arc::new(StdMutex::new(None)),
+            images: Arc::new(StdMutex::new(None)),
             content_length: None,
             redirected: None,
             elapsed: None,
+            status_code: None,
         }
     }
 
@@ -54,8 +64,10 @@ impl Page {
         self.url = Some(url.to_url().unwrap());
     }
 
-    pub fn get_url(&self) -> Option<Url> {
-        self.url.clone()
+    pub fn get_url(&self) -> Url {
+        self.url
+            .clone()
+            .unwrap_or(Url::parse(FALLBACK_URL).unwrap())
     }
 
     pub fn get_html(&self) -> Option<String> {
@@ -78,6 +90,10 @@ impl Page {
         self.elapsed.clone()
     }
 
+    pub fn get_status_code(&self) -> Option<NonZeroU16> {
+        self.status_code.clone()
+    }
+
     pub async fn from_url<T: FromUrl>(url: T) -> Result<Self, PageError> {
         let url = url.to_url().unwrap();
         // let html = self.fetch(&url).await;
@@ -85,17 +101,17 @@ impl Page {
         let client = Client::
         builder()
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
-             .timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(10))
             .build()
             .map_err(|e| PageError::FetchError(e.to_string()))?;
         let start_time = Instant::now();
-        let response = client
-            .get(url.clone())
-            .send()
-            .await
-            .map_err(|e| PageError::FetchError(e.to_string()))?;
+        let response =
+            client.get(url.clone()).send().await.map_err(|e| {
+                PageError::FetchError(format!("Failed to fetch URL: {} {}", url, e))
+            })?;
 
         let elapsed = start_time.elapsed().as_millis() as f32;
+        let status_code = u16::from(response.status());
         let redirected = response.status().is_redirection();
         let content_length = response
             .headers()
@@ -117,11 +133,12 @@ impl Page {
         Ok(Self {
             url: Some(url),
             html: Some(body),
-            meta_tags: None,
-            images: None,
+            meta_tags: Arc::new(StdMutex::new(None)),
+            images: Arc::new(StdMutex::new(None)),
             content_length,
             redirected: Some(redirected),
             elapsed: Some(elapsed),
+            status_code: NonZeroU16::new(status_code),
         })
     }
 
@@ -135,7 +152,8 @@ impl Page {
 
     pub fn get_element(&self, selector: &str) -> Result<Element, PageError> {
         let document = self.get_document().unwrap();
-        let selector = Selector::parse(selector).unwrap();
+        let selector =
+            Selector::parse(selector).map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         let element = document
             .select(&selector)
             .next()
@@ -166,7 +184,7 @@ impl Page {
 
 impl Page {
     // Images
-    fn set_images(&mut self) {
+    fn set_images(&self) {
         let document = self.get_document().unwrap();
         let img_selector = Selector::parse("img").unwrap();
         let mut images = Vec::new();
@@ -178,22 +196,29 @@ impl Page {
             images.push(Image { src, alt, srcset });
         }
 
-        self.images = Some(images);
+        let _ = self.images.lock().unwrap().insert(images);
     }
 
-    fn get_images(&mut self) -> Option<Vec<Image>> {
-        if self.images.is_none() {
+    fn get_images(&self) -> Option<Vec<Image>> {
+        if self.images.lock().unwrap().is_none() {
             self.set_images();
         }
-        self.images.clone()
+        self.images.lock().unwrap().clone()
     }
 
-    pub fn extract_images(&mut self) -> Vec<Image> {
+    pub fn extract_images(&self) -> Vec<Image> {
         self.get_images().unwrap_or_default()
     }
 
     // Meta Tags
-    fn set_meta_tags(&mut self) {
+    fn set_meta_tags(&self) {
+        println!(
+            "setting meta tags for page: {:?}",
+            self.url
+                .clone()
+                .unwrap_or(Url::parse(FALLBACK_URL).unwrap())
+                .to_string()
+        );
         let document = self.get_document().unwrap();
         let mut meta_tags = MetaTagInfo::default();
 
@@ -274,18 +299,58 @@ impl Page {
             }
         }
 
-        self.meta_tags = Some(meta_tags);
+        let _ = self.meta_tags.lock().unwrap().insert(meta_tags);
     }
 
-    fn get_meta_tags(&mut self) -> MetaTagInfo {
-        if self.meta_tags.is_none() {
+    fn get_meta_tags(&self) -> MetaTagInfo {
+        if self.meta_tags.lock().unwrap().is_none() {
             self.set_meta_tags();
         }
-        self.meta_tags.clone().unwrap_or_default()
+        self.meta_tags.lock().unwrap().clone().unwrap_or_default()
     }
 
-    pub fn extract_meta_tags(&mut self) -> MetaTagInfo {
+    pub fn extract_meta_tags(&self) -> MetaTagInfo {
         self.get_meta_tags()
+    }
+
+    // Links
+    pub fn extract_links(&self) -> Result<Vec<Link>, PageError> {
+        let document = self.get_document().unwrap();
+        let link_selector = Selector::parse("a").unwrap();
+        let mut links = Vec::new();
+
+        for link in document.select(&link_selector) {
+            if let Some(href) = link.value().attr("href") {
+                let base_url = self
+                    .url
+                    .clone()
+                    .unwrap_or(Url::parse(FALLBACK_URL).unwrap());
+                let link = parse_link(href, base_url)
+                    .map_err(|e| PageError::LinkParseError(e.to_string()))?;
+                links.push(link);
+            }
+        }
+
+        Ok(links)
+    }
+    pub fn extract_headings(&self) -> Vec<Heading> {
+        let document = self.get_document().unwrap();
+        let mut headings: Vec<Heading> = Vec::new();
+
+        for i in 1..=6 {
+            let selector = format!("h{}", i);
+            let heading_selector = Selector::parse(&selector).unwrap();
+            let res = document.select(&heading_selector);
+            for heading in res {
+                let text = heading.inner_html();
+                headings.push(Heading {
+                    tag: selector.clone(),
+                    text,
+                });
+            }
+        }
+
+        headings
     }
 }
 
@@ -315,36 +380,258 @@ pub struct Image {
     pub srcset: Option<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub struct Heading {
+    pub tag: String,
+    pub text: String,
+}
+
 pub struct StaticElement {
     pub name: QualName,
     pub attrs: Attributes,
     pub text: String,
 }
 
-pub trait FromUrl {
-    fn to_url(self) -> Result<Url, PageError>;
-}
+#[cfg(test)]
+mod tests {
 
-impl FromUrl for Url {
-    fn to_url(self) -> Result<Url, PageError> {
-        Ok(self)
+    use crate::utils::link_parser::LinkType;
+
+    use super::*;
+    use hyper::service::{make_service_fn, service_fn};
+    use hyper::{Body, Response, Server};
+    use std::convert::Infallible;
+    use std::net::SocketAddr;
+    use tokio::net::TcpListener;
+
+    #[test]
+    fn test_document_extract_links_no_base_url() {
+        let page = Page::from_html(
+            r#"
+            <html>
+                <body>
+                    <a href="/test">Test</a>
+                    <a href="https://cool-site.com/test">Test</a>
+                </body>
+            </html>
+            "#
+            .to_string(),
+        );
+        let links = page.extract_links().unwrap();
+        println!("links: {:?}", links);
+        assert_eq!(links.len(), 2);
+        assert_eq!(links[0].href, format!("{}/test", FALLBACK_URL));
+        assert_eq!(links[0].path, "/test");
+        assert_eq!(links[0].link_type, LinkType::Internal);
+        assert_eq!(links[1].href, "https://cool-site.com/test");
+        assert_eq!(links[1].path, "/test");
+        assert_eq!(links[1].link_type, LinkType::External);
     }
-}
-
-impl FromUrl for String {
-    fn to_url(self) -> Result<Url, PageError> {
-        Url::parse(&self).map_err(|e| PageError::UrlParseError(e.to_string()))
+    #[test]
+    fn test_document_extract_links_with_base_url() {
+        let mut page = Page::from_html(
+            r#"
+            <html>
+                <body>
+                    <a href="/test">Test</a>    
+                    <a href="https://cool-site.com/test">Test</a>
+                </body>
+            </html>
+            "#
+            .to_string(),
+        );
+        const TEST_URL: &str = "https://sample.com";
+        page.set_url(TEST_URL);
+        let links = page.extract_links().unwrap();
+        println!("links: {:?}", links);
+        assert_eq!(links.len(), 2);
+        assert_eq!(links[0].href, format!("{}/test", TEST_URL));
+        assert_eq!(links[0].path, "/test");
+        assert_eq!(links[0].link_type, LinkType::Internal);
+        assert_eq!(links[1].href, "https://cool-site.com/test");
+        assert_eq!(links[1].path, "/test");
+        assert_eq!(links[1].link_type, LinkType::External);
     }
-}
 
-impl FromUrl for &String {
-    fn to_url(self) -> Result<Url, PageError> {
-        Url::parse(self).map_err(|e| PageError::UrlParseError(e.to_string()))
+    #[tokio::test]
+    async fn test_extract_meta_tags() {
+        let html = r#"
+                <html>
+                    <head>
+                        <title>Test Page</title>
+                        <meta name="description" content="This is a test description">
+                        <meta name="robots" content="index, follow">
+                        <meta property="og:title" content="Test OG Title">
+                        <meta property="twitter:card" content="summary">
+                        <link rel="sitemap" href="https://example.com/sitemap.xml">
+                    </head>
+                </html>
+            "#;
+
+        let parser = Page::from_html(html.to_string());
+        // parser.set_content(html.to_string());
+
+        let meta_tags = parser.extract_meta_tags();
+
+        assert_eq!(meta_tags.title, Some("Test Page".to_string()));
+        assert_eq!(
+            meta_tags.description,
+            Some("This is a test description".to_string())
+        );
+        assert_eq!(meta_tags.robots, Some("index, follow".to_string()));
+        assert_eq!(
+            meta_tags.og_tags.get("title"),
+            Some(&"Test OG Title".to_string())
+        );
+        assert_eq!(
+            meta_tags.twitter_tags.get("card"),
+            Some(&"summary".to_string())
+        );
+        assert_eq!(
+            meta_tags.sitemap,
+            Some("https://example.com/sitemap.xml".to_string())
+        );
     }
-}
 
-impl FromUrl for &str {
-    fn to_url(self) -> Result<Url, PageError> {
-        Url::parse(self).map_err(|e| PageError::UrlParseError(e.to_string()))
+    #[tokio::test]
+    async fn test_extract_links() {
+        let html = r#"
+                <html>
+                    <body>
+                        <a href="/internal-link">Internal Link</a>
+                        <a href="https://external.com">External Link</a>
+                    </body>
+                </html>
+            "#;
+
+        let mut parser = Page::from_html(html.to_string());
+        parser.set_url(Url::parse("https://example.com").unwrap());
+
+        let links = parser.extract_links().unwrap();
+
+        assert_eq!(links.len(), 2);
+        assert_eq!(links[0].href, "https://example.com/internal-link");
+        assert_eq!(links[0].link_type, LinkType::Internal);
+        assert_eq!(links[1].href, "https://external.com/");
+        assert_eq!(links[1].link_type, LinkType::External);
+    }
+
+    #[tokio::test]
+    async fn test_extract_headings() {
+        let html = r#"
+                <html>
+                    <body>
+                        <h1>Main Heading</h1>
+                        <h2>Subheading</h2>
+                        <h3>Another Subheading</h3>
+                    </body>
+                </html>
+            "#;
+
+        let mut parser = Page::from_html(html.to_string());
+        parser.set_url(Url::parse("https://example.com").unwrap());
+
+        let headings = parser.extract_headings();
+
+        assert_eq!(headings.len(), 3);
+        assert_eq!(headings[0].tag, "h1");
+        assert_eq!(headings[0].text, "Main Heading");
+        assert_eq!(headings[1].tag, "h2");
+        assert_eq!(headings[1].text, "Subheading");
+        assert_eq!(headings[2].tag, "h3");
+        assert_eq!(headings[2].text, "Another Subheading");
+    }
+
+    #[tokio::test]
+    async fn test_fetch_document() {
+        let addr = start_test_server().await;
+        let mock_url = format!("http://{}", addr);
+        let mut parser = Page::from_url(mock_url).await.unwrap();
+
+        // assert_eq!(parser.path, "/");
+        // parser.fetch().await.unwrap();
+
+        let tags = parser.extract_meta_tags();
+        assert_eq!(tags.title, Some("Test Page".to_string()));
+        assert_eq!(
+            tags.description,
+            Some("This is a test description".to_string())
+        );
+        assert_eq!(tags.robots, Some("index, follow".to_string()));
+        assert_eq!(
+            tags.og_tags.get("title"),
+            Some(&"Test OG Title".to_string())
+        );
+        assert_eq!(tags.twitter_tags.get("card"), Some(&"summary".to_string()));
+        assert_eq!(tags.canonical, Some("https://example.com".to_string()));
+    }
+
+    async fn start_test_server() -> SocketAddr {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+        let listener = TcpListener::bind(addr).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let base_url = format!("http://{}", addr);
+        let make_svc = make_service_fn(move |_conn| {
+            let base_url = base_url.clone();
+            async move {
+                Ok::<_, Infallible>(service_fn(move |req| {
+                    let base_url = base_url.clone();
+                    async move {
+                        match req.uri().path() {
+                            "/" => Ok::<_, Infallible>(Response::new(Body::from(
+                                r#"
+                                <html>
+                                <head>
+                                    <title>Test Page</title>
+                                    <meta name="description" content="This is a test description">
+                                    <meta name="robots" content="index, follow">
+                                    <meta property="og:title" content="Test OG Title">
+                                    <meta property="twitter:card" content="summary">
+                                    <link rel="canonical" href="https://example.com">
+                                </head>
+                                    <body>
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page2">Page 2</a>
+                                        <a href="https://external.com">External</a>
+                                    </body>
+                                </html>
+                            "#,
+                            ))),
+                            "/sitemap.xml" => {
+                                let sitemap = format!(
+                                    r#"<?xml version="1.0" encoding="UTF-8"?>
+                                    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+                                    <url><loc>{}/page1</loc></url>
+                                    <url><loc>{}/page3</loc></url>
+                                    </urlset>"#,
+                                    base_url, base_url
+                                );
+                                Ok(Response::new(Body::from(sitemap)))
+                            }
+                            "/page1" => Ok(Response::new(Body::from(
+                                "<html><body>Page 1</body></html>",
+                            ))),
+                            "/page2" => Ok(Response::new(Body::from(
+                                "<html><body>Page 2</body></html>",
+                            ))),
+                            "/page3" => Ok(Response::new(Body::from(
+                                "<html><body>Page 3</body></html>",
+                            ))),
+                            _ => Ok(Response::new(Body::from("404"))),
+                        }
+                    }
+                }))
+            }
+        });
+
+        tokio::spawn(async move {
+            Server::from_tcp(listener.into_std().unwrap())
+                .unwrap()
+                .serve(make_svc)
+                .await
+                .unwrap();
+        });
+
+        addr
     }
 }

@@ -34,66 +34,6 @@ pub enum Severity {
     Critical,
 }
 
-// Main plugin trait
-#[async_trait::async_trait]
-pub trait SeoPlugin: Send + Sync + 'static {
-    fn name(&self) -> &str;
-    fn description(&self) -> &str;
-    fn as_any(&self) -> &dyn Any;
-
-    // What other plugins this one depends on
-    fn dependencies(&self) -> Vec<TypeId> {
-        vec![]
-    }
-
-    // Initialize the plugin with access to its dependencies
-    fn initialize(&mut self, registry: &PluginRegistry) -> Result<(), String>;
-
-    // Get available rules this plugin can check
-    fn available_rules(&self) -> Vec<Rule>;
-
-    async fn analyze_async(&self, page: &Page, config: &RuleConfig) -> Vec<RuleResult> {
-        let available_rules = self.available_rules();
-        let rules: Vec<&Rule> = available_rules
-            .iter()
-            .filter(|rule| config.is_rule_enabled(rule.id))
-            .collect();
-
-        let results = stream::iter(rules)
-            .map(|rule| {
-                let result = (rule.check)(page);
-                RuleResult {
-                    rule_id: rule.id.to_string(),
-                    passed: result.passed,
-                    message: result.message,
-                    severity: rule.default_severity.clone(),
-                    category: rule.category.clone(),
-                }
-            })
-            .collect::<Vec<_>>()
-            .await;
-        results
-    }
-
-    // Run enabled rules on the given page
-    fn analyze(&self, page: &Page, config: &RuleConfig) -> Vec<RuleResult> {
-        self.available_rules()
-            .iter()
-            .filter(|rule| config.is_rule_enabled(rule.id))
-            .map(|rule| {
-                let result = (rule.check)(page);
-                RuleResult {
-                    rule_id: rule.id.to_string(),
-                    passed: result.passed,
-                    message: result.message,
-                    severity: rule.default_severity.clone(),
-                    category: rule.category.clone(),
-                }
-            })
-            .collect()
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub enum RuleCategory {
     Accessibility,
@@ -111,6 +51,95 @@ pub struct Rule {
     pub default_severity: Severity,
     pub check: fn(&Page) -> CheckResult,
     pub category: RuleCategory,
+}
+
+// Rule definition
+#[derive(Clone)]
+pub struct SiteRule {
+    pub id: &'static str,
+    pub name: &'static str,
+    pub description: &'static str,
+    pub default_severity: Severity,
+    // pub check: fn(&Site) -> CheckResult,
+    pub category: RuleCategory,
+}
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub enum RuleType {
+    Page,
+    Site,
+}
+
+#[derive(Debug, Serialize, Deserialize, Type, Clone)]
+pub struct RuleDisplay {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub severity: Severity,
+    pub category: RuleCategory,
+    pub rule_type: RuleType,
+}
+
+impl Rule {
+    pub fn to_display(&self) -> RuleDisplay {
+        RuleDisplay::from(self)
+    }
+}
+
+impl SiteRule {
+    pub fn to_display(&self) -> RuleDisplay {
+        RuleDisplay::from(self)
+    }
+}
+
+impl From<Rule> for RuleDisplay {
+    fn from(rule: Rule) -> Self {
+        RuleDisplay {
+            id: rule.id.to_string(),
+            name: rule.name.to_string(),
+            description: rule.description.to_string(),
+            severity: rule.default_severity,
+            category: rule.category,
+            rule_type: RuleType::Page,
+        }
+    }
+}
+
+impl From<&Rule> for RuleDisplay {
+    fn from(rule: &Rule) -> Self {
+        let rule = rule.clone();
+        RuleDisplay::from(rule)
+    }
+}
+impl From<SiteRule> for RuleDisplay {
+    fn from(rule: SiteRule) -> Self {
+        RuleDisplay {
+            id: rule.id.to_string(),
+            name: rule.name.to_string(),
+            description: rule.description.to_string(),
+            severity: rule.default_severity,
+            category: rule.category,
+            rule_type: RuleType::Site,
+        }
+    }
+}
+
+impl From<&SiteRule> for RuleDisplay {
+    fn from(rule: &SiteRule) -> Self {
+        let rule = rule.clone();
+        RuleDisplay::from(rule)
+    }
+}
+
+impl FromIterator<SiteRule> for Vec<RuleDisplay> {
+    fn from_iter<T: IntoIterator<Item = SiteRule>>(iter: T) -> Self {
+        iter.into_iter().map(|rule| rule.to_display()).collect()
+    }
+}
+
+impl FromIterator<Rule> for Vec<RuleDisplay> {
+    fn from_iter<T: IntoIterator<Item = Rule>>(iter: T) -> Self {
+        iter.into_iter().map(|rule| rule.to_display()).collect()
+    }
 }
 
 // Configuration for which rules to run
@@ -134,8 +163,9 @@ impl RuleConfig {
         }
     }
 
-    pub fn enable_rule(&mut self, rule_id: &str) {
-        self.enabled_rules.insert(rule_id.to_string(), true);
+    pub fn enable_rule<S: AsRef<str>>(&mut self, rule_id: S) {
+        self.enabled_rules
+            .insert(rule_id.as_ref().to_string(), true);
     }
 
     pub fn disable_rule(&mut self, rule_id: &str) {

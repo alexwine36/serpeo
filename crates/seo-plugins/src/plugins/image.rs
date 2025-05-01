@@ -3,7 +3,8 @@ use std::any::{Any, TypeId};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 
-use crate::utils::config::{CheckResult, Rule, RuleCategory, SeoPlugin, Severity};
+use crate::utils::config::{CheckResult, Rule, RuleCategory, Severity};
+use crate::utils::page_plugin::SeoPlugin;
 use crate::utils::registry::PluginRegistry;
 
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
@@ -83,10 +84,7 @@ impl SeoPlugin for ImagePlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::{
-        config::{RuleConfig, SeoPlugin},
-        page::Page,
-    };
+    use crate::utils::{config::RuleConfig, page::Page, page_plugin::SeoPlugin};
     use hyper::service::{make_service_fn, service_fn};
     use hyper::{Body, Response, Server};
 

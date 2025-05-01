@@ -1,9 +1,8 @@
 use std::any::Any;
 
-use scraper::Selector;
-
 use crate::utils::{
-    config::{CheckResult, Rule, RuleCategory, SeoPlugin, Severity},
+    config::{CheckResult, Rule, RuleCategory, Severity},
+    page_plugin::SeoPlugin,
     registry::PluginRegistry,
 };
 
@@ -46,7 +45,7 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Critical,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
                     let has_title = meta_tags.title.is_some();
 
@@ -69,7 +68,7 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
                     let title = meta_tags.title.unwrap_or_default();
                     let title_length = title.len();
@@ -88,7 +87,7 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
                     let has_description = meta_tags.description.is_some();
 
@@ -111,7 +110,7 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
                     let description = meta_tags.description.unwrap_or_default();
                     let description_length = description.len();
@@ -133,7 +132,7 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let canonical_url = page.extract_meta_tags().canonical;
                     let has_canonical_url = canonical_url.is_some();
                     CheckResult {
@@ -155,12 +154,10 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let canonical_url = page.extract_meta_tags().canonical;
                     let canonical_url_matches_site = canonical_url.is_some()
-                        && canonical_url
-                            .unwrap()
-                            .starts_with(page.get_url().unwrap().as_str());
+                        && canonical_url.unwrap().starts_with(page.get_url().as_str());
                     CheckResult {
                         rule_id: "seo_basic.canonical_url_matches_site".to_string(),
                         passed: canonical_url_matches_site,
@@ -180,7 +177,7 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
                     let is_scrapeable =
                         meta_tags.robots.is_some() && meta_tags.robots.unwrap().contains("noindex");
@@ -203,7 +200,7 @@ impl SeoPlugin for SeoBasicPlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
                     let has_valid_charset = meta_tags.charset.is_some();
                     CheckResult {
@@ -247,10 +244,7 @@ impl SeoPlugin for SeoBasicPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::{
-        config::{RuleConfig, SeoPlugin},
-        page::Page,
-    };
+    use crate::utils::{config::RuleConfig, page::Page, page_plugin::SeoPlugin};
     use hyper::service::{make_service_fn, service_fn};
     use hyper::{Body, Response, Server};
 
