@@ -1,0 +1,73 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex as StdMutex};
+
+
+use crate::site_analyzer::SiteAnalyzer;
+use crate::utils::{
+    config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
+    page::Page,
+    registry::PluginRegistry,
+    site::Site,
+    site_plugin::SitePlugin,
+};
+
+
+
+#[derive(Clone)]
+pub struct {{ pluginName }}Plugin {
+    
+}
+
+impl {{ pluginName }}Plugin {
+    pub fn new() -> Self {
+        Self {
+           
+        }
+    }
+}
+
+impl SitePlugin for {{ pluginName }}Plugin {
+    fn name(&self) -> &str {
+        "{{ pluginName }} Plugin"
+    }
+
+    fn description(&self) -> &str {
+        "{{ pluginDescription }}"
+    }
+    fn initialize(&mut self, _registry: &mut PluginRegistry) -> Result<(), String> {
+        Ok(())
+    }
+    fn after_page_hook(
+        &mut self,
+        page: Arc<StdMutex<Page>>,
+        _results: &Vec<RuleResult>,
+    ) -> Result<(), String> {
+        Ok(())
+    } 
+
+    fn available_rules(&self) -> Vec<SiteRule> {
+        vec![SiteRule {
+            id: "{{ ruleId }}",
+            name: "{{ ruleName }}",
+            description: "{{ ruleDescription }}",
+            default_severity: Severity::Warning,
+            category: RuleCategory::SEO,
+        }]
+    }
+    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> CheckResult {
+        match rule.id {
+            //"{{ ruleId }}" => {
+            // TODO: Implement the rule
+            //}
+            _ => CheckResult {
+                rule_id: rule.id.to_string(),
+                passed: false,
+                message: "Unknown rule".to_string(),
+            },
+        }
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+}
