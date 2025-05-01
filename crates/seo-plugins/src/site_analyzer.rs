@@ -13,8 +13,9 @@ use scraper::{
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
+use tauri_specta::Event;
 use thiserror::Error;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, MutexGuard};
 use tokio::time::Instant;
 use url::Url;
 
@@ -60,6 +61,22 @@ pub struct CrawlResult {
     total_pages: u32,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Type)]
+pub enum AnalysisProgressType {
+    FoundLink,
+    AnalyzedPage,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Type, Event)]
+pub struct AnalysisProgress {
+    pub progress_type: AnalysisProgressType,
+    pub url: Option<String>,
+    pub total_pages: u32,
+    pub completed_pages: u32,
+}
+
+pub type ProgressCallback = Option<Box<dyn Fn(AnalysisProgress) + Send + Sync + 'static>>;
+
 #[derive(Debug, Error)]
 pub enum SiteAnalyzerError {
     #[error("Failed to parse URL: {0}")]
@@ -68,11 +85,11 @@ pub enum SiteAnalyzerError {
     PageError(#[from] PageError),
 }
 
-#[derive(Debug)]
 pub struct SiteAnalyzer {
     url: Url,
     links: Arc<Mutex<HashMap<String, PageLink>>>,
     registry: Arc<Mutex<PluginRegistry>>,
+    progress_callback: Arc<Mutex<ProgressCallback>>,
 }
 
 impl SiteAnalyzer {
@@ -82,6 +99,7 @@ impl SiteAnalyzer {
             url,
             links: Arc::new(Mutex::new(HashMap::new())),
             registry: Arc::new(Mutex::new(registry)),
+            progress_callback: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -91,6 +109,41 @@ impl SiteAnalyzer {
             url,
             links: Arc::new(Mutex::new(HashMap::new())),
             registry: Arc::new(Mutex::new(PluginRegistry::default_with_config())),
+            progress_callback: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    pub async fn with_progress_callback(
+        self,
+        callback: impl Fn(AnalysisProgress) + Send + Sync + 'static,
+    ) -> Self {
+        let _ = self
+            .progress_callback
+            .lock()
+            .await
+            .insert(Box::new(callback));
+        self
+    }
+
+    async fn report_progress(
+        &self,
+        progress_type: AnalysisProgressType,
+        url: Option<String>,
+        links: &MutexGuard<'_, HashMap<String, PageLink>>,
+    ) {
+        if let Some(callback) = &self.progress_callback.lock().await.as_ref() {
+            callback(AnalysisProgress {
+                progress_type,
+                url,
+                total_pages: links
+                    .values()
+                    .filter(|link| link.link_type == LinkType::Internal)
+                    .count() as u32,
+                completed_pages: links
+                    .values()
+                    .filter(|link| link.link_type == LinkType::Internal && link.result.is_some())
+                    .count() as u32,
+            });
         }
     }
 
@@ -109,6 +162,12 @@ impl SiteAnalyzer {
         if let Some(link) = links.get_mut(&url.to_string()) {
             link.result = Some(result);
         }
+        self.report_progress(
+            AnalysisProgressType::AnalyzedPage,
+            Some(url.to_string()),
+            &links,
+        )
+        .await;
         Ok(())
     }
 
@@ -131,6 +190,7 @@ impl SiteAnalyzer {
         let link = parse_link(url, self.url.clone()).unwrap();
         let url_string = Self::clean_url(link.href.clone());
         let url_string2 = Self::clean_url(link.href.clone());
+        let url_string3 = Self::clean_url(link.href.clone());
         let mut links = self.links.lock().await;
         if let Some(existing) = links.get_mut(&url_string) {
             existing.found_in.insert(page_link_source);
@@ -146,6 +206,8 @@ impl SiteAnalyzer {
                     result: None,
                 },
             );
+            self.report_progress(AnalysisProgressType::FoundLink, Some(url_string3), &links)
+                .await;
         }
         Ok(())
     }
@@ -210,6 +272,12 @@ impl SiteAnalyzer {
             .await?;
         }
 
+        let total_pages = {
+            let links = self.links.lock().await;
+            links.len() as u32
+        };
+
+        let mut completed_pages = 0;
         loop {
             // Get all unprocessed internal links
             let links = self.links.lock().await;
@@ -230,11 +298,13 @@ impl SiteAnalyzer {
                     let url = Url::parse(&url).unwrap();
                     let registry = self.registry.clone();
                     let links = self.links.clone();
+                    let progress_callback = self.progress_callback.clone();
                     async move {
                         let mut analyzer = SiteAnalyzer {
                             url: url.clone(),
                             links,
                             registry,
+                            progress_callback,
                         };
                         analyzer.process_page(url).await
                     }
@@ -243,11 +313,18 @@ impl SiteAnalyzer {
 
             while let Some(result) = stream.next().await {
                 result?;
+                completed_pages += 1;
+                // self.report_progress(AnalysisProgress {
+                //     progress_type: AnalysisProgressType::AnalyzedPage,
+                //     url: None,
+                //     total_pages,
+                //     completed_pages,
+                // })
+                // .await;
             }
         }
 
         let site_result = self.registry.lock().await.analyze_site(self).await;
-        println!("site_result: {:#?}", site_result);
         let links = self.links.lock().await;
         let page_results: Vec<PageLink> = links.values().map(|link| link.clone()).collect();
         Ok(CrawlResult {

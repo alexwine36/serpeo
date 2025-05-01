@@ -44,6 +44,14 @@ async setConfig(config: Config) : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async analyzeUrlSeo(url: string) : Promise<Result<CrawlResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("analyze_url_seo", { url }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -62,9 +70,8 @@ analysisProgress: "analysis-progress"
 
 /** user-defined types **/
 
-export type AnalysisProgress = { total_urls: number; completed_urls: number; results: Partial<{ [key in string]: AnalysisResult }> }
-export type AnalysisResult = { analysis: PageAnalysis; status: AnalysisStatus }
-export type AnalysisStatus = "Pending" | "InProgress" | "Complete" | { Failed: string }
+export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
+export type AnalysisProgressType = "FoundLink" | "AnalyzedPage"
 export type BaseInfo = { base_url: string; path: string }
 export type Config = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }

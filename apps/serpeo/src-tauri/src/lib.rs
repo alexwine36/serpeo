@@ -1,6 +1,6 @@
 use seo_analyzer::{
     analyze_url, config::Config, crawl_url, crawler::CrawlResultOrig, AnalysisProgress,
-    CommandOutput, PageAnalysis, SeoAnalysis, ShellCommand,
+    CommandOutput, CrawlResult, PageAnalysis, SeoAnalysis, ShellCommand, SiteAnalyzer,
 };
 use specta_typescript::Typescript;
 use std::{collections::HashMap, sync::Mutex};
@@ -92,6 +92,20 @@ async fn analyze_crawl_seo(
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResult, String> {
+    let site = SiteAnalyzer::new_with_default(url);
+    let app_handle = app.clone();
+    site.with_progress_callback(move |progress| {
+        let _ = app_handle.emit("analysis-progress", progress);
+    })
+    .await
+    .crawl()
+    .await
+    .map_err(|e| e.to_string())
+}
+
 fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
@@ -101,6 +115,7 @@ fn builder() -> Builder<tauri::Wry> {
             analyze_crawl_seo,
             get_config,
             set_config,
+            analyze_url_seo,
         ])
         .events(collect_events![AnalysisProgress])
 }

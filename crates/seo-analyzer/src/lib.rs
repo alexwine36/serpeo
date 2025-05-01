@@ -2,8 +2,9 @@ pub mod crawler;
 mod lighthouse;
 use config::Config;
 use html_parser::page_parser::{Heading, Image, Links, MetaTagInfo, Performance};
-use seo_plugins::{
-    site_analyzer::{CrawlResult, SiteAnalyzer},
+
+pub use seo_plugins::{
+    site_analyzer::{AnalysisProgress, CrawlResult, SiteAnalyzer},
     utils::page::Page,
 };
 use serde::{Deserialize, Serialize};
@@ -16,7 +17,7 @@ pub mod analyzer;
 pub mod config;
 pub use html_parser::page_parser::PageAnalysis;
 
-pub use analyzer::{AnalysisProgress, AnalysisStatus, Analyzer, AnalyzerError};
+pub use analyzer::{AnalysisStatus, Analyzer, AnalyzerError};
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct SeoAnalysis {
