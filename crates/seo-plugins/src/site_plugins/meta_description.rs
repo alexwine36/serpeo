@@ -8,7 +8,6 @@ use crate::utils::{
     config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
     registry::PluginRegistry,
-    site::Site,
     site_plugin::SitePlugin,
 };
 

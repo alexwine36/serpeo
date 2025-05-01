@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 
 use super::config::{CheckResult, Rule, RuleConfig, RuleResult, SiteRule};
 use super::page::Page;
-use super::site::Site;
+
 use crate::site_analyzer::SiteAnalyzer;
 #[async_trait::async_trait]
 pub trait SitePlugin: Send + Sync + 'static {

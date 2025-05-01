@@ -4,6 +4,7 @@ use crate::plugins::request::RequestPlugin;
 use crate::plugins::seo_basic::SeoBasicPlugin;
 use crate::site_analyzer::SiteAnalyzer;
 use crate::site_plugins::MetaDescriptionPlugin;
+use crate::site_plugins::orphaned_page::OrphanedPagePlugin;
 use futures::stream::{self, StreamExt};
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -14,7 +15,6 @@ use tokio::sync::Mutex;
 use super::config::{Rule, RuleConfig, RuleDisplay, RuleResult};
 use super::page::{Page, PageError};
 use super::page_plugin::SeoPlugin;
-use super::site::Site;
 use super::site_plugin::SitePlugin;
 
 #[derive(Clone)]
@@ -156,6 +156,9 @@ impl Default for PluginRegistry {
             let _ = registry.register(RequestPlugin::new()).await;
             let _ = registry
                 .register_site_plugin(MetaDescriptionPlugin::new())
+                .await;
+            let _ = registry
+                .register_site_plugin(OrphanedPagePlugin::new())
                 .await;
         });
 

@@ -105,18 +105,18 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
         name: "ruleName",
         message: "What is the name of the rule?",
       },
-      {
-        type: "input",
-        name: "ruleDescription",
-        message: "What is the description of the rule?",
-      },
+      // {
+      //   type: "input",
+      //   name: "ruleDescription",
+      //   message: "What is the description of the rule?",
+      // },
     ],
     actions: (rawData) => {
       const modData = rawData as TurboAnswers & {
         name: string;
         description: string;
         ruleName: string;
-        ruleDescription: string;
+        // ruleDescription: string;
       };
 
       const libPath = path.join(

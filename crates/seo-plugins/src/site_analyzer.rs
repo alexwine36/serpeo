@@ -125,6 +125,10 @@ impl SiteAnalyzer {
         self
     }
 
+    pub fn get_links(&self) -> HashMap<String, PageLink> {
+        futures::executor::block_on(async { self.links.lock().await.clone() })
+    }
+
     async fn report_progress(
         &self,
         progress_type: AnalysisProgressType,
@@ -292,12 +296,6 @@ impl SiteAnalyzer {
             .await?;
         }
 
-        let total_pages = {
-            let links = self.links.lock().await;
-            links.len() as u32
-        };
-
-        let mut completed_pages = 0;
         loop {
             // Get all unprocessed internal links
             let links = self.links.lock().await;
@@ -333,14 +331,6 @@ impl SiteAnalyzer {
 
             while let Some(result) = stream.next().await {
                 result?;
-                completed_pages += 1;
-                // self.report_progress(AnalysisProgress {
-                //     progress_type: AnalysisProgressType::AnalyzedPage,
-                //     url: None,
-                //     total_pages,
-                //     completed_pages,
-                // })
-                // .await;
             }
         }
 
@@ -416,7 +406,13 @@ mod tests {
             .iter()
             .find(|result| result.rule_id == "meta_description_uniqueness")
             .unwrap();
-        assert!(meta_description_uniqueness.passed == false)
+        assert!(meta_description_uniqueness.passed == false);
+        let orphaned_page = results
+            .site_result
+            .iter()
+            .find(|result| result.rule_id == "orphaned_page.check")
+            .unwrap();
+        assert!(orphaned_page.passed == false);
         // let page1 = links.get(&format!("{}/page1", base_url)).unwrap();
         // assert_eq!(page1.found_in.len(), 3);
     }

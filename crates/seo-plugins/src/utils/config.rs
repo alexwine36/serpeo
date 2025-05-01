@@ -7,7 +7,6 @@ use std::collections::HashMap;
 
 use super::page::Page;
 use super::registry::PluginRegistry;
-use super::site::Site;
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CheckResult {
