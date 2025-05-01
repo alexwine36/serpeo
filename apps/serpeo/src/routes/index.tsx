@@ -35,38 +35,6 @@ function Index() {
     }
   };
 
-  // const charts = useMemo((): {
-  //   label: string;
-  //   value: number;
-  // }[] => {
-  //   if (!result?.lighthouse_metrics) {
-  //     return [];
-  //   }
-  //   const {
-  //     performance_score,
-  //     best_practices_score,
-  //     seo_score,
-  //     accessibility_score,
-  //   } = result.lighthouse_metrics;
-  //   return [
-  //     {
-  //       label: "Performance",
-  //       value: performance_score,
-  //     },
-  //     {
-  //       label: "SEO",
-  //       value: seo_score,
-  //     },
-  //     {
-  //       label: "Best Practices",
-  //       value: best_practices_score,
-  //     },
-  //     {
-  //       label: "Accessibility",
-  //       value: accessibility_score,
-  //     },
-  //   ];
-  // }, [result]);
   return (
     <div className="container mx-auto flex max-w-4xl flex-col gap-4 p-4">
       <SettingsCard collapsible />

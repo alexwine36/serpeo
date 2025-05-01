@@ -46,10 +46,10 @@ impl SitePlugin for MetaDescriptionPlugin {
         page: Arc<StdMutex<Page>>,
         _results: &Vec<RuleResult>,
     ) -> Result<(), String> {
-        let mut page = page.lock().unwrap();
+        let page = page.lock().unwrap();
 
         let mut page_descriptions = self.page_descriptions.lock().unwrap();
-        let url = page.get_url().unwrap().to_string();
+        let url = page.get_url().to_string();
         let meta_tags = page.extract_meta_tags();
 
         let description = meta_tags.description.clone();

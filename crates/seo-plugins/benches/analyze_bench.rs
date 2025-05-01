@@ -40,7 +40,7 @@ fn analyze_benchmark(c: &mut Criterion) {
     // Benchmark async analyze
     group.bench_function("async_analyze", |b| {
         b.to_async(FuturesExecutor).iter(|| async {
-            black_box(registry.analyze_async(&page));
+            black_box(registry.analyze_async(&page).await);
         })
     });
 

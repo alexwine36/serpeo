@@ -64,8 +64,10 @@ impl Page {
         self.url = Some(url.to_url().unwrap());
     }
 
-    pub fn get_url(&self) -> Option<Url> {
-        self.url.clone()
+    pub fn get_url(&self) -> Url {
+        self.url
+            .clone()
+            .unwrap_or(Url::parse(FALLBACK_URL).unwrap())
     }
 
     pub fn get_html(&self) -> Option<String> {

@@ -103,20 +103,24 @@ impl PluginRegistry {
         results
     }
 
-    pub async fn analyze(&self, page: &Page) -> Vec<RuleResult> {
+    pub fn analyze(&self, page: &Page) -> Vec<RuleResult> {
         let config = self.get_config().unwrap();
-        let results = self
-            .plugins
-            .lock()
-            .await
-            .values()
-            .flat_map(|plugin| plugin.analyze(page, config))
-            .collect();
+        let results = futures::executor::block_on(async {
+            let r = self
+                .plugins
+                .lock()
+                .await
+                .values()
+                .flat_map(|plugin| plugin.analyze(page, config))
+                .collect();
 
-        // Run site plugins
-        for plugin in self.site_plugins.lock().await.iter_mut() {
-            let _ = plugin.after_page_hook(Arc::new(StdMutex::new(page.clone())), &results);
-        }
+            // Run site plugins
+            for plugin in self.site_plugins.lock().await.iter_mut() {
+                let _ = plugin.after_page_hook(Arc::new(StdMutex::new(page.clone())), &r);
+            }
+
+            r
+        });
 
         results
     }
