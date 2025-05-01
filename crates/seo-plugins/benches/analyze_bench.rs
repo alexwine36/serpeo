@@ -2,7 +2,7 @@ use criterion::async_executor::FuturesExecutor;
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use seo_plugins::utils::{page::Page, registry::PluginRegistry};
 
-async fn analyze_benchmark(c: &mut Criterion) {
+fn analyze_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("analyze");
 
     // Setup
@@ -40,7 +40,7 @@ async fn analyze_benchmark(c: &mut Criterion) {
     // Benchmark async analyze
     group.bench_function("async_analyze", |b| {
         b.to_async(FuturesExecutor).iter(|| async {
-            black_box(registry.analyze_async(&page).await);
+            black_box(registry.analyze_async(&page));
         })
     });
 
