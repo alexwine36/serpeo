@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.5
+
+### Patch Changes
+
+- 0bbe3f5: Testing wildcard in quotes
+
 ## 0.2.4
 
 ### Patch Changes
