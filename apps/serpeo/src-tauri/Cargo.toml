@@ -37,3 +37,6 @@ specta = { workspace=true }
 [features]
 custom-protocol = ["tauri/custom-protocol"]
 
+
+[package.metadata.cargo-machete]
+ignored = ["serde_json"]

@@ -5,14 +5,14 @@ use crate::plugins::seo_basic::SeoBasicPlugin;
 use crate::site_analyzer::SiteAnalyzer;
 use crate::site_plugins::MetaDescriptionPlugin;
 use crate::site_plugins::orphaned_page::OrphanedPagePlugin;
-use futures::stream::{self, StreamExt};
+use futures::stream::{StreamExt};
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, Mutex as StdMutex};
 use tokio::sync::Mutex;
 
-use super::config::{Rule, RuleConfig, RuleDisplay, RuleResult};
+use super::config::{RuleConfig, RuleDisplay, RuleResult};
 use super::page::{Page, PageError};
 use super::page_plugin::SeoPlugin;
 use super::site_plugin::SitePlugin;

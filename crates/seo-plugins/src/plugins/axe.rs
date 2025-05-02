@@ -68,7 +68,7 @@ impl SeoPlugin for AxePlugin {
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let images = page.extract_images();
                     let images_without_alt = images
                         .iter()
@@ -93,7 +93,7 @@ impl SeoPlugin for AxePlugin {
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
 
                     let viewport = meta_tags.viewport.unwrap_or_default();

@@ -1,12 +1,10 @@
 // Core plugin traits
-use futures::stream::{self, StreamExt};
+use futures::stream::{StreamExt};
 use serde::{Deserialize, Serialize};
 use specta::Type;
-use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
 use super::page::Page;
-use super::registry::PluginRegistry;
 
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CheckResult {

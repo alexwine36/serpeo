@@ -1,15 +1,7 @@
-use std::{collections::HashMap, num::NonZeroU16, time::Duration};
 
-use markup5ever::QualName;
-use reqwest::Client;
-use scraper::{
-    ElementRef, Html, Selector,
-    node::{Attributes, Element},
-};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use thiserror::Error;
-use tokio::time::Instant;
 use url::Url;
 
 #[derive(Debug, Serialize, Deserialize, Type, Clone, PartialEq)]

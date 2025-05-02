@@ -1,8 +1,5 @@
 use futures::stream::{self, StreamExt};
-use serde::{Deserialize, Serialize};
-use specta::Type;
 use std::any::{Any, TypeId};
-use std::collections::HashMap;
 
 use super::config::{Rule, RuleConfig, RuleResult};
 use super::page::Page;

@@ -1,22 +1,12 @@
-use std::{
-    collections::{HashMap, HashSet},
-    time::Duration,
-};
+use std::collections::{HashMap, HashSet};
 
 use futures::stream::{self, StreamExt};
-use markup5ever::QualName;
-use reqwest::Client;
-use scraper::{
-    ElementRef, Html, Selector,
-    node::{Attributes, Element},
-};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
 use tauri_specta::Event;
 use thiserror::Error;
 use tokio::sync::{Mutex, MutexGuard};
-use tokio::time::Instant;
 use url::Url;
 
 use crate::utils::{

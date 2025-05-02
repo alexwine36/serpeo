@@ -1,8 +1,10 @@
-name: "test-on-pr"
+name: "Test Build"
 
 on: [pull_request]
 
-# This workflow will build your tauri app without uploading it anywhere.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-tauri:

@@ -1,7 +1,5 @@
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex as StdMutex};
 
-use futures::future::BoxFuture;
 
 use crate::site_analyzer::{LinkSourceType, SiteAnalyzer};
 
