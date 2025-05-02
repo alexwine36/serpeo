@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.2
+
+### Patch Changes
+
+- 4251a32: Added pnpm to changeset tag
+
 ## 0.2.1
 
 ### Patch Changes
