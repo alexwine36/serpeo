@@ -35,6 +35,7 @@ export const AnalysisStatus = () => {
       <div className="flex flex-col items-center justify-center gap-2">
         <CircleProgress
           strokeWidth={10}
+          showValue
           size={150}
           value={progress.value}
           maxValue={progress.maxValue}

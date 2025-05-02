@@ -36,6 +36,7 @@ pub trait SeoPlugin: Send + Sync + 'static {
                 RuleResult {
                     rule_id: rule.id.to_string(),
                     name: rule.name.to_string(),
+                    plugin_name: self.name().to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),
@@ -57,6 +58,7 @@ pub trait SeoPlugin: Send + Sync + 'static {
                 RuleResult {
                     rule_id: rule.id.to_string(),
                     name: rule.name.to_string(),
+                    plugin_name: self.name().to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),

@@ -2,10 +2,11 @@ use crate::plugins::axe::AxePlugin;
 use crate::plugins::image::ImagePlugin;
 use crate::plugins::request::RequestPlugin;
 use crate::plugins::seo_basic::SeoBasicPlugin;
+use crate::plugins::title::TitlePlugin;
 use crate::site_analyzer::SiteAnalyzer;
-use crate::site_plugins::MetaDescriptionPlugin;
+use crate::site_plugins::MetaDescriptionSitePlugin;
 use crate::site_plugins::orphaned_page::OrphanedPagePlugin;
-use futures::stream::{StreamExt};
+use futures::stream::StreamExt;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::fmt;
@@ -156,10 +157,14 @@ impl Default for PluginRegistry {
         futures::executor::block_on(async {
             let _ = registry.register(ImagePlugin::new()).await;
             let _ = registry.register(SeoBasicPlugin::new()).await;
+            let _ = registry.register(TitlePlugin::new()).await;
             let _ = registry.register(AxePlugin::new()).await;
             let _ = registry.register(RequestPlugin::new()).await;
             let _ = registry
-                .register_site_plugin(MetaDescriptionPlugin::new())
+                .register(crate::plugins::meta_description::MetaDescriptionPlugin::new())
+                .await;
+            let _ = registry
+                .register_site_plugin(MetaDescriptionSitePlugin::new())
                 .await;
             let _ = registry
                 .register_site_plugin(OrphanedPagePlugin::new())

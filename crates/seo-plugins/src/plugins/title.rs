@@ -6,27 +6,28 @@ use crate::utils::{
     registry::PluginRegistry,
 };
 
-// Request Plugin
-pub struct RequestPlugin {}
+// Title Plugin
+pub struct TitlePlugin {}
 
-impl Default for RequestPlugin {
+impl Default for TitlePlugin {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RequestPlugin {
+impl TitlePlugin {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl SeoPlugin for RequestPlugin {
+impl SeoPlugin for TitlePlugin {
     fn name(&self) -> &str {
-        "Request"
+        "Title"
     }
     fn description(&self) -> &str {
-        "Check the status of network requests"
+        "The title tag of a web page is meant to be an accurate and concise description of
+ a page's content. It is critical to both user experience and SEO."
     }
     fn as_any(&self) -> &dyn Any {
         self
@@ -37,27 +38,50 @@ impl SeoPlugin for RequestPlugin {
     }
 
     fn available_rules(&self) -> Vec<Rule> {
-        vec![Rule {
-            id: "request.redirects",
-            name: "Redirects",
-            description: "Checks if the page has redirects",
-            default_severity: Severity::Error,
-            category: RuleCategory::Performance,
-            check: |page| {
-                let page = page.clone();
-                let redirected = page.get_redirected();
+        vec![
+            Rule {
+                id: "title.has_title",
+                name: "Page has title tag",
+                description: "Checks if the page has a proper title tag",
+                default_severity: Severity::Critical,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let has_title = meta_tags.title.is_some();
 
-                CheckResult {
-                    rule_id: "request.redirects".to_string(),
-                    passed: !redirected,
-                    message: if redirected {
-                        "Page has redirects".to_string()
-                    } else {
-                        "Page does not have redirects".to_string()
-                    },
-                }
+                    CheckResult {
+                        rule_id: "title.has_title".to_string(),
+                        passed: has_title,
+                        message: if has_title {
+                            "Page has a title tag"
+                        } else {
+                            "Page is missing a title tag"
+                        }
+                        .to_string(),
+                    }
+                },
             },
-        }]
+            Rule {
+                id: "title.title_length",
+                name: "Title length is less than 60 characters",
+                description: "Checks if the title length is less than 60 characters",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let title = meta_tags.title.unwrap_or_default();
+                    let title_length = title.len();
+                    let passed = title_length < 60 && title_length > 0;
+                    CheckResult {
+                        rule_id: "title.title_length".to_string(),
+                        passed,
+                        message: format!("Title length is {} characters", title_length),
+                    }
+                },
+            },
+        ]
     }
 }
 
@@ -66,18 +90,18 @@ mod tests {
     use super::*;
     use crate::utils::{config::RuleConfig, page::Page, page_plugin::SeoPlugin};
     use hyper::service::{make_service_fn, service_fn};
-    use hyper::{Body, Response, Server, header};
+    use hyper::{Body, Response, Server};
 
     use std::convert::Infallible;
     use std::net::SocketAddr;
     use tokio::net::TcpListener;
 
     #[tokio::test]
-    async fn test_request_plugin_success() {
+    async fn test_title_plugin_success() {
         let addr = start_test_server().await;
         let base_url = format!("http://{}/success", addr);
 
-        let plugin = RequestPlugin::new();
+        let plugin = TitlePlugin::new();
         let page = Page::from_url(url::Url::parse(&base_url).unwrap())
             .await
             .unwrap();
@@ -94,11 +118,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_request_plugin_failure() {
+    async fn test_title_plugin_failure() {
         let addr = start_test_server().await;
-        let base_url = format!("http://{}/redirect", addr);
+        let base_url = format!("http://{}/failure", addr);
 
-        let plugin = RequestPlugin::new();
+        let plugin = TitlePlugin::new();
         let page = Page::from_url(url::Url::parse(&base_url).unwrap())
             .await
             .unwrap();
@@ -143,7 +167,6 @@ mod tests {
                                 </html>
                             "#,
                             ))),
-                            // Page with redirect
                             "/failure" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <html>
@@ -156,13 +179,6 @@ mod tests {
                                 </html>
                             "#,
                             ))),
-                            "/redirect" => Ok::<_, Infallible>(
-                                Response::builder()
-                                    .status(301)
-                                    .header(header::LOCATION, "/success")
-                                    .body(Body::from("Redirecting..."))
-                                    .unwrap(),
-                            ),
                             _ => Ok(Response::new(Body::from("404"))),
                         }
                     }

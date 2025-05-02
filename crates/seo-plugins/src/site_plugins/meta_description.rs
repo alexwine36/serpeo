@@ -18,11 +18,11 @@ struct PageDescription {
 }
 
 #[derive(Clone)]
-pub struct MetaDescriptionPlugin {
+pub struct MetaDescriptionSitePlugin {
     page_descriptions: Arc<StdMutex<HashMap<String, PageDescription>>>,
 }
 
-impl MetaDescriptionPlugin {
+impl MetaDescriptionSitePlugin {
     pub fn new() -> Self {
         Self {
             page_descriptions: Arc::new(StdMutex::new(HashMap::new())),
@@ -30,7 +30,7 @@ impl MetaDescriptionPlugin {
     }
 }
 
-impl SitePlugin for MetaDescriptionPlugin {
+impl SitePlugin for MetaDescriptionSitePlugin {
     fn name(&self) -> &str {
         "Meta Description Plugin"
     }

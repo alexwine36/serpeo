@@ -56,7 +56,7 @@ export type PageLink = { url: string; link_type: LinkType; found_in: PageLinkSou
 export type PageLinkSource = { link_source_type: LinkSourceType; url: string }
 export type PageResult = { error: boolean; results: RuleResult[] }
 export type RuleCategory = "Accessibility" | "Performance" | "BestPractices" | "SEO"
-export type RuleResult = { rule_id: string; name: string; passed: boolean; message: string; severity: Severity; category: RuleCategory }
+export type RuleResult = { rule_id: string; name: string; plugin_name: string; passed: boolean; message: string; severity: Severity; category: RuleCategory }
 export type Severity = "Info" | "Warning" | "Error" | "Critical"
 
 /** tauri-specta globals **/
