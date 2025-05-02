@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       hasChangeset: ${{ steps.changesets.outputs.hasChangeset }}
+      published: ${{ steps.changesets.outputs.published }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -29,13 +30,29 @@ jobs:
       - name: Create Release Pull Request
         id: changesets
         uses: changesets/action@v1
-        # with:
-        #   publish: pnpm changeset tag
+        with:
+          commitMode: "github-api"
+          publish: pnpm changeset tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log Has Changeset
+        run: echo "hasChangeset ${{ steps.changesets.outputs.hasChangeset }}"
+      - name: Log Has Published
+        run: echo "published ${{ steps.changesets.outputs.published }}"
+
+  publish-check:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log Has Changeset
+        run: echo "hasChangeset ${{ needs.release.outputs.hasChangeset }}"
+      - name: Log Has Published
+        run: echo "published ${{ needs.release.outputs.published }}"
+
   publish:
     needs: release
-    if: needs.release.outputs.hasChangeset == 'false'
+    if: needs.release.outputs.published == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
