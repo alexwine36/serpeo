@@ -28,9 +28,28 @@ export const linksAtom = atom((get) => {
   };
 });
 
+const siteResultsParsed = atom((get) => {
+  const siteResults = get(siteResultsAtom);
+  return siteResults.flatMap((result) => {
+    let urls: string[] = [];
+    if (typeof result.context !== "string") {
+      if ("Urls" in result.context) {
+        urls = result.context.Urls;
+      } else if ("Values" in result.context) {
+        urls = Object.values(result.context.Values).flat().filter(notNullish);
+      }
+    }
+
+    return urls.map((url) => ({
+      ...result,
+      page_url: url,
+    }));
+  });
+});
+
 export const issuesAtom = atom((get) => {
   const pageResults = get(pageResultsAtom);
-  const siteResults = get(siteResultsAtom);
+  const siteResults = get(siteResultsParsed);
   const pageIssues = pageResults
     .flatMap((page) =>
       page.result?.results.filter(notNullish).map((r) => ({
@@ -40,7 +59,10 @@ export const issuesAtom = atom((get) => {
     )
     .filter(notNullish);
 
-  return [...pageIssues, ...siteResults];
+  return [...pageIssues, ...siteResults].map((issue) => ({
+    ...issue,
+    pathname: new URL(issue.page_url).pathname,
+  }));
 });
 
 export const issueCategoriesAtom = atom((get) => {
@@ -51,7 +73,8 @@ export const issueCategoriesAtom = atom((get) => {
 export type IssueCategoryItem = Required<
   NonNullable<CrawlResult["page_results"][number]["result"]>
 >["results"][number] & {
-  page_url?: string;
+  page_url: string;
+  pathname: string;
 };
 
 function notNullish<TValue>(value: TValue | undefined | null): value is TValue {

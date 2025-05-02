@@ -59,12 +59,14 @@ const IssueCategoryDetailItem = ({
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              {i.tests.map((t, idx) => (
-                <div key={`${t.rule_id}-${idx}`}>
-                  <p>{t.message}</p>
-                  <p>{t.page_url}</p>
-                </div>
-              ))}
+              {i.tests.map((t, idx) => {
+                return (
+                  <div key={`${t.rule_id}-${idx}`}>
+                    <p>{t.message}</p>
+                    <p>{t.pathname}</p>
+                  </div>
+                );
+              })}
             </AccordionContent>
           </AccordionItem>
         ))}

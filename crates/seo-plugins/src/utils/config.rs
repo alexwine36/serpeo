@@ -5,6 +5,21 @@ use std::collections::HashMap;
 
 use super::page::Page;
 
+#[derive(Debug, Serialize, Deserialize, specta::Type, Clone)]
+pub enum SiteCheckContext {
+    Urls(Vec<String>),
+    Values(HashMap<String, Vec<String>>),
+    Empty,
+}
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
+pub struct SiteCheckResult {
+    pub rule_id: String,
+    pub passed: bool,
+    pub message: String,
+    pub context: SiteCheckContext,
+    // pub severity: Option<Severity>,
+}
+
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CheckResult {
     pub rule_id: String,
@@ -22,6 +37,7 @@ pub struct RuleResult {
     pub message: String,
     pub severity: Severity,
     pub category: RuleCategory,
+    pub context: SiteCheckContext,
 }
 
 // Severity level of an SEO issue
