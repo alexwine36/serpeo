@@ -16,6 +16,7 @@ pub struct CheckResult {
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct RuleResult {
     pub rule_id: String,
+    pub name: String,
     pub passed: bool,
     pub message: String,
     pub severity: Severity,

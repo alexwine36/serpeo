@@ -40,7 +40,7 @@ impl SitePlugin for OrphanedPagePlugin {
     fn available_rules(&self) -> Vec<SiteRule> {
         vec![SiteRule {
             id: "orphaned_page.check",
-            name: "check",
+            name: "Orphaned Page",
             description: "Check if pages are found only in sitemap but not in links",
             default_severity: Severity::Warning,
             category: RuleCategory::SEO,

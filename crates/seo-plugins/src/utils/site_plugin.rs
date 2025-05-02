@@ -30,6 +30,7 @@ pub trait SitePlugin: Send + Sync + 'static {
                 let result = self.check(rule, site);
                 RuleResult {
                     rule_id: rule.id.to_string(),
+                    name: rule.name.to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),
@@ -50,6 +51,7 @@ pub trait SitePlugin: Send + Sync + 'static {
                 let result = self.check(rule, site);
                 RuleResult {
                     rule_id: rule.id.to_string(),
+                    name: rule.name.to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),
