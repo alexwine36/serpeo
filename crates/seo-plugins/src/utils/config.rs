@@ -1,5 +1,4 @@
 // Core plugin traits
-use futures::stream::{StreamExt};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::collections::HashMap;

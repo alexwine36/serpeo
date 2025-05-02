@@ -70,12 +70,12 @@ impl SitePlugin for MetaDescriptionPlugin {
             category: RuleCategory::SEO,
         }]
     }
-    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> CheckResult {
+    fn check(&self, rule: &SiteRule, _site: &SiteAnalyzer) -> CheckResult {
         match rule.id {
             "meta_description_uniqueness" => {
                 let page_descriptions = self.page_descriptions.lock().unwrap();
                 let mut found_descriptions = HashMap::new();
-                for (url, page_description) in page_descriptions.iter() {
+                for (_url, page_description) in page_descriptions.iter() {
                     found_descriptions
                         .entry(page_description.description.clone())
                         .or_insert(Vec::new())

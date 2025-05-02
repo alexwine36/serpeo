@@ -396,7 +396,7 @@ mod tests {
             .iter()
             .find(|result| result.rule_id == "meta_description_uniqueness")
             .unwrap();
-        assert!(meta_description_uniqueness.passed == false);
+        assert!(!meta_description_uniqueness.passed);
         let orphaned_page = results
             .site_result
             .iter()
