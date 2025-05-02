@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.8
+
+### Patch Changes
+
+- 1249803: with new job outputs
+
 ## 0.2.7
 
 ### Patch Changes
