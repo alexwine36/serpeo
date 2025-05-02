@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.4
+
+### Patch Changes
+
+- 1f3201c: updated tags query for publish action
+
 ## 0.2.3
 
 ### Patch Changes
