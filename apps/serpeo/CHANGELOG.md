@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.6
+
+### Patch Changes
+
+- d869b48: Test wildcard tag
+
 ## 0.2.5
 
 ### Patch Changes
