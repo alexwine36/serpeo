@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.3
+
+### Patch Changes
+
+- 910fc52: Added publish job for serpeo release tags
+
 ## 0.2.2
 
 ### Patch Changes
