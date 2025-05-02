@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.1
+
+### Patch Changes
+
+- ced9778: Quick test to see if changeset tag can push tags
+
 ## 0.2.0
 
 ### Minor Changes
