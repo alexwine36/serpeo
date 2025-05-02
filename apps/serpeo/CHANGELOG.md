@@ -1,5 +1,11 @@
 # serpeo
 
+## 0.2.7
+
+### Patch Changes
+
+- b5bbcc4: Testing new release workflow
+
 ## 0.2.6
 
 ### Patch Changes
