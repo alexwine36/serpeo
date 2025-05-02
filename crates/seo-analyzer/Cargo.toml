@@ -9,15 +9,9 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 thiserror = { workspace = true }
-scraper = { workspace = true }
-url = { workspace = true }
-reqwest = { workspace = true }
-futures = { workspace = true }
-roxmltree = { workspace = true }
 tempfile = { workspace = true }
 async-trait = { workspace = true }
 specta = { workspace = true }
-tauri-specta = { workspace = true }
 
 [dev-dependencies]
 hyper = { workspace = true }

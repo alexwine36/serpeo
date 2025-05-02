@@ -24,6 +24,8 @@ jobs:
       - uses: ./.github/actions/ci-setup
       - uses: Swatinem/rust-cache@v2
 
+      - uses: bnjbvr/cargo-machete@main
+
       # Running Lint with --quiet to only print errors
       - name: Static Check...
         run: pnpm static

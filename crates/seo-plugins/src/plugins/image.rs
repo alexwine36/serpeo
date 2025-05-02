@@ -58,7 +58,7 @@ impl SeoPlugin for ImagePlugin {
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {
-                    let mut page = page.clone();
+                    let page = page.clone();
                     let images = page.extract_images();
                     let images_without_srcset = images
                         .iter()

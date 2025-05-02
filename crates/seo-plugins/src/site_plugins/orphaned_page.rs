@@ -1,7 +1,4 @@
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex as StdMutex};
-
-use futures::future::BoxFuture;
 
 use crate::site_analyzer::{LinkSourceType, SiteAnalyzer};
 
@@ -34,7 +31,7 @@ impl SitePlugin for OrphanedPagePlugin {
     }
     fn after_page_hook(
         &mut self,
-        page: Arc<StdMutex<Page>>,
+        _page: Arc<StdMutex<Page>>,
         _results: &Vec<RuleResult>,
     ) -> Result<(), String> {
         Ok(())

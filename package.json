@@ -13,7 +13,7 @@
     "js-lint:ci": "biome check --diagnostic-level=error",
     "js-test": "turbo run test",
     "lint": "turbo run js-lint rust-lint sync:lint",
-    "rust-format": "cargo clippy --fix --allow-dirty",
+    "rust-format": "cargo clippy --fix --allow-staged --allow-dirty",
     "rust-lint": "cargo clippy",
     "rust-test": "cargo test",
     "static": "turbo run js-lint rust-lint test rust-test sync:lint typecheck",

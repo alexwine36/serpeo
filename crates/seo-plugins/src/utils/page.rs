@@ -1,4 +1,3 @@
-use markup5ever::QualName;
 use reqwest::Client;
 use scraper::{
     ElementRef, Html, Selector,
@@ -159,26 +158,6 @@ impl Page {
             .next()
             .ok_or(PageError::ElementNotFound)?;
         Ok(element.value().clone())
-    }
-
-    fn format_element(&self, element: &ElementRef) -> StaticElement {
-        let element = *element;
-        StaticElement {
-            name: element.value().name.clone(),
-            attrs: element.value().attrs.clone(),
-            text: element.text().collect::<String>(),
-        }
-    }
-
-    pub fn get_elements(&self, selector: &str) -> Vec<StaticElement> {
-        let document = self.get_document().unwrap();
-        let selector = Selector::parse(selector).unwrap();
-        let mut elements: Vec<StaticElement> = Vec::new();
-        for element in document.select(&selector) {
-            // println!("element: {:?}", element.text());
-            elements.push(self.format_element(&element));
-        }
-        elements
     }
 }
 
@@ -386,12 +365,6 @@ pub struct Heading {
     pub text: String,
 }
 
-pub struct StaticElement {
-    pub name: QualName,
-    pub attrs: Attributes,
-    pub text: String,
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -546,7 +519,7 @@ mod tests {
     async fn test_fetch_document() {
         let addr = start_test_server().await;
         let mock_url = format!("http://{}", addr);
-        let mut parser = Page::from_url(mock_url).await.unwrap();
+        let parser = Page::from_url(mock_url).await.unwrap();
 
         // assert_eq!(parser.path, "/");
         // parser.fetch().await.unwrap();

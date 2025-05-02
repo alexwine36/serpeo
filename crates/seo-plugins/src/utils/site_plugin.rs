@@ -2,9 +2,8 @@ use std::any::Any;
 use std::sync::{Arc, Mutex as StdMutex};
 
 use futures::stream::{self, StreamExt};
-use tokio::sync::Mutex;
 
-use super::config::{CheckResult, Rule, RuleConfig, RuleResult, SiteRule};
+use super::config::{CheckResult, RuleConfig, RuleResult, SiteRule};
 use super::page::Page;
 
 use crate::site_analyzer::SiteAnalyzer;
