@@ -20,6 +20,7 @@ export const baseUrlAtom = focusAtom(settingsAtom, (optic) =>
 
 // })
 
+// TODO: rewrite to use Tauri event system
 const someAtom = withAtomEffect(settingsAtom, (get, set) => {
   const settings = get(settingsAtom);
   console.log("settings", settings);
