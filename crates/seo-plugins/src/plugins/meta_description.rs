@@ -6,27 +6,27 @@ use crate::utils::{
     registry::PluginRegistry,
 };
 
-// Request Plugin
-pub struct RequestPlugin {}
+// MetaDescription Plugin
+pub struct MetaDescriptionPlugin {}
 
-impl Default for RequestPlugin {
+impl Default for MetaDescriptionPlugin {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl RequestPlugin {
+impl MetaDescriptionPlugin {
     pub fn new() -> Self {
         Self {}
     }
 }
 
-impl SeoPlugin for RequestPlugin {
+impl SeoPlugin for MetaDescriptionPlugin {
     fn name(&self) -> &str {
-        "Request"
+        "MetaDescription"
     }
     fn description(&self) -> &str {
-        "Check the status of network requests"
+        "Meta descriptions provide concise explanations of the contents of web pages. They are commonly used on search engine result pages to display preview snippets for a given page."
     }
     fn as_any(&self) -> &dyn Any {
         self
@@ -37,27 +37,53 @@ impl SeoPlugin for RequestPlugin {
     }
 
     fn available_rules(&self) -> Vec<Rule> {
-        vec![Rule {
-            id: "request.redirects",
-            name: "Redirects",
-            description: "Checks if the page has redirects",
-            default_severity: Severity::Error,
-            category: RuleCategory::Performance,
-            check: |page| {
-                let page = page.clone();
-                let redirected = page.get_redirected();
+        vec![
+            Rule {
+                id: "meta_description.has_meta_description",
+                name: "Page has meta description",
+                description: "Checks if the page has a meta description",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let has_description = meta_tags.description.is_some();
 
-                CheckResult {
-                    rule_id: "request.redirects".to_string(),
-                    passed: !redirected,
-                    message: if redirected {
-                        "Page has redirects".to_string()
-                    } else {
-                        "Page does not have redirects".to_string()
-                    },
-                }
+                    CheckResult {
+                        rule_id: "meta_description.has_meta_description".to_string(),
+                        passed: has_description,
+                        message: if has_description {
+                            "Page has a meta description"
+                        } else {
+                            "Page is missing a meta description"
+                        }
+                        .to_string(),
+                    }
+                },
             },
-        }]
+            Rule {
+                id: "meta_description.description_length",
+                name: "Meta description length is less than 155 characters",
+                description: "Checks if the meta description length is less than 155 characters",
+                default_severity: Severity::Warning,
+                category: RuleCategory::SEO,
+                check: |page| {
+                    let page = page.clone();
+                    let meta_tags = page.extract_meta_tags();
+                    let description = meta_tags.description.unwrap_or_default();
+                    let description_length = description.len();
+                    let passed = description_length < 155 && description_length > 0;
+                    CheckResult {
+                        rule_id: "meta_description.description_length".to_string(),
+                        passed,
+                        message: format!(
+                            "Meta description length is {} characters",
+                            description_length
+                        ),
+                    }
+                },
+            },
+        ]
     }
 }
 
@@ -66,18 +92,18 @@ mod tests {
     use super::*;
     use crate::utils::{config::RuleConfig, page::Page, page_plugin::SeoPlugin};
     use hyper::service::{make_service_fn, service_fn};
-    use hyper::{Body, Response, Server, header};
+    use hyper::{Body, Response, Server};
 
     use std::convert::Infallible;
     use std::net::SocketAddr;
     use tokio::net::TcpListener;
 
     #[tokio::test]
-    async fn test_request_plugin_success() {
+    async fn test_meta_description_plugin_success() {
         let addr = start_test_server().await;
         let base_url = format!("http://{}/success", addr);
 
-        let plugin = RequestPlugin::new();
+        let plugin = MetaDescriptionPlugin::new();
         let page = Page::from_url(url::Url::parse(&base_url).unwrap())
             .await
             .unwrap();
@@ -94,11 +120,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_request_plugin_failure() {
+    async fn test_meta_description_plugin_failure() {
         let addr = start_test_server().await;
-        let base_url = format!("http://{}/redirect", addr);
+        let base_url = format!("http://{}/failure", addr);
 
-        let plugin = RequestPlugin::new();
+        let plugin = MetaDescriptionPlugin::new();
         let page = Page::from_url(url::Url::parse(&base_url).unwrap())
             .await
             .unwrap();
@@ -131,6 +157,7 @@ mod tests {
                                 <html>
                                     <head>
                                         <title>Test Page</title>
+                                        <meta name="description" content="This is a test page with a meta description">
                                     </head>
                                     <body>
                                         <a href="/page1">Page 1</a>
@@ -143,7 +170,6 @@ mod tests {
                                 </html>
                             "#,
                             ))),
-                            // Page with redirect
                             "/failure" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <html>
@@ -156,13 +182,6 @@ mod tests {
                                 </html>
                             "#,
                             ))),
-                            "/redirect" => Ok::<_, Infallible>(
-                                Response::builder()
-                                    .status(301)
-                                    .header(header::LOCATION, "/success")
-                                    .body(Body::from("Redirecting..."))
-                                    .unwrap(),
-                            ),
                             _ => Ok(Response::new(Body::from("404"))),
                         }
                     }

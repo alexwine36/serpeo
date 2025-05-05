@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 
 use crate::site_analyzer::{LinkSourceType, SiteAnalyzer};
 
+use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
     config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
@@ -40,7 +41,7 @@ impl SitePlugin for OrphanedPagePlugin {
     fn available_rules(&self) -> Vec<SiteRule> {
         vec![SiteRule {
             id: "orphaned_page.check",
-            name: "check",
+            name: "Orphaned Page",
             description: "Check if pages are found only in sitemap but not in links",
             default_severity: Severity::Warning,
             category: RuleCategory::SEO,
@@ -57,7 +58,7 @@ impl SitePlugin for OrphanedPagePlugin {
     //     // });
     //     Ok(())
     // }
-    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> CheckResult {
+    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> SiteCheckResult {
         let links = site.get_links();
         let orphaned_pages = links
             .iter()
@@ -90,15 +91,17 @@ impl SitePlugin for OrphanedPagePlugin {
         println!("Orphaned pages: {:#?}", orphaned_pages);
 
         match rule.id {
-            "orphaned_page.check" => CheckResult {
+            "orphaned_page.check" => SiteCheckResult {
                 rule_id: rule.id.to_string(),
                 passed: orphaned_pages_count == 0,
                 message: format!("Orphaned pages: {}", orphaned_pages_count),
+                context: SiteCheckContext::Urls(orphaned_pages),
             },
-            _ => CheckResult {
+            _ => SiteCheckResult {
                 rule_id: rule.id.to_string(),
                 passed: false,
                 message: "Unknown rule".to_string(),
+                context: SiteCheckContext::Empty,
             },
         }
     }

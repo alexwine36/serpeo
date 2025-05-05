@@ -1,28 +1,22 @@
 import { Toaster } from "@repo/ui/components/sonner";
-import { Link, Outlet, createRootRoute } from "@tanstack/react-router";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { NavBar } from "../components/layout/nav-bar";
+import { Providers } from "../components/providers";
 
 export const Route = createRootRoute({
   component: () => (
     <>
-      <div className="flex gap-2 p-2">
-        <Link to="/" className="[&.active]:font-bold">
-          Home
-        </Link>{" "}
-        {/* <Link to="/about" className="[&.active]:font-bold">
-          About
-        </Link> */}
-        <Link to="/settings" className="[&.active]:font-bold">
-          Settings
-        </Link>
-      </div>
-      <hr />
-      <div className="m-2">
-        <Outlet />
-      </div>
-      <Toaster />
+      <Providers>
+        <NavBar />
 
-      <TanStackRouterDevtools />
+        <div className="m-2">
+          <Outlet />
+        </div>
+        <Toaster />
+
+        <TanStackRouterDevtools />
+      </Providers>
     </>
   ),
 });

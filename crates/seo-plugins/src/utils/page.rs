@@ -1,10 +1,11 @@
-use reqwest::Client;
+use reqwest::{Client, redirect};
 use scraper::{
     ElementRef, Html, Selector,
     node::{Attributes, Element},
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
+use std::sync::atomic::{AtomicU16, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::{collections::HashMap, num::NonZeroU16, time::Duration};
 use thiserror::Error;
@@ -38,7 +39,6 @@ pub struct Page {
     meta_tags: Arc<StdMutex<Option<MetaTagInfo>>>,
     images: Arc<StdMutex<Option<Vec<Image>>>>,
     content_length: Option<u64>,
-    redirected: Option<bool>,
     elapsed: Option<f32>,
     status_code: Option<NonZeroU16>,
 }
@@ -53,7 +53,7 @@ impl Page {
             meta_tags: Arc::new(StdMutex::new(None)),
             images: Arc::new(StdMutex::new(None)),
             content_length: None,
-            redirected: None,
+            
             elapsed: None,
             status_code: None,
         }
@@ -77,8 +77,12 @@ impl Page {
         self.content_length.clone()
     }
 
-    pub fn get_redirected(&self) -> Option<bool> {
-        self.redirected.clone()
+    pub fn get_redirected(&self) -> bool {
+        if self.status_code.is_some() && self.status_code.unwrap() >= NonZeroU16::new(300).unwrap() && self.status_code.unwrap() < NonZeroU16::new(400).unwrap() {
+            true
+        } else {
+            false
+        }
     }
 
     pub fn set_content(&mut self, html: String) {
@@ -95,10 +99,16 @@ impl Page {
 
     pub async fn from_url<T: FromUrl>(url: T) -> Result<Self, PageError> {
         let url = url.to_url().unwrap();
-        // let html = self.fetch(&url).await;
-
+        let redirect_status_code = Arc::new(AtomicU16::new(0));
+        let redirect_status_code_clone = redirect_status_code.clone();
         let client = Client::
         builder()
+        .redirect(redirect::Policy::custom(move |attempt| {
+            redirect_status_code_clone.store(attempt.status().into(), Ordering::Relaxed);
+            
+            redirect::Policy::default().redirect(attempt)
+        }))
+        // .redirect(redirect::Policy::none())
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
             .timeout(Duration::from_secs(10))
             .build()
@@ -110,8 +120,11 @@ impl Page {
             })?;
 
         let elapsed = start_time.elapsed().as_millis() as f32;
-        let status_code = u16::from(response.status());
-        let redirected = response.status().is_redirection();
+        let mut status_code = u16::from(response.status());
+        if redirect_status_code.load(Ordering::Relaxed) != 0 {
+            status_code = redirect_status_code.load(Ordering::Relaxed);
+        }
+        
         let content_length = response
             .headers()
             .get("content-length")
@@ -135,7 +148,6 @@ impl Page {
             meta_tags: Arc::new(StdMutex::new(None)),
             images: Arc::new(StdMutex::new(None)),
             content_length,
-            redirected: Some(redirected),
             elapsed: Some(elapsed),
             status_code: NonZeroU16::new(status_code),
         })
@@ -191,13 +203,7 @@ impl Page {
 
     // Meta Tags
     fn set_meta_tags(&self) {
-        println!(
-            "setting meta tags for page: {:?}",
-            self.url
-                .clone()
-                .unwrap_or(Url::parse(FALLBACK_URL).unwrap())
-                .to_string()
-        );
+        
         let document = self.get_document().unwrap();
         let mut meta_tags = MetaTagInfo::default();
 

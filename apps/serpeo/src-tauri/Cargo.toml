@@ -17,7 +17,7 @@ name = "serpeo_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta", features = [] }
+tauri-build = { version = "2.2.0", features = [] }
 
 [dependencies]
 tauri = { workspace = true }
@@ -27,8 +27,8 @@ tokio = { workspace = true }
 console-subscriber = {workspace=true}
 thiserror = { workspace = true }
 seo-analyzer = { path = "../../../crates/seo-analyzer" }
-tauri-plugin-shell = "2.0.0-beta"
-tauri-plugin-opener = "2.0.0-beta"
+tauri-plugin-shell = "2.2.1"
+tauri-plugin-opener = "2.2.6"
 async-trait = "0.1"
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }

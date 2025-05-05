@@ -4,6 +4,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 // use hashbrown::HashMap;
 
 use crate::site_analyzer::SiteAnalyzer;
+use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
     config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
@@ -18,11 +19,11 @@ struct PageDescription {
 }
 
 #[derive(Clone)]
-pub struct MetaDescriptionPlugin {
+pub struct MetaDescriptionSitePlugin {
     page_descriptions: Arc<StdMutex<HashMap<String, PageDescription>>>,
 }
 
-impl MetaDescriptionPlugin {
+impl MetaDescriptionSitePlugin {
     pub fn new() -> Self {
         Self {
             page_descriptions: Arc::new(StdMutex::new(HashMap::new())),
@@ -30,7 +31,7 @@ impl MetaDescriptionPlugin {
     }
 }
 
-impl SitePlugin for MetaDescriptionPlugin {
+impl SitePlugin for MetaDescriptionSitePlugin {
     fn name(&self) -> &str {
         "Meta Description Plugin"
     }
@@ -70,7 +71,7 @@ impl SitePlugin for MetaDescriptionPlugin {
             category: RuleCategory::SEO,
         }]
     }
-    fn check(&self, rule: &SiteRule, _site: &SiteAnalyzer) -> CheckResult {
+    fn check(&self, rule: &SiteRule, _site: &SiteAnalyzer) -> SiteCheckResult {
         match rule.id {
             "meta_description_uniqueness" => {
                 let page_descriptions = self.page_descriptions.lock().unwrap();
@@ -87,23 +88,26 @@ impl SitePlugin for MetaDescriptionPlugin {
                 // println!("page_descriptions: {:#?}", page_descriptions);
                 let percentage = (unique_descriptions as f64 / total_pages as f64) * 100.0;
                 if percentage < 90.0 {
-                    CheckResult {
+                    SiteCheckResult {
                         rule_id: rule.id.to_string(),
                         passed: false,
                         message: "Meta description is unique across pages".to_string(),
+                        context: SiteCheckContext::Empty,
                     }
                 } else {
-                    CheckResult {
+                    SiteCheckResult {
                         rule_id: rule.id.to_string(),
                         passed: true,
                         message: "Meta description is unique across pages".to_string(),
+                        context: SiteCheckContext::Values(found_descriptions),
                     }
                 }
             }
-            _ => CheckResult {
+            _ => SiteCheckResult {
                 rule_id: rule.id.to_string(),
                 passed: false,
                 message: "Unknown rule".to_string(),
+                context: SiteCheckContext::Empty,
             },
         }
     }

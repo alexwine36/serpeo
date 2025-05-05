@@ -5,6 +5,21 @@ use std::collections::HashMap;
 
 use super::page::Page;
 
+#[derive(Debug, Serialize, Deserialize, specta::Type, Clone)]
+pub enum SiteCheckContext {
+    Urls(Vec<String>),
+    Values(HashMap<String, Vec<String>>),
+    Empty,
+}
+#[derive(Debug, Serialize, Deserialize, specta::Type)]
+pub struct SiteCheckResult {
+    pub rule_id: String,
+    pub passed: bool,
+    pub message: String,
+    pub context: SiteCheckContext,
+    // pub severity: Option<Severity>,
+}
+
 #[derive(Debug, Serialize, Deserialize, specta::Type)]
 pub struct CheckResult {
     pub rule_id: String,
@@ -16,10 +31,13 @@ pub struct CheckResult {
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct RuleResult {
     pub rule_id: String,
+    pub name: String,
+    pub plugin_name: String,
     pub passed: bool,
     pub message: String,
     pub severity: Severity,
     pub category: RuleCategory,
+    pub context: SiteCheckContext,
 }
 
 // Severity level of an SEO issue
@@ -70,6 +88,7 @@ pub enum RuleType {
 pub struct RuleDisplay {
     pub id: String,
     pub name: String,
+    pub plugin_name: String,
     pub description: String,
     pub severity: Severity,
     pub category: RuleCategory,
@@ -93,6 +112,7 @@ impl From<Rule> for RuleDisplay {
         RuleDisplay {
             id: rule.id.to_string(),
             name: rule.name.to_string(),
+            plugin_name: "".to_string(),
             description: rule.description.to_string(),
             severity: rule.default_severity,
             category: rule.category,
@@ -112,6 +132,7 @@ impl From<SiteRule> for RuleDisplay {
         RuleDisplay {
             id: rule.id.to_string(),
             name: rule.name.to_string(),
+            plugin_name: "".to_string(),
             description: rule.description.to_string(),
             severity: rule.default_severity,
             category: rule.category,

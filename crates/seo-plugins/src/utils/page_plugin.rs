@@ -1,7 +1,7 @@
 use futures::stream::{self, StreamExt};
 use std::any::{Any, TypeId};
 
-use super::config::{Rule, RuleConfig, RuleResult};
+use super::config::{Rule, RuleConfig, RuleResult, SiteCheckContext};
 use super::page::Page;
 use super::registry::PluginRegistry;
 
@@ -35,10 +35,13 @@ pub trait SeoPlugin: Send + Sync + 'static {
                 let result = (rule.check)(page);
                 RuleResult {
                     rule_id: rule.id.to_string(),
+                    name: rule.name.to_string(),
+                    plugin_name: self.name().to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),
                     category: rule.category.clone(),
+                    context: SiteCheckContext::Empty,
                 }
             })
             .collect::<Vec<_>>()
@@ -55,10 +58,13 @@ pub trait SeoPlugin: Send + Sync + 'static {
                 let result = (rule.check)(page);
                 RuleResult {
                     rule_id: rule.id.to_string(),
+                    name: rule.name.to_string(),
+                    plugin_name: self.name().to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),
                     category: rule.category.clone(),
+                    context: SiteCheckContext::Empty,
                 }
             })
             .collect()

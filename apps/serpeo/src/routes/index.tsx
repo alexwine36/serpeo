@@ -6,11 +6,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@repo/ui/components/card";
+import { Input } from "@repo/ui/components/input";
 import { createFileRoute } from "@tanstack/react-router";
+import { useAtom } from "jotai";
+import { RESET } from "jotai/utils";
 import { useState } from "react";
+import { crawlResultAtom } from "../atoms/crawl-result";
+import { useSettings } from "../atoms/settings";
 import { AnalysisStatus } from "../components/analysis-status";
-import { SettingsCard } from "../components/settings/card";
-import { type CrawlResult, commands } from "../generated/bindings";
+import { IssueCategoryDetail } from "../components/display/issue-category-detail";
+import { IssueCategoryOverview } from "../components/display/issue-category-overview";
+import { LinkDisplay } from "../components/display/link-display";
+import { commands } from "../generated/bindings";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -18,11 +25,14 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CrawlResult | null>(null);
+  const [result, setResult] = useAtom(crawlResultAtom);
+
+  const { baseUrl, setBaseUrl } = useSettings();
 
   const analyzeSeo = async () => {
     try {
       setLoading(true);
+      setResult(RESET);
       const analysis = await commands.analyzeUrlSeo();
       console.log("Analysis", analysis);
       if (analysis.status === "ok") {
@@ -37,7 +47,7 @@ function Index() {
 
   return (
     <div className="container mx-auto flex max-w-4xl flex-col gap-4 p-4">
-      <SettingsCard collapsible />
+      {/* <SettingsCard collapsible /> */}
       <Card>
         <CardHeader>
           <CardTitle>SEO Analysis Tool</CardTitle>
@@ -47,18 +57,24 @@ function Index() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            <Button onClick={analyzeSeo} disabled={loading}>
+            <Input
+              type="url"
+              placeholder="Enter website URL..."
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={analyzeSeo} disabled={loading || !baseUrl}>
               {loading ? "Analyzing..." : "Analyze"}
             </Button>
           </div>
 
           <AnalysisStatus />
-          {result && (
+          {result.total_pages > 0 && (
             <div className="mt-8 space-y-6">
-              <div>
-                <h2 className="font-semibold text-lg">Total Pages</h2>
-                <p className="font-bold text-2xl">{result.total_pages}</p>
-              </div>
+              <LinkDisplay />
+              <IssueCategoryOverview />
+              <IssueCategoryDetail />
             </div>
           )}
         </CardContent>

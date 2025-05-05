@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 
 use futures::stream::{self, StreamExt};
 
-use super::config::{CheckResult, RuleConfig, RuleResult, SiteRule};
+use super::config::{RuleConfig, RuleResult, SiteCheckResult, SiteRule};
 use super::page::Page;
 
 use crate::site_analyzer::SiteAnalyzer;
@@ -21,7 +21,7 @@ pub trait SitePlugin: Send + Sync + 'static {
     ) -> Result<(), String> {
         Ok(())
     }
-    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> CheckResult;
+    fn check(&self, rule: &SiteRule, site: &SiteAnalyzer) -> SiteCheckResult;
     fn analyze(&self, site: &SiteAnalyzer, config: &RuleConfig) -> Vec<RuleResult> {
         self.available_rules()
             .iter()
@@ -30,10 +30,13 @@ pub trait SitePlugin: Send + Sync + 'static {
                 let result = self.check(rule, site);
                 RuleResult {
                     rule_id: rule.id.to_string(),
+                    name: rule.name.to_string(),
+                    plugin_name: self.name().to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),
                     category: rule.category.clone(),
+                    context: result.context,
                 }
             })
             .collect()
@@ -50,10 +53,13 @@ pub trait SitePlugin: Send + Sync + 'static {
                 let result = self.check(rule, site);
                 RuleResult {
                     rule_id: rule.id.to_string(),
+                    name: rule.name.to_string(),
+                    plugin_name: self.name().to_string(),
                     passed: result.passed,
                     message: result.message,
                     severity: rule.default_severity.clone(),
                     category: rule.category.clone(),
+                    context: result.context,
                 }
             })
             .collect::<Vec<_>>()

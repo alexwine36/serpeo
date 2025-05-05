@@ -8,6 +8,7 @@ export interface CircleProgressProps
   size?: number;
   strokeWidth?: number;
   showValue?: boolean;
+  showPercentage?: boolean;
   description?: React.ReactNode;
   suffix?: string;
   counterClockwise?: boolean;
@@ -46,8 +47,10 @@ const CircleProgress = ({
   disableAnimation = false,
   // Gradient options
   useGradient = false,
-  gradientColors = ["#10b981", "#f59e0b", "#ef4444"],
+  gradientColors = ["#ef4444", "#f59e0b", "#10b981"],
   gradientId,
+  showPercentage,
+  showValue,
   ...props
 }: CircleProgressProps) => {
   // Add state for animated value
@@ -75,9 +78,9 @@ const CircleProgress = ({
 
   // Default color function
   const defaultGetColor = (percentage: number) => {
-    if (percentage < 0.7) return "stroke-emerald-500"; // Green
+    if (percentage < 0.5) return "stroke-red-500"; // Red
     if (percentage < 0.9) return "stroke-amber-500"; // Yellow/Orange
-    return "stroke-red-500"; // Red
+    return "stroke-emerald-500"; // Green
   };
 
   // Use custom color function if provided, otherwise use default
@@ -141,7 +144,7 @@ const CircleProgress = ({
     `${Math.round(value)}${props.suffix ? props.suffix : ""} out of ${maxValue}${props.suffix ? props.suffix : ""}, ${Math.round(fillPercentage * 100)}% complete`;
 
   const labelText = `${Math.round(value)}${props.suffix ? props.suffix : ""} / ${maxValue}${props.suffix ? props.suffix : ""}`;
-
+  const percentageText = `${Math.round(fillPercentage * 100)}`;
   return (
     // biome-ignore lint/nursery/useAriaPropsSupportedByRole: <explanation>
     // biome-ignore lint/a11y/useFocusableInteractive: <explanation>
@@ -155,7 +158,16 @@ const CircleProgress = ({
       {...props}
     >
       <div className="absolute inset-0 flex items-center justify-center">
-        <p className="font-medium text-gray-500 text-sm">{labelText}</p>
+        {showValue && (
+          <p className="font-medium text-muted-foreground text-sm">
+            {labelText}
+          </p>
+        )}
+        {showPercentage && (
+          <p className="font-bold text-lg text-muted-foreground">
+            {percentageText}
+          </p>
+        )}
       </div>
       {/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
       <svg

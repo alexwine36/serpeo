@@ -15,10 +15,10 @@ import {
 import { Separator } from "@repo/ui/components/separator";
 import { cn } from "@repo/ui/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { useSettings } from "../../../atoms/settings";
 import type { CrawlConfig } from "../../../generated/bindings";
-import { commands } from "../../../generated/bindings";
 import { SettingsForm } from "../form";
 
 type SettingsCardProps = {
@@ -27,41 +27,41 @@ type SettingsCardProps = {
 };
 
 export const SettingsCard = ({ collapsible = false }: SettingsCardProps) => {
-  const [config, setConfig] = useState<CrawlConfig | undefined>();
+  const { settings: config, setSettings: setConfig } = useSettings();
   const [isLoading, setIsLoading] = useState(false);
 
   const [isOpen, setIsOpen] = useState(!collapsible);
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
+  // useEffect(() => {
+  //   loadConfig();
+  // }, []);
 
-  const loadConfig = async () => {
-    try {
-      const result = await commands.getConfig();
-      if (result.status === "ok") {
-        console.log("Loaded config", result.data);
-        setConfig(result.data);
-      } else {
-        toast.error("Failed to load config");
-      }
-    } catch (error) {
-      toast.error("Failed to load config");
-    }
-  };
+  // const loadConfig = async () => {
+  //   try {
+  //     const result = await commands.getConfig();
+  //     if (result.status === "ok") {
+  //       console.log("Loaded config", result.data);
+  //       setConfig(result.data);
+  //     } else {
+  //       toast.error("Failed to load config");
+  //     }
+  //   } catch (error) {
+  //     toast.error("Failed to load config");
+  //   }
+  // };
 
   const handleSave = async (data: CrawlConfig) => {
     setIsLoading(true);
     try {
-      const result = await commands.setConfig(data);
-
-      if (result.status === "ok") {
-        toast.success("Settings saved successfully");
-        await loadConfig();
-        // onSubmit?.(data);
-      } else {
-        toast.error("Failed to save settings");
-      }
+      // const result = await commands.setConfig(data);
+      setConfig(data);
+      // if (result.status === "ok") {
+      toast.success("Settings saved successfully");
+      // await loadConfig();
+      // onSubmit?.(data);
+      // } else {
+      // toast.error("Failed to save settings");
+      // }
     } catch (error) {
       toast.error("Failed to save settings");
     } finally {
