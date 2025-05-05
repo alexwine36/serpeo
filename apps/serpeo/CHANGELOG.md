@@ -1,5 +1,16 @@
 # serpeo
 
+## 0.3.0
+
+### Minor Changes
+
+- bee967a: Updated design of seo display
+- 80df582: Updated tauri dependencies to latest
+
+### Patch Changes
+
+- e077549: Added macos signing to workflow
+
 ## 0.2.8
 
 ### Patch Changes
