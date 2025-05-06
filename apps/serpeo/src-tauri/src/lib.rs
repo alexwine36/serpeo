@@ -68,10 +68,11 @@ fn builder() -> Builder<tauri::Wry> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = builder();
-    // #[cfg(debug_assertions)] // <- Only export on non-release builds
-    // builder
-    //     .export(Typescript::default(), "../src/generated/bindings.ts")
-    //     .expect("Failed to export typescript bindings");
+    #[cfg(debug_assertions)] // <- Only export on non-release builds
+    #[cfg(not(target_os = "ios"))]
+    builder
+        .export(Typescript::default(), "../src/generated/bindings.ts")
+        .expect("Failed to export typescript bindings");
 
     // Create the tauri app
     tauri::Builder::default()
