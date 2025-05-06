@@ -92,9 +92,6 @@ importers:
       '@tauri-apps/plugin-opener':
         specifier: 2.2.6
         version: 2.2.6
-      '@tauri-apps/plugin-shell':
-        specifier: 2.2.1
-        version: 2.2.1
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -1626,9 +1623,6 @@ packages:
 
   '@tauri-apps/plugin-opener@2.2.6':
     resolution: {integrity: sha512-bSdkuP71ZQRepPOn8BOEdBKYJQvl6+jb160QtJX/i2H9BF6ZySY/kYljh76N2Ne5fJMQRge7rlKoStYQY5Jq1w==}
-
-  '@tauri-apps/plugin-shell@2.2.1':
-    resolution: {integrity: sha512-G1GFYyWe/KlCsymuLiNImUgC8zGY0tI0Y3p8JgBCWduR5IEXlIJS+JuG1qtveitwYXlfJrsExt3enhv5l2/yhA==}
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
@@ -6039,10 +6033,6 @@ snapshots:
       '@tauri-apps/cli-win32-x64-msvc': 2.5.0
 
   '@tauri-apps/plugin-opener@2.2.6':
-    dependencies:
-      '@tauri-apps/api': 2.5.0
-
-  '@tauri-apps/plugin-shell@2.2.1':
     dependencies:
       '@tauri-apps/api': 2.5.0
 

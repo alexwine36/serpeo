@@ -1,4 +1,4 @@
-mod lighthouse;
+// mod lighthouse;
 
 pub use seo_plugins::{
     site_analyzer::{AnalysisProgress, CrawlResult, SiteAnalyzer},
@@ -6,7 +6,7 @@ pub use seo_plugins::{
 };
 use thiserror::Error;
 
-pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
+// pub use lighthouse::{run_lighthouse_analysis, CommandOutput, LighthouseMetrics, ShellCommand};
 
 #[derive(Error, Debug)]
 pub enum SeoError {
