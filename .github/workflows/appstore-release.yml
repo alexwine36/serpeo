@@ -63,6 +63,7 @@ jobs:
             - name: Build iOS App
               env:
                 APPLE_API_KEY_PATH: ${{ env.API_KEY_PATH }}
+                APPLE_API_KEY: ${{ secrets.APPLE_KEY_ID }}
               run: |
                 echo $APPLE_API_KEY_PATH
                 pnpm tauri ios build --export-method app-store-connect
