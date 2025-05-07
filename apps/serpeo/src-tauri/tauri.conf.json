@@ -24,10 +24,14 @@
   },
 
   "bundle": {
+    "category": "Utility",
     "active": true,
     "targets": "all",
 
-    "iOS": {}
+    "iOS": {},
+    "macOS": {
+      "entitlements": "./Entitlements.plist"
+    }
   },
   "plugins": {
     "http": {
