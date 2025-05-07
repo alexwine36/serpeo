@@ -57,7 +57,7 @@ jobs:
                 echo "Private key decoded."
             - name: Add Rust target for iOS
               run: |
-                rustup target add arm64-apple-ios
+                rustup target add aarch64-apple-ios
             - name: Build iOS App
               run: |
                 pnpm tauri ios build --export-method app-store-connect
