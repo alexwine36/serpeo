@@ -31,7 +31,7 @@ jobs:
             - name: Setup AppStore Connect API KEY
               run: |
                 mkdir -p ~/private_keys
-                echo ${{ secrets.APPLE_KEY_CONTENT }} > ~/private_keys/AuthKey_${{ secrets.APPLE_KEY_ID }}.p8
+                echo -n ${{ secrets.APPLE_KEY_CONTENT }} > ~/private_keys/AuthKey_${{ secrets.APPLE_KEY_ID }}.p8
             - name: Add Rust target for iOS
               run: |
                 rustup target add aarch64-apple-ios
