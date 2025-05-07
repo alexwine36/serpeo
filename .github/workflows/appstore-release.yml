@@ -52,10 +52,10 @@ jobs:
                 echo "Certificate imported."
             - name: Setup AppStore Connect API KEY
               run: |
-                mkdir private_keys 
-                API_KEY_PATH=private_keys/AuthKey\_$APPLE_API_KEY_ID.p8
-                ABSOLUTE_API_KEY_PATH=$GITHUB_WORKSPACE/$API_KEY_PATH
-                echo $APPLE_KEY_CONTENT > $API_KEY_PATH
+                mkdir -p ~/private_keys
+                API_KEY_PATH=~/private_keys/AuthKey_${{ secrets.APPLE_KEY_ID }}.p8
+                ABSOLUTE_API_KEY_PATH=$API_KEY_PATH
+                echo -n ${{ secrets.APPLE_API_KEY_CONTENT }} > $API_KEY_PATH
                 echo "API_KEY_PATH=$API_KEY_PATH" >> $GITHUB_ENV
                 echo "ABSOLUTE_API_KEY_PATH=$ABSOLUTE_API_KEY_PATH" >> $GITHUB_ENV
                 echo "Private key decoded."
