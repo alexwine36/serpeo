@@ -53,13 +53,18 @@ jobs:
             - name: Setup AppStore Connect API KEY
               run: |
                 mkdir private_keys 
-                echo $APPLE_KEY_CONTENT | base64 --decode > private_keys/AuthKey\_$APPLE_KEY_ID.p8
+                API_KEY_PATH=private_keys/AuthKey\_$APPLE_KEY_ID.p8
+                echo $APPLE_KEY_CONTENT | base64 --decode > $API_KEY_PATH
+                echo "API_KEY_PATH=$API_KEY_PATH" >> $GITHUB_ENV
                 echo "Private key decoded."
             - name: Add Rust target for iOS
               run: |
                 rustup target add aarch64-apple-ios
             - name: Build iOS App
+              env:
+                APPLE_API_KEY_PATH: ${{ env.API_KEY_PATH }}
               run: |
+                echo $APPLE_API_KEY_PATH
                 pnpm tauri ios build --export-method app-store-connect
 
             - name: Upload iOS App to AppStore Connect
