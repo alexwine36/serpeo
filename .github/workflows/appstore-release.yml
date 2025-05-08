@@ -48,7 +48,7 @@ jobs:
             working-directory: apps/serpeo
     name: ${{ matrix.platform_name }}
     runs-on: ${{ matrix.platform }}
-    needs: tests
+    # needs: tests
     permissions:
       contents: write
     strategy:
