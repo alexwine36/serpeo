@@ -1,5 +1,13 @@
 # serpeo
 
+## 1.0.2
+
+### Patch Changes
+
+- d42a7d3: Removed push branches to use release types published and removed push branches and tags
+
+  Moved to Personal Access Token for release jobs
+
 ## 1.0.1
 
 ### Patch Changes
