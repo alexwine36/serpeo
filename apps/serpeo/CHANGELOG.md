@@ -1,5 +1,11 @@
 # serpeo
 
+## 1.0.1
+
+### Patch Changes
+
+- 387db17: Updated build workflow trigger to include release type published and changed workflow name
+
 ## 1.0.0
 
 ### Major Changes
