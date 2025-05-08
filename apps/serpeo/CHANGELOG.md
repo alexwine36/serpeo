@@ -1,5 +1,11 @@
 # serpeo
 
+## 1.0.4
+
+### Patch Changes
+
+- 63cbac1: Moved back to release published for trigger
+
 ## 1.0.3
 
 ### Patch Changes
