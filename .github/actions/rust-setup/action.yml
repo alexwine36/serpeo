@@ -1,0 +1,20 @@
+name: "Rust Setup"
+description: "Install rust and configure deps"
+
+inputs:
+  platform:
+    required: false
+    default: "ubuntu-latest"
+    description: "The platform that the job is running on"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Ubuntu dependencies
+      shell: bash
+      if: ${{ inputs.platform }} == 'ubuntu-latest' || ${{ inputs.platform }} == 'ubuntu-22.04' || ${{ inputs.platform }} == 'linux-arm64'
+      run: |
+        sudo apt-get update
+        sudo apt install libwebkit2gtk-4.1-dev
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: Swatinem/rust-cache@v2

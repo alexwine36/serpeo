@@ -20,9 +20,9 @@ jobs:
           fetch-depth: 0
       # - name: Install rust deps
       #   run: sudo apt install libwebkit2gtk-4.1-dev
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/rust-setup
       - uses: ./.github/actions/ci-setup
-      - uses: Swatinem/rust-cache@v2
+      
 
       - uses: bnjbvr/cargo-machete@main
 

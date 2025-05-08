@@ -27,9 +27,9 @@ jobs:
     #     run: |
     #         sudo apt-get update
     #         sudo apt install libwebkit2gtk-4.1-dev
-      - uses: dtolnay/rust-toolchain@stable
+      
       - uses: ./.github/actions/ci-setup
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/rust-setup
       - uses: bnjbvr/cargo-machete@main
 
       - name: Static Check...
@@ -80,8 +80,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: ./.github/actions/rust-setup
+        with:
+            platform: ${{ matrix.platform }}
       - uses: ./.github/actions/ci-setup
 
       - name: Setup Xcode
@@ -93,7 +94,6 @@ jobs:
             xcodebuild -version
 
 
-      - uses: Swatinem/rust-cache@v2
       - name: Add x86_64-apple-darwin
         if: matrix.platform_name == 'MacOS'
         run: rustup target add x86_64-apple-darwin

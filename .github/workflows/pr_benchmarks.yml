@@ -17,10 +17,7 @@ jobs:
       BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      # - name: Install rust deps
-      #   run: sudo apt install libwebkit2gtk-4.1-dev
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: ./.github/actions/rust-setup
       - uses: bencherdev/bencher@main
 
       - name: Track PR Benchmarks with Bencher
