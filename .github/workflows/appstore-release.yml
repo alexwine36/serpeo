@@ -1,4 +1,4 @@
-name: Build
+name: AppStore Release
 on:
   push:
     branches:
