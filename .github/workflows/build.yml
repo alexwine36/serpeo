@@ -79,6 +79,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: GitHub Ref
+        run: |
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.event.ref: ${{ github.event.ref }}"
+
       - uses: ./.github/actions/rust-setup
         with:
             platform: ${{ matrix.platform }}
