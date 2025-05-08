@@ -1,5 +1,15 @@
 # serpeo
 
+## 1.0.0
+
+### Major Changes
+
+- 6c92c6d: Added automatic iOS build and submit workflow
+
+### Patch Changes
+
+- 0de9709: Updated icons to new logo
+
 ## 0.3.0
 
 ### Minor Changes
