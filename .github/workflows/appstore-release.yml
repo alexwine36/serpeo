@@ -339,17 +339,18 @@ jobs:
         if: matrix.platform_name == 'iOS'
         with:
           name: Serpeo_iOS.ipa
-          path: src-tauri/gen/apple/build/arm64/*.ipa
+          path: apps/serpeo/src-tauri/gen/apple/build/arm64/*.ipa
 
       - name: Release (iOS)
         uses: softprops/action-gh-release@v2
         if: matrix.platform_name == 'iOS' && startsWith(github.event.ref, 'refs/tags/v')
         with:
           files: |
-            src-tauri/gen/apple/build/arm64/*.ipa
+            apps/serpeo/src-tauri/gen/apple/build/arm64/*.ipa
 
       - name: Upload to App Store (or TestFlight)
-        if: matrix.platform_name == 'iOS' && startsWith(github.event.ref, 'refs/tags/v')
+        if: matrix.platform_name == 'iOS' 
+        # && startsWith(github.event.ref, 'refs/tags/v')
         run: xcrun altool --upload-app --type ios --file "src-tauri/gen/apple/build/arm64/Serpeo.ipa" --apiKey $APPLE_API_KEY_ID --apiIssuer $APPLE_API_ISSUER
         env:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
