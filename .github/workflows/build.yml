@@ -6,6 +6,7 @@ on:
       - '**'
     branches-ignore:
       - changeset-release/main
+      - main
       # release:
   #   types: [published]
 
