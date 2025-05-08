@@ -1,5 +1,11 @@
 # serpeo
 
+## 1.0.3
+
+### Patch Changes
+
+- 51420d2: Updated to use tags as build trigger
+
 ## 1.0.2
 
 ### Patch Changes
