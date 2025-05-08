@@ -23,6 +23,18 @@ jobs:
 #       - name: Checkout
 #         uses: actions/checkout@v4
 
+#       - name: Install rust deps
+#         run: sudo apt install libwebkit2gtk-4.1-dev
+#       - uses: dtolnay/rust-toolchain@stable
+#       - uses: ./.github/actions/ci-setup
+#       - uses: Swatinem/rust-cache@v2
+#       - uses: bnjbvr/cargo-machete@main
+
+#       - name: Static Check...
+#         run: pnpm static
+        # env:
+        #   NODE_OPTIONS: "--max_old_space_size=8192"
+
 #       - name: Install PNPM
 #         uses: pnpm/action-setup@v4
 
@@ -158,8 +170,8 @@ jobs:
           mkdir -p ~/private_keys
           echo -n '${{ secrets.APPLE_API_SECRET_KEY }}' > ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
 
-      - name: Bindgen CLI
-        run: cargo install bindgen-cli --locked
+    #   - name: Bindgen CLI
+    #     run: cargo install bindgen-cli --locked
       # On MacOS we only notarize on tagged releases
       # On iOS we need these secrets as well to do code signing
       - name: Build with secrets
