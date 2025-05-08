@@ -23,10 +23,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install rust deps
-        run: |
-            sudo apt-get update
-            sudo apt install libwebkit2gtk-4.1-dev
+    #   - name: Install rust deps
+    #     run: |
+    #         sudo apt-get update
+    #         sudo apt install libwebkit2gtk-4.1-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: ./.github/actions/ci-setup
       - uses: Swatinem/rust-cache@v2

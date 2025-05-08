@@ -1,7 +1,7 @@
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { globbySync } from "globby";
 import sharp from "sharp";
-import { mkdirSync } from "node:fs";
 const CWD = path.join(
   "./src-tauri/gen/apple/Assets.xcassets/AppIcon.appiconset"
 );
