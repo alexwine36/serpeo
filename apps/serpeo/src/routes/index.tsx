@@ -56,7 +56,7 @@ function Index() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4">
+          <div className="space-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
             <Input
               type="url"
               placeholder="Enter website URL..."
@@ -64,7 +64,11 @@ function Index() {
               onChange={(e) => setBaseUrl(e.target.value)}
               className="flex-1"
             />
-            <Button onClick={analyzeSeo} disabled={loading || !baseUrl}>
+            <Button
+              className="min-w-24"
+              onClick={analyzeSeo}
+              disabled={loading || !baseUrl}
+            >
               {loading ? "Analyzing..." : "Analyze"}
             </Button>
           </div>

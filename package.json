@@ -24,6 +24,7 @@
     "sync:format": "syncpack format",
     "sync:lint": "syncpack lint",
     "sync:list": "syncpack list",
+    "tauri": "pnpm --filter serpeo tauri",
     "tauri:dev": "turbo run tauri:dev",
     "typecheck": "turbo run typecheck"
   },

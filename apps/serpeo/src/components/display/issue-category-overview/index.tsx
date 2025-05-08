@@ -8,7 +8,7 @@ import {
 export const IssueCategoryOverview = () => {
   const categories = useAtomValue(issueCategoriesAtom);
   return (
-    <div className="flex w-full flex-row justify-evenly gap-4">
+    <div className="flex w-full flex-row flex-wrap justify-evenly gap-4">
       {Object.entries(categories).map(([category, issues]) => (
         <IssueCategoryOverviewItem
           key={category}

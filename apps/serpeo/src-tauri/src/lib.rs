@@ -1,10 +1,8 @@
-use seo_analyzer::{
-    crawl_url, AnalysisProgress, CommandOutput, CrawlConfig, CrawlResult, ShellCommand,
-};
+use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
 use specta_typescript::Typescript;
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State};
-use tauri_plugin_shell::ShellExt;
+
 use tauri_specta::{collect_commands, collect_events, Builder};
 
 #[derive(Default)]
@@ -71,6 +69,7 @@ fn builder() -> Builder<tauri::Wry> {
 pub fn run() {
     let builder = builder();
     #[cfg(debug_assertions)] // <- Only export on non-release builds
+    #[cfg(not(target_os = "ios"))]
     builder
         .export(Typescript::default(), "../src/generated/bindings.ts")
         .expect("Failed to export typescript bindings");
@@ -81,37 +80,10 @@ pub fn run() {
             app.manage(Mutex::new(AppData::default()));
             Ok(())
         })
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-
-struct TauriShell(tauri::AppHandle);
-
-#[async_trait::async_trait]
-impl ShellCommand for TauriShell {
-    async fn run_command(
-        &self,
-        command: &str,
-        args: &[&str],
-    ) -> Result<CommandOutput, std::io::Error> {
-        let output = self
-            .0
-            .shell()
-            .command(command)
-            .args(args)
-            .output()
-            .await
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-
-        Ok(CommandOutput {
-            status: output.status.success(),
-            stdout: output.stdout,
-            stderr: output.stderr,
-        })
-    }
 }
 
 #[cfg(test)]

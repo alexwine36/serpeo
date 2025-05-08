@@ -17,8 +17,9 @@ import {
   SheetTrigger,
 } from "@repo/ui/components/sheet";
 import { Link, type LinkProps } from "@tanstack/react-router";
-import { ChevronsUp, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { useState } from "react";
+import Logo from "../../../../app-icon.svg";
 
 type RouteDef = Pick<LinkProps, "to"> & {
   label: string;
@@ -57,8 +58,9 @@ export const NavBar = () => {
               <SheetHeader className="mb-4 ml-4">
                 <SheetTitle className="flex items-center">
                   <a href="/" className="flex items-center">
-                    <ChevronsUp className="mr-2 h-9 w-9 rounded-lg border border-secondary bg-gradient-to-tr from-primary via-primary/70 to-primary text-white" />
-                    Forest Fitness
+                    {/* biome-ignore lint/nursery/noImgElement: Importing svg as image */}
+                    <img alt="logo" src={Logo} className="mr-2 h-9 w-9" />
+                    Serpeo
                   </a>
                 </SheetTitle>
               </SheetHeader>
