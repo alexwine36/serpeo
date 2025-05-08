@@ -1,14 +1,14 @@
 name: Build
 on:
 
-  push:
-    tags:
-      - '**'
-    branches-ignore:
-      - changeset-release/main
-      - main
-      # release:
-  #   types: [published]
+  # push:
+    # tags:
+    #   - '**'
+    # branches-ignore:
+    #   - changeset-release/main
+    #   - main
+  release:
+    types: [published]
 
   pull_request:
     branches:
@@ -171,8 +171,8 @@ jobs:
       # On MacOS we only notarize on tagged releases
       # On iOS we need these secrets as well to do code signing
       - name: Build with secrets
-        if: ${{ (matrix.platform_name == 'MacOS' && startsWith(github.event.ref, 'refs/tags/serpeo')) || matrix.platform_name == 'iOS' }}
-        run: ${{ startsWith(github.event.ref, 'refs/tags/serpeo') && matrix.build || matrix.build_dev || matrix.build }}
+        if: ${{ (matrix.platform_name == 'MacOS' && startsWith(github.ref, 'refs/tags/serpeo')) || matrix.platform_name == 'iOS' }}
+        run: ${{ startsWith(github.ref, 'refs/tags/serpeo') && matrix.build || matrix.build_dev || matrix.build }}
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_DIST }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD_DIST }}
@@ -193,7 +193,7 @@ jobs:
 
       # We don't currently do signing on other platforms
       - name: Build without secrets
-        if: ${{ !((matrix.platform_name == 'MacOS' && startsWith(github.event.ref, 'refs/tags/serpeo')) || matrix.platform_name == 'iOS' || matrix.platform_name == 'Android') }}
+        if: ${{ !((matrix.platform_name == 'MacOS' && startsWith(github.ref, 'refs/tags/serpeo')) || matrix.platform_name == 'iOS' || matrix.platform_name == 'Android') }}
         run: ${{ matrix.build }}
         env:
           CI: true
@@ -215,7 +215,7 @@ jobs:
 
       - name: Release (MacOS)
         uses: softprops/action-gh-release@v2
-        if: matrix.platform_name == 'MacOS' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'MacOS' && startsWith(github.ref, 'refs/tags/serpeo')
         with:
           files: |
             target/universal-apple-darwin/release/bundle/macos/*.app
@@ -245,7 +245,7 @@ jobs:
 
       - name: Release (Linux x64)
         uses: softprops/action-gh-release@v2
-        if: matrix.platform_name == 'Linux (x64)' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'Linux (x64)' && startsWith(github.ref, 'refs/tags/serpeo')
         with:
           files: |
             target/release/bundle/deb/*.deb
@@ -276,7 +276,7 @@ jobs:
 
       - name: Release (Linux ARM)
         uses: softprops/action-gh-release@v2
-        if: matrix.platform_name == 'Linux (ARM)' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'Linux (ARM)' && startsWith(github.ref, 'refs/tags/serpeo')
         with:
           files: |
             target/aarch64-unknown-linux-gnu/release/bundle/deb/*.deb
@@ -300,7 +300,7 @@ jobs:
 
       - name: Release (Windows x64)
         uses: softprops/action-gh-release@v2
-        if: matrix.platform_name == 'Windows (x64)' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'Windows (x64)' && startsWith(github.ref, 'refs/tags/serpeo')
         with:
           files: |
             target/release/bundle/msi/*.msi
@@ -323,7 +323,7 @@ jobs:
 
       - name: Release (Windows ARM)
         uses: softprops/action-gh-release@v2
-        if: matrix.platform_name == 'Windows (ARM)' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'Windows (ARM)' && startsWith(github.ref, 'refs/tags/serpeo')
         with:
           files: |
             target/aarch64-pc-windows-msvc/release/bundle/msi/*.msi
@@ -339,13 +339,13 @@ jobs:
 
       - name: Release (iOS)
         uses: softprops/action-gh-release@v2
-        if: matrix.platform_name == 'iOS' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'iOS' && startsWith(github.ref, 'refs/tags/serpeo')
         with:
           files: |
             apps/serpeo/src-tauri/gen/apple/build/arm64/*.ipa
 
       - name: Upload to App Store (or TestFlight)
-        if: matrix.platform_name == 'iOS' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'iOS' && startsWith(github.ref, 'refs/tags/serpeo')
         run: xcrun altool --upload-app --type ios --file "src-tauri/gen/apple/build/arm64/Serpeo.ipa" --apiKey $APPLE_API_KEY_ID --apiIssuer $APPLE_API_ISSUER
         env:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
@@ -368,7 +368,7 @@ jobs:
 
       - name: Release (Android)
         uses: softprops/action-gh-release@v2
-        if: matrix.platform_name == 'Android' && startsWith(github.event.ref, 'refs/tags/serpeo')
+        if: matrix.platform_name == 'Android' && startsWith(github.ref, 'refs/tags/serpeo')
         with:
           files: |
             src-tauri/gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab
