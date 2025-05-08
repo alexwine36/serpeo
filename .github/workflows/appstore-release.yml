@@ -102,6 +102,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - uses: ./.github/actions/ci-setup
 
+      - name: Setup Xcode
+        if: matrix.platform == 'macos-latest'
+        run: |
+            xcodebuild -version
+            ls /Applications | grep Xcode
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+            xcodebuild -version
+
+
       - uses: Swatinem/rust-cache@v2
       - name: Add x86_64-apple-darwin
         if: matrix.platform_name == 'MacOS'
