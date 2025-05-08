@@ -1,9 +1,12 @@
 name: Build
 on:
+
   push:
     tags:
       - '**'
-  # release:
+    branches-ignore:
+      - changeset-release/main
+      # release:
   #   types: [published]
 
   pull_request:
