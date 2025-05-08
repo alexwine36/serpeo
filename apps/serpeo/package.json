@@ -11,6 +11,7 @@
     "tauri:dev": "tauri dev",
     "test": "vitest run",
     "gen:icon": "tauri icon ./logos/icon-square.svg --ios-color=#fff",
+    "fix:icons": "tsx ./scripts/fix-icons.ts",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
@@ -50,6 +51,9 @@
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-istanbul": "catalog:",
     "@workspace/typescript-config": "workspace:*",
+    "globby": "^14.1.0",
+    "sharp": "^0.34.1",
+    "tsx": "^4.19.4",
     "typescript": "catalog:",
     "vite": "^6.0.3",
     "vitest": "catalog:"
