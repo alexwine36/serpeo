@@ -12,7 +12,11 @@ export const AnalysisStatus = () => {
         url: string;
       }
     | undefined
-  >(undefined);
+  >({
+    value: 0,
+    maxValue: 0,
+    url: "",
+  });
   const crawlResult = useAtomValue(crawlResultAtom);
 
   useEffect(() => {
@@ -41,7 +45,14 @@ export const AnalysisStatus = () => {
           maxValue={progress.maxValue}
         />
 
-        <p className="text-muted-foreground text-sm">{progress.url}</p>
+        <p
+          style={{
+            lineBreak: "anywhere",
+          }}
+          className="line-clamp-1 text-muted-foreground text-sm"
+        >
+          {progress.url}
+        </p>
       </div>
     </div>
   );

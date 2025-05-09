@@ -9,15 +9,15 @@ import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import { ShineBorder } from "@repo/ui/components/shine-border";
 import { WavyBackground } from "@repo/ui/components/wavy-background";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSetAtom } from "jotai";
 import { RESET } from "jotai/utils";
+import { Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { crawlResultAtom } from "../atoms/crawl-result";
 import { useSettings } from "../atoms/settings";
 import { AnalysisStatus } from "../components/analysis-status";
 import { commands } from "../generated/bindings";
-
 export const Route = createFileRoute("/")({
   component: Index,
 });
@@ -73,7 +73,18 @@ function Index() {
           shineColor={"chart"}
           // shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
         />
-        <div className="space-4 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
+        <Button
+          className="fixed right-4 bottom-4"
+          variant="outline"
+          size="icon"
+          asChild
+          aria-label="Settings"
+        >
+          <Link to="/settings" viewTransition>
+            <Settings />
+          </Link>
+        </Button>
+        <div className="space-4 grid w-[calc(100vw-4rem)] grid-cols-1 gap-4 sm:w-sm md:w-md md:grid-cols-[1fr_auto]">
           <div className="flex flex-col gap-2">
             <Label>Analyze Your Website</Label>
             <Input
