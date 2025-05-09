@@ -83,25 +83,15 @@ export const Vortex = (props: VortexProps) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    let x: number,
-      y: number,
-      vx: number,
-      vy: number,
-      life: number,
-      ttl: number,
-      speed: number,
-      radius: number,
-      hue: number;
-
-    x = rand(canvas.width);
-    y = center[1] + randRange(rangeY);
-    vx = 0;
-    vy = 0;
-    life = 0;
-    ttl = baseTTL + rand(rangeTTL);
-    speed = baseSpeed + rand(rangeSpeed);
-    radius = baseRadius + rand(rangeRadius);
-    hue = baseHue + rand(rangeHue);
+    const x: number = rand(canvas.width),
+      y: number = center[1] + randRange(rangeY),
+      vx: number = 0,
+      vy: number = 0,
+      life: number = 0,
+      ttl: number = baseTTL + rand(rangeTTL),
+      speed: number = baseSpeed + rand(rangeSpeed),
+      radius: number = baseRadius + rand(rangeRadius),
+      hue: number = baseHue + rand(rangeHue);
 
     particleProps.set([x, y, vx, vy, life, ttl, speed, radius, hue], i);
   };
@@ -139,20 +129,31 @@ export const Vortex = (props: VortexProps) => {
       i7 = 6 + i,
       i8 = 7 + i,
       i9 = 8 + i;
-    let n, x, y, vx, vy, life, ttl, speed, x2, y2, radius, hue;
+    let n: number,
+      x: number,
+      y: number,
+      vx: number,
+      vy: number,
+      life: number,
+      ttl: number,
+      speed: number,
+      x2: number,
+      y2: number,
+      radius: number,
+      hue: number;
 
-    x = particleProps[i];
-    y = particleProps[i2];
+    x = particleProps[i] ?? 0;
+    y = particleProps[i2] ?? 0;
     n = noise3D(x * xOff, y * yOff, tick * zOff) * noiseSteps * TAU;
-    vx = lerp(particleProps[i3], Math.cos(n), 0.5);
-    vy = lerp(particleProps[i4], Math.sin(n), 0.5);
-    life = particleProps[i5];
-    ttl = particleProps[i6];
-    speed = particleProps[i7];
+    vx = lerp(particleProps[i3] ?? 0, Math.cos(n), 0.5);
+    vy = lerp(particleProps[i4] ?? 0, Math.sin(n), 0.5);
+    life = particleProps[i5] ?? 0;
+    ttl = particleProps[i6] ?? 0;
+    speed = particleProps[i7] ?? 0;
     x2 = x + vx * speed;
     y2 = y + vy * speed;
-    radius = particleProps[i8];
-    hue = particleProps[i9];
+    radius = particleProps[i8] ?? 0;
+    hue = particleProps[i9] ?? 0;
 
     drawParticle(x, y, x2, y2, life, ttl, radius, hue, ctx);
 
@@ -234,6 +235,7 @@ export const Vortex = (props: VortexProps) => {
     ctx.restore();
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     setup();
     window.addEventListener("resize", () => {

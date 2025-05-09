@@ -27,7 +27,7 @@ type RouteDef = Pick<LinkProps, "to"> & {
 
 const routeList: RouteDef[] = [
   {
-    label: "Home",
+    label: "New Analysis",
     to: "/",
   },
   {
@@ -43,7 +43,7 @@ const routeList: RouteDef[] = [
 export const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   return (
-    <header className="sticky z-40 mx-auto flex items-center justify-between border border-secondary bg-card bg-opacity-15 p-2 shadow-inner ">
+    <header className="sticky z-40 mx-auto flex items-center justify-between border bg-card/25 p-2 ">
       {/* Placeholder for Logo */}
       <div className="flex items-center md:hidden">
         <Sheet open={isOpen} onOpenChange={setIsOpen}>

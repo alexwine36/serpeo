@@ -11,14 +11,15 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as SettingsImport } from './routes/settings'
+import { Route as SettingsRouteImport } from './routes/settings/route'
 import { Route as AnalysisRouteImport } from './routes/analysis/route'
 import { Route as IndexImport } from './routes/index'
+import { Route as SettingsIndexImport } from './routes/settings/index'
 import { Route as AnalysisIndexImport } from './routes/analysis/index'
 
 // Create/Update Routes
 
-const SettingsRoute = SettingsImport.update({
+const SettingsRouteRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => rootRoute,
@@ -34,6 +35,12 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const SettingsIndexRoute = SettingsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRouteRoute,
 } as any)
 
 const AnalysisIndexRoute = AnalysisIndexImport.update({
@@ -64,7 +71,7 @@ declare module '@tanstack/react-router' {
       id: '/settings'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof SettingsImport
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRoute
     }
     '/analysis/': {
@@ -73,6 +80,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/analysis/'
       preLoaderRoute: typeof AnalysisIndexImport
       parentRoute: typeof AnalysisRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexImport
+      parentRoute: typeof SettingsRouteImport
     }
   }
 }
@@ -91,46 +105,60 @@ const AnalysisRouteRouteWithChildren = AnalysisRouteRoute._addFileChildren(
   AnalysisRouteRouteChildren,
 )
 
+interface SettingsRouteRouteChildren {
+  SettingsIndexRoute: typeof SettingsIndexRoute
+}
+
+const SettingsRouteRouteChildren: SettingsRouteRouteChildren = {
+  SettingsIndexRoute: SettingsIndexRoute,
+}
+
+const SettingsRouteRouteWithChildren = SettingsRouteRoute._addFileChildren(
+  SettingsRouteRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRouteRouteWithChildren
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/analysis/': typeof AnalysisIndexRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/settings': typeof SettingsRoute
   '/analysis': typeof AnalysisIndexRoute
+  '/settings': typeof SettingsIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/analysis': typeof AnalysisRouteRouteWithChildren
-  '/settings': typeof SettingsRoute
+  '/settings': typeof SettingsRouteRouteWithChildren
   '/analysis/': typeof AnalysisIndexRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analysis' | '/settings' | '/analysis/'
+  fullPaths: '/' | '/analysis' | '/settings' | '/analysis/' | '/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/analysis'
-  id: '__root__' | '/' | '/analysis' | '/settings' | '/analysis/'
+  to: '/' | '/analysis' | '/settings'
+  id: '__root__' | '/' | '/analysis' | '/settings' | '/analysis/' | '/settings/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalysisRouteRoute: typeof AnalysisRouteRouteWithChildren
-  SettingsRoute: typeof SettingsRoute
+  SettingsRouteRoute: typeof SettingsRouteRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalysisRouteRoute: AnalysisRouteRouteWithChildren,
-  SettingsRoute: SettingsRoute,
+  SettingsRouteRoute: SettingsRouteRouteWithChildren,
 }
 
 export const routeTree = rootRoute
@@ -158,11 +186,18 @@ export const routeTree = rootRoute
       ]
     },
     "/settings": {
-      "filePath": "settings.tsx"
+      "filePath": "settings/route.tsx",
+      "children": [
+        "/settings/"
+      ]
     },
     "/analysis/": {
       "filePath": "analysis/index.tsx",
       "parent": "/analysis"
+    },
+    "/settings/": {
+      "filePath": "settings/index.tsx",
+      "parent": "/settings"
     }
   }
 }
