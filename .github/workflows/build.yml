@@ -174,8 +174,8 @@ jobs:
         if: ${{ (matrix.platform_name == 'MacOS' && startsWith(github.ref, 'refs/tags/serpeo')) || matrix.platform_name == 'iOS' }}
         run: ${{ startsWith(github.ref, 'refs/tags/serpeo') && matrix.build || matrix.build_dev || matrix.build }}
         env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE_DIST }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD_DIST }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8

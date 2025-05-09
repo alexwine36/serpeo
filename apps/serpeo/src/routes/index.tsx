@@ -1,22 +1,21 @@
 import { Button } from "@repo/ui/components/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@repo/ui/components/card";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@repo/ui/components/dialog";
 import { Input } from "@repo/ui/components/input";
-import { createFileRoute } from "@tanstack/react-router";
-import { useAtom } from "jotai";
+import { Label } from "@repo/ui/components/label";
+import { ShineBorder } from "@repo/ui/components/shine-border";
+import { WavyBackground } from "@repo/ui/components/wavy-background";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useSetAtom } from "jotai";
 import { RESET } from "jotai/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { crawlResultAtom } from "../atoms/crawl-result";
 import { useSettings } from "../atoms/settings";
 import { AnalysisStatus } from "../components/analysis-status";
-import { IssueCategoryDetail } from "../components/display/issue-category-detail";
-import { IssueCategoryOverview } from "../components/display/issue-category-overview";
-import { LinkDisplay } from "../components/display/link-display";
 import { commands } from "../generated/bindings";
 
 export const Route = createFileRoute("/")({
@@ -25,8 +24,8 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useAtom(crawlResultAtom);
-
+  const setResult = useSetAtom(crawlResultAtom);
+  const navigate = useNavigate();
   const { baseUrl, setBaseUrl } = useSettings();
 
   const analyzeSeo = async () => {
@@ -37,6 +36,7 @@ function Index() {
       console.log("Analysis", analysis);
       if (analysis.status === "ok") {
         setResult(analysis.data);
+        navigate({ to: "/analysis", viewTransition: true });
       }
     } catch (error) {
       console.error("Error analyzing SEO:", error);
@@ -45,25 +45,46 @@ function Index() {
     }
   };
 
+  useEffect(() => {
+    document.body.classList.add("h-dvh");
+    document.body.classList.add("overflow-hidden");
+    return () => {
+      document.body.classList.remove("h-dvh");
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, []);
+
   return (
-    <div className="container mx-auto flex max-w-4xl flex-col gap-4 p-4">
-      {/* <SettingsCard collapsible /> */}
-      <Card>
-        <CardHeader>
-          <CardTitle>SEO Analysis Tool</CardTitle>
-          <CardDescription>
-            Run a full SEO analysis on the website configured in settings.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
+    // <WavyBackground
+    //   // rangeY={200}
+    //   //     // particleCount={500}
+    //   //     // baseHue={120}
+    //   //     baseRadius={3}
+    //   //     rangeRadius={2}
+    //   className="max-w-screen overflow-x-hidden"
+    // >
+    <WavyBackground className="flex max-h-dvh max-w-dvh items-center justify-center overflow-hidden [view-transition-name:warp]">
+      {/* <WavyBackground className="max-h-full overflow-hidden"> */}
+      <div className="relative rounded-md bg-background p-4 shadow-lg">
+        {/* <SettingsCard collapsible /> */}
+        <ShineBorder
+          borderWidth={2}
+          // className="bg-background"
+          shineColor={"chart"}
+          // shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+        />
+        <div className="space-4 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
+          <div className="flex flex-col gap-2">
+            <Label>Analyze Your Website</Label>
             <Input
               type="url"
-              placeholder="Enter website URL..."
+              placeholder="https://"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
               className="flex-1"
             />
+          </div>
+          <div className="flex items-end">
             <Button
               className="min-w-24"
               onClick={analyzeSeo}
@@ -72,17 +93,65 @@ function Index() {
               {loading ? "Analyzing..." : "Analyze"}
             </Button>
           </div>
+        </div>
+        <Dialog open={loading}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Run Status</DialogTitle>
+            </DialogHeader>
+            <div>
+              <AnalysisStatus />
+            </div>
+          </DialogContent>
+        </Dialog>
 
-          <AnalysisStatus />
-          {result.total_pages > 0 && (
+        {/* {result.total_pages > 0 && (
             <div className="mt-8 space-y-6">
               <LinkDisplay />
               <IssueCategoryOverview />
               <IssueCategoryDetail />
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          )} */}
+
+        {/* <Card>
+            <CardHeader>
+              <CardTitle>SEO Analysis Tool</CardTitle>
+              <CardDescription>
+                Run a full SEO analysis on the website configured in settings.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
+                <Input
+                  type="url"
+                  placeholder="Enter website URL..."
+                  value={baseUrl}
+                  onChange={(e) => setBaseUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  className="min-w-24"
+                  onClick={analyzeSeo}
+                  disabled={loading || !baseUrl}
+                >
+                  {loading ? "Analyzing..." : "Analyze"}
+                </Button>
+              </div>
+
+              <AnalysisStatus />
+              {result.total_pages > 0 && (
+                <div className="mt-8 space-y-6">
+                  <LinkDisplay />
+                  <IssueCategoryOverview />
+                  <IssueCategoryDetail />
+                </div>
+              )}
+            </CardContent>
+          </Card> */}
+      </div>
+      {/* </WavyBackground> */}
+    </WavyBackground>
+
+    // </WavyBackground>
   );
 }

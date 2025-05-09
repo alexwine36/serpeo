@@ -1,4 +1,5 @@
 import "@repo/ui/globals.css";
+import "@repo/ui/transitions.css";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import ReactDOM from "react-dom/client";
