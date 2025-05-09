@@ -8,11 +8,11 @@ export const Route = createRootRoute({
   component: () => (
     <>
       <Providers>
-        <NavBar />
+        {/* <NavBar /> */}
 
-        <div className="m-2">
-          <Outlet />
-        </div>
+        {/* <div className="m-2"> */}
+        <Outlet />
+        {/* </div> */}
         <Toaster />
 
         <TanStackRouterDevtools />

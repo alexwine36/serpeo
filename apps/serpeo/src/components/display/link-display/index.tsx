@@ -13,11 +13,11 @@ export const LinkDisplay = () => {
 
   const displayOpts: (keyof typeof links)[] = ["Total", "Internal", "External"];
   return (
-    <div className="flex flex-wrap gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
       {displayOpts.map((linkType) => {
         const linkCount = links[linkType]?.length ?? 0;
         return (
-          <Card className="w-full max-w-sm" key={linkType}>
+          <Card key={linkType}>
             <CardHeader>
               <CardTitle>{linkType}</CardTitle>
             </CardHeader>
