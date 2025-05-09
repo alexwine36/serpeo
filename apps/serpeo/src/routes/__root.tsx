@@ -1,7 +1,6 @@
 import { Toaster } from "@repo/ui/components/sonner";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { NavBar } from "../components/layout/nav-bar";
 import { Providers } from "../components/providers";
 
 export const Route = createRootRoute({

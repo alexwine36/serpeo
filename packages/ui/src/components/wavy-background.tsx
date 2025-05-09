@@ -66,18 +66,18 @@ export const WavyBackground = ({
   };
 
   const waveColors = colors ?? [
-    "#38bdf8",
-    "#818cf8",
-    "#c084fc",
-    "#e879f9",
-    "#22d3ee",
+    styles.getPropertyValue("--chart-1"),
+    styles.getPropertyValue("--chart-2"),
+    styles.getPropertyValue("--chart-3"),
+    styles.getPropertyValue("--chart-4"),
+    styles.getPropertyValue("--chart-5"),
   ];
   const drawWave = (n: number) => {
     nt += getSpeed();
     for (i = 0; i < n; i++) {
       if (!ctx) return;
       ctx.beginPath();
-      ctx.lineWidth = waveWidth || 50;
+      ctx.lineWidth = waveWidth || 30;
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       ctx.strokeStyle = waveColors[i % waveColors.length] || waveColors[0]!;
       for (x = 0; x < w; x += 5) {

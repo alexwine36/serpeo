@@ -7,7 +7,8 @@
     "ignore": [
       "apps/serpeo/src-tauri/gen",
       "apps/serpeo/src/routeTree.gen.ts",
-      "apps/serpeo/src/generated/*"
+      "apps/serpeo/src/generated/*",
+      "packages/ui/src/styles/transitions.css"
     ]
   },
   "formatter": {
@@ -28,6 +29,10 @@
         "noForEach": "off"
       },
       "style": {
+        "noUnusedTemplateLiteral": {
+          "level": "error",
+          "fix": "safe"
+        },
         "useNodejsImportProtocol": {
           "level": "error",
           "fix": "safe"

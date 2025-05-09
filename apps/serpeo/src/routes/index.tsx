@@ -1,4 +1,3 @@
-import { BackgroundPaths } from "@repo/ui/components/background-paths";
 import { Button } from "@repo/ui/components/button";
 import {
   Dialog,
@@ -9,14 +8,16 @@ import {
 import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import { ShineBorder } from "@repo/ui/components/shine-border";
+import { WavyBackground } from "@repo/ui/components/wavy-background";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSetAtom } from "jotai";
 import { RESET } from "jotai/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { crawlResultAtom } from "../atoms/crawl-result";
 import { useSettings } from "../atoms/settings";
 import { AnalysisStatus } from "../components/analysis-status";
 import { commands } from "../generated/bindings";
+
 export const Route = createFileRoute("/")({
   component: Index,
 });
@@ -44,6 +45,15 @@ function Index() {
     }
   };
 
+  useEffect(() => {
+    document.body.classList.add("h-dvh");
+    document.body.classList.add("overflow-hidden");
+    return () => {
+      document.body.classList.remove("h-dvh");
+      document.body.classList.remove("overflow-hidden");
+    };
+  }, []);
+
   return (
     // <WavyBackground
     //   // rangeY={200}
@@ -53,49 +63,49 @@ function Index() {
     //   //     rangeRadius={2}
     //   className="max-w-screen overflow-x-hidden"
     // >
-    <div className="h-dvh overflow-hidden [view-transition-name:warp]">
-      <BackgroundPaths>
-        <div className="relative rounded-md bg-background p-4 shadow-lg">
-          {/* <SettingsCard collapsible /> */}
-          <ShineBorder
-            borderWidth={2}
-            // className="bg-background"
-            shineColor={"chart"}
-            // shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
-          />
-          <div className="space-4 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
-            <div className="flex flex-col gap-2">
-              <Label>Analyze Your Website</Label>
-              <Input
-                type="url"
-                placeholder="https://"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button
-                className="min-w-24"
-                onClick={analyzeSeo}
-                disabled={loading || !baseUrl}
-              >
-                {loading ? "Analyzing..." : "Analyze"}
-              </Button>
-            </div>
+    <WavyBackground className="flex max-h-dvh max-w-dvh items-center justify-center overflow-hidden [view-transition-name:warp]">
+      {/* <WavyBackground className="max-h-full overflow-hidden"> */}
+      <div className="relative rounded-md bg-background p-4 shadow-lg">
+        {/* <SettingsCard collapsible /> */}
+        <ShineBorder
+          borderWidth={2}
+          // className="bg-background"
+          shineColor={"chart"}
+          // shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+        />
+        <div className="space-4 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
+          <div className="flex flex-col gap-2">
+            <Label>Analyze Your Website</Label>
+            <Input
+              type="url"
+              placeholder="https://"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              className="flex-1"
+            />
           </div>
-          <Dialog open={loading}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Run Status</DialogTitle>
-              </DialogHeader>
-              <div>
-                <AnalysisStatus />
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-end">
+            <Button
+              className="min-w-24"
+              onClick={analyzeSeo}
+              disabled={loading || !baseUrl}
+            >
+              {loading ? "Analyzing..." : "Analyze"}
+            </Button>
+          </div>
+        </div>
+        <Dialog open={loading}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Run Status</DialogTitle>
+            </DialogHeader>
+            <div>
+              <AnalysisStatus />
+            </div>
+          </DialogContent>
+        </Dialog>
 
-          {/* {result.total_pages > 0 && (
+        {/* {result.total_pages > 0 && (
             <div className="mt-8 space-y-6">
               <LinkDisplay />
               <IssueCategoryOverview />
@@ -103,7 +113,7 @@ function Index() {
             </div>
           )} */}
 
-          {/* <Card>
+        {/* <Card>
             <CardHeader>
               <CardTitle>SEO Analysis Tool</CardTitle>
               <CardDescription>
@@ -138,9 +148,9 @@ function Index() {
               )}
             </CardContent>
           </Card> */}
-        </div>
-      </BackgroundPaths>
-    </div>
+      </div>
+      {/* </WavyBackground> */}
+    </WavyBackground>
 
     // </WavyBackground>
   );

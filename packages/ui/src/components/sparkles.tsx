@@ -1,14 +1,13 @@
 "use client";
+import { cn } from "@repo/ui/lib/utils";
+import type { Container, SingleOrMultiple } from "@tsparticles/engine";
+import Particles, { initParticlesEngine } from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
+import { motion, useAnimation } from "framer-motion";
 import { useId } from "react";
 import { useEffect, useState } from "react";
-import Particles, { initParticlesEngine } from "@tsparticles/react";
-import type { Container, SingleOrMultiple } from "@tsparticles/engine";
-import { loadSlim } from "@tsparticles/slim";
-import { cn } from "@repo/ui/lib/utils";
-import { motion, useAnimation } from "framer-motion";
 
 // Usage -> https://21st.dev/aceternity/sparkles/default
-
 
 type ParticlesProps = {
   id?: string;
@@ -21,8 +20,6 @@ type ParticlesProps = {
   particleColor?: string;
   particleDensity?: number;
 };
-
-
 
 /**
  * 

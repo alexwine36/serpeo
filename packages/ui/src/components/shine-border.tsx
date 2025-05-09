@@ -40,7 +40,9 @@ export function ShineBorder({
     if (shineColor === "chart") {
       return [
         styles.getPropertyValue("--chart-1"),
+        styles.getPropertyValue("--chart-2"),
         styles.getPropertyValue("--chart-3"),
+        styles.getPropertyValue("--chart-4"),
         styles.getPropertyValue("--chart-5"),
       ];
     }
