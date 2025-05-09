@@ -1,3 +1,6 @@
+[![GitHub Release](https://img.shields.io/github/v/release/alexwine36/serpeo?filter=serpeo*&style=flat)](https://github.com/alexwine36/serpeo/releases) [![Build](https://github.com/alexwine36/serpeo/actions/workflows/build.yml/badge.svg?event=release)](https://github.com/alexwine36/serpeo/actions/workflows/build.yml)
+
+
 
 # Serpeo
 
