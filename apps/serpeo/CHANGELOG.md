@@ -1,5 +1,13 @@
 # serpeo
 
+## 1.0.5
+
+### Patch Changes
+
+- 2250952: Updated SEO appearance and window order
+- Updated dependencies [2250952]
+  - @repo/ui@0.1.1
+
 ## 1.0.4
 
 ### Patch Changes
