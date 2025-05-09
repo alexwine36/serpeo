@@ -1,5 +1,11 @@
 # serpeo
 
+## 1.0.6
+
+### Patch Changes
+
+- 07d700b: Updated small UI bugs
+
 ## 1.0.5
 
 ### Patch Changes
