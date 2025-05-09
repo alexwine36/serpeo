@@ -84,7 +84,7 @@ function Index() {
             <Settings />
           </Link>
         </Button>
-        <div className="space-4 grid grid-cols-1 gap-4 md:grid-cols-[1fr_auto]">
+        <div className="space-4 grid w-[calc(100vw-4rem)] grid-cols-1 gap-4 sm:w-sm md:w-md md:grid-cols-[1fr_auto]">
           <div className="flex flex-col gap-2">
             <Label>Analyze Your Website</Label>
             <Input
