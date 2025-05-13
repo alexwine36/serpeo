@@ -109,7 +109,7 @@ fn setup_listeners(app: Arc<Mutex<tauri::AppHandle>>) {
         let app_handle = Arc::clone(&app);
         let app_handle = app_handle.lock().unwrap().clone();
         futures::executor::block_on(async move {
-            if let Ok(payload) = serde_json::from_str::<AnalysisStart>(&event.payload()) {
+            if let Ok(payload) = serde_json::from_str::<AnalysisStart>(event.payload()) {
                 let storage = app_handle
                     .state::<Mutex<AppData>>()
                     .lock()

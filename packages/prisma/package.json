@@ -3,14 +3,14 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev --skip-generate",
-    "db:deploy": "prisma migrate deploy"
+    "db:migrate": "prisma migrate dev --skip-generate"
+  },
+  "dependencies": {
+    "@prisma/client": "6.7.0"
   },
   "devDependencies": {
     "prisma": "^6.7.0"
-  },
-  "dependencies": {
-    "@prisma/client": "^6.7.0"
   }
 }

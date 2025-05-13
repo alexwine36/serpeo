@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use sqlx::types::chrono::{DateTime, Utc};
-use welds::{Syntax, WeldsError, prelude::*};
+use welds::prelude::*;
 
 #[derive(Debug, WeldsModel, Serialize, Deserialize, Type)]
 #[welds(table = "Site")]

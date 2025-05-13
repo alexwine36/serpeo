@@ -1,9 +1,5 @@
 use entities::{Run, Site};
-use sqlx::{
-    migrate::{Migration, MigrationType, Migrator},
-    sqlite::SqlitePoolOptions,
-};
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 pub mod entities;
 pub mod migrations;
@@ -50,7 +46,7 @@ impl SeoStorage {
             .run(client.as_ref())
             .await
             .map_err(|e| e.to_string())?;
-        if sites.len() > 0 {
+        if !sites.is_empty() {
             return Ok(sites[0].id);
         }
         site.save(client.as_ref())
@@ -112,13 +108,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_run() {
-        let mut storage = SeoStorage::new("sqlite::memory:").await.unwrap();
+        let storage = SeoStorage::new("sqlite::memory:").await.unwrap();
         storage.migrate().await.unwrap();
         let run_id = storage.create_run("https://www.google.com").await.unwrap();
         assert!(run_id > 0);
         let runs = storage.get_runs().await.unwrap();
         println!("runs: {:?}", runs);
-        assert!(runs.len() > 0);
+        assert!(!runs.is_empty());
         let created_run = &runs[0];
         assert_eq!(created_run.id, run_id);
         let site_id = storage.upsert_site("https://www.google.com").await.unwrap();
