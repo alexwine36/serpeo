@@ -28,6 +28,14 @@ async analyzeUrlSeo() : Promise<Result<CrawlResult, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getSites() : Promise<Result<Site[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_sites") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -35,9 +43,11 @@ async analyzeUrlSeo() : Promise<Result<CrawlResult, string>> {
 
 
 export const events = __makeEvents__<{
-analysisProgress: AnalysisProgress
+analysisProgress: AnalysisProgress,
+analysisStart: AnalysisStart
 }>({
-analysisProgress: "analysis-progress"
+analysisProgress: "analysis-progress",
+analysisStart: "analysis-start"
 })
 
 /** user-defined constants **/
@@ -48,6 +58,7 @@ analysisProgress: "analysis-progress"
 
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
 export type AnalysisProgressType = "FoundLink" | "AnalyzedPage"
+export type AnalysisStart = { base_url: string }
 export type CrawlConfig = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
@@ -58,6 +69,7 @@ export type PageResult = { error: boolean; results: RuleResult[] }
 export type RuleCategory = "Accessibility" | "Performance" | "BestPractices" | "SEO"
 export type RuleResult = { rule_id: string; name: string; plugin_name: string; passed: boolean; message: string; severity: Severity; category: RuleCategory; context: SiteCheckContext }
 export type Severity = "Info" | "Warning" | "Error" | "Critical"
+export type Site = { id: number; name: string; url: string; created_at: string }
 export type SiteCheckContext = { Urls: string[] } | { Values: Partial<{ [key in string]: string[] }> } | "Empty"
 
 /** tauri-specta globals **/

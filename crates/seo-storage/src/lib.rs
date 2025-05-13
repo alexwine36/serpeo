@@ -3,11 +3,10 @@ use sqlx::{
     migrate::{Migration, MigrationType, Migrator},
     sqlite::SqlitePoolOptions,
 };
-use std::{
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::{path::Path, sync::Arc};
+use tokio::sync::Mutex;
 pub mod entities;
+pub mod migrations;
 pub use welds::{
     connections::{Client, any::AnyClient, sqlite::SqliteClient},
     state::DbState,
@@ -29,22 +28,22 @@ impl SeoStorage {
             client: Arc::new(Mutex::new(client)),
         })
     }
-    pub async fn migrate(&self) -> Result<(), String> {
-        let schema = include_str!(
-            "../../../packages/prisma/prisma/migrations/20250513041938_initial_create_db/migration.sql"
-        );
-        let client = self.client.lock().unwrap();
-        client
-            .execute(schema, &[])
-            .await
-            .map_err(|e| e.to_string())?;
+    async fn migrate(&self) -> Result<(), String> {
+        let migrations = migrations::get_migrations();
+        for migration in migrations {
+            let client = self.client.lock().await;
+            client
+                .execute(&migration.schema, &[])
+                .await
+                .map_err(|e| e.to_string())?;
+        }
         Ok(())
     }
 
     pub async fn upsert_site(&self, url: &str) -> Result<i32, String> {
         let mut site = Site::new();
         site.url = url.to_string();
-        let client = self.client.lock().unwrap();
+        let client = self.client.lock().await;
         let sites = Site::all()
             .where_col(|p| p.url.equal(url))
             .limit(1)
@@ -60,9 +59,9 @@ impl SeoStorage {
         Ok(site.id)
     }
 
-    pub async fn create_run(&mut self, url: &str) -> Result<i32, String> {
+    pub async fn create_run(&self, url: &str) -> Result<i32, String> {
         let site_id = self.upsert_site(url).await?;
-        let client = self.client.lock().unwrap();
+        let client = self.client.lock().await;
         let mut run = Run::new();
         run.site_id = site_id;
         run.save(client.as_ref()).await.map_err(|e| e.to_string())?;
@@ -70,7 +69,7 @@ impl SeoStorage {
     }
 
     pub async fn get_sites(&self) -> Result<Vec<Site>, String> {
-        let client = self.client.lock().unwrap();
+        let client = self.client.lock().await;
         let sites = Site::all()
             .run(client.as_ref())
             .await
@@ -79,11 +78,12 @@ impl SeoStorage {
         Ok(sites)
     }
 
-    pub async fn get_runs(&self) -> Result<Vec<DbState<Run>>, String> {
-        let client = self.client.lock().unwrap();
+    pub async fn get_runs(&self) -> Result<Vec<Run>, String> {
+        let client = self.client.lock().await;
         let runs = Run::all()
             .run(client.as_ref())
             .await
+            .map(|s| s.into_iter().map(|s| s.into_inner()).collect())
             .map_err(|e| e.to_string())?;
         Ok(runs)
     }
@@ -126,6 +126,6 @@ mod tests {
         let sites = storage.get_sites().await.unwrap();
         println!("sites: {:?}", sites);
 
-        assert!(false);
+        // assert!(false);
     }
 }

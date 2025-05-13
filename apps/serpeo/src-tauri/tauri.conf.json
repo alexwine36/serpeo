@@ -40,6 +40,9 @@
       "all": true,
       "request": true,
       "scope": ["https://**", "http://**"]
+    },
+    "sql": {
+      "preload": ["sqlite:seo-storage.db"]
     }
   }
 }

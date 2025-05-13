@@ -1,12 +1,19 @@
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
 use seo_storage::{entities::Site, SeoStorage};
+use serde::{Deserialize, Serialize};
+use specta::Type;
 use specta_typescript::Typescript;
-use std::sync::Mutex;
-use tauri::{Emitter, Manager, State};
+use std::sync::{Arc, Mutex};
+use tauri::{Emitter, Listener, Manager, State};
 use tauri_plugin_sql::{Migration, MigrationKind};
-use tauri_specta::{collect_commands, collect_events, Builder};
+use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 const DB_PATH: &str = "seo-storage.db";
+
+#[derive(Debug, Serialize, Deserialize, Clone, Type, Event)]
+struct AnalysisStart {
+    base_url: String,
+}
 
 // #[derive(Default)]
 struct AppData {
@@ -41,6 +48,11 @@ async fn analyze_url_seo(app: tauri::AppHandle) -> Result<CrawlResult, String> {
         .unwrap()
         .config
         .clone();
+    let base_url = config.base_url.clone();
+    {
+        let app_handle = app.clone();
+        let _ = app_handle.emit("analysis-start", AnalysisStart { base_url });
+    }
     let progress_callback = Box::new(move |progress| {
         let _ = app_handle.emit("analysis-progress", progress);
     });
@@ -86,7 +98,29 @@ fn builder() -> Builder<tauri::Wry> {
             analyze_url_seo,
             get_sites
         ])
-        .events(collect_events![AnalysisProgress])
+        .events(collect_events![AnalysisProgress, AnalysisStart])
+}
+
+fn setup_listeners(app: Arc<Mutex<tauri::AppHandle>>) {
+    let root_app = Arc::clone(&app);
+    let root_app = root_app.lock().unwrap().clone();
+
+    root_app.listen("analysis-start", move |event| {
+        let app_handle = Arc::clone(&app);
+        let app_handle = app_handle.lock().unwrap().clone();
+        futures::executor::block_on(async move {
+            if let Ok(payload) = serde_json::from_str::<AnalysisStart>(&event.payload()) {
+                let storage = app_handle
+                    .state::<Mutex<AppData>>()
+                    .lock()
+                    .unwrap()
+                    .storage
+                    .clone();
+                let site_id = storage.create_run(&payload.base_url).await.unwrap();
+                println!("site_id: {}", site_id);
+            }
+        });
+    });
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -98,26 +132,44 @@ pub fn run() {
         .export(Typescript::default(), "../src/generated/bindings.ts")
         .expect("Failed to export typescript bindings");
 
+    let migrations = seo_storage::migrations::get_migrations()
+        .into_iter()
+        .map(|m| Migration {
+            version: m.version,
+            description: Box::leak(m.description.clone().into_boxed_str()),
+            sql: Box::leak(m.schema.clone().into_boxed_str()),
+            kind: MigrationKind::Up,
+        })
+        .collect();
+
     // Create the tauri app
     tauri::Builder::default()
         // TODO: Add migrations
-        .plugin(tauri_plugin_sql::Builder::new().build())
+        .plugin(
+            tauri_plugin_sql::Builder::default()
+                .add_migrations(format!("sqlite://{}", DB_PATH).as_str(), migrations)
+                .build(),
+        )
+        .plugin(tauri_plugin_opener::init())
+        .invoke_handler(builder.invoke_handler())
         .setup(|app| {
             tauri::async_runtime::spawn(async move {});
             tauri::async_runtime::block_on(async move {
                 let db_path = app.path().app_data_dir().unwrap().join(DB_PATH);
-                let storage = SeoStorage::new(&db_path.to_string_lossy()).await.unwrap();
-                storage.migrate().await.unwrap();
+                let db_url = format!("sqlite://{}", db_path.to_string_lossy());
+                println!("db_url: {}", db_url);
+                let storage = SeoStorage::new(&db_url).await.unwrap();
+
                 app.manage(Mutex::new(AppData {
                     config: CrawlConfig::default(),
                     storage,
                 }));
+                let app_handle = app.app_handle().clone();
+                setup_listeners(Arc::new(Mutex::new(app_handle)));
+                // app.manage(Mutex::new(app_handle));
             });
-
             Ok(())
         })
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
