@@ -1,0 +1,42 @@
+-- CreateTable
+CREATE TABLE "Site" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT,
+    "url" TEXT NOT NULL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Run" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "siteId" INTEGER NOT NULL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Run_siteId_fkey" FOREIGN KEY ("siteId") REFERENCES "Site" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "PageRun" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "runId" INTEGER NOT NULL,
+    "url" TEXT NOT NULL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "PageRun_runId_fkey" FOREIGN KEY ("runId") REFERENCES "Run" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "RuleResult" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "pageRunId" INTEGER NOT NULL,
+    "rule_id" TEXT NOT NULL,
+    "rule_type" TEXT NOT NULL,
+    "passed" BOOLEAN NOT NULL,
+    "context" JSONB NOT NULL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "RuleResult_pageRunId_fkey" FOREIGN KEY ("pageRunId") REFERENCES "PageRun" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Site_url_key" ON "Site"("url");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PageRun_runId_url_key" ON "PageRun"("runId", "url");

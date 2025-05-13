@@ -1,13 +1,18 @@
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
+use seo_storage::{entities::Site, SeoStorage};
 use specta_typescript::Typescript;
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State};
-
+use tauri_plugin_sql::{Migration, MigrationKind};
 use tauri_specta::{collect_commands, collect_events, Builder};
 
-#[derive(Default)]
+const DB_PATH: &str = "seo-storage.db";
+
+// #[derive(Default)]
 struct AppData {
     config: CrawlConfig,
+    // pool: SqlitePool,
+    storage: SeoStorage,
 }
 
 #[tauri::command]
@@ -44,6 +49,20 @@ async fn analyze_url_seo(app: tauri::AppHandle) -> Result<CrawlResult, String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn get_sites(app: tauri::AppHandle) -> Result<Vec<Site>, String> {
+    let app_handle = app.clone();
+    let storage = app_handle
+        .state::<Mutex<AppData>>()
+        .lock()
+        .unwrap()
+        .storage
+        .clone();
+    let sites = storage.get_sites().await.map_err(|e| e.to_string())?;
+    Ok(sites)
+}
+
 // #[tauri::command]
 // #[specta::specta]
 // async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResult, String> {
@@ -61,7 +80,12 @@ async fn analyze_url_seo(app: tauri::AppHandle) -> Result<CrawlResult, String> {
 fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![get_config, set_config, analyze_url_seo,])
+        .commands(collect_commands![
+            get_config,
+            set_config,
+            analyze_url_seo,
+            get_sites
+        ])
         .events(collect_events![AnalysisProgress])
 }
 
@@ -76,8 +100,20 @@ pub fn run() {
 
     // Create the tauri app
     tauri::Builder::default()
+        // TODO: Add migrations
+        .plugin(tauri_plugin_sql::Builder::new().build())
         .setup(|app| {
-            app.manage(Mutex::new(AppData::default()));
+            tauri::async_runtime::spawn(async move {});
+            tauri::async_runtime::block_on(async move {
+                let db_path = app.path().app_data_dir().unwrap().join(DB_PATH);
+                let storage = SeoStorage::new(&db_path.to_string_lossy()).await.unwrap();
+                storage.migrate().await.unwrap();
+                app.manage(Mutex::new(AppData {
+                    config: CrawlConfig::default(),
+                    storage,
+                }));
+            });
+
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())

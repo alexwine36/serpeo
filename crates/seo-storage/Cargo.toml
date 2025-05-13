@@ -1,0 +1,13 @@
+[package]
+name = "seo-storage"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sqlx = { version = "0.8.5", features = ["runtime-tokio", "chrono"] }
+welds = { version = "0.4.16", features = ["sqlite", "migrations"] }
+tokio = { workspace = true }
+tauri-specta = { workspace = true }
+specta = { workspace = true }
+serde = { workspace = true }
+chrono = {version = "0.4.41", features=["default", "serde"]}

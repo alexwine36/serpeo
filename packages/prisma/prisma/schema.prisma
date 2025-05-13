@@ -1,0 +1,50 @@
+generator client {
+    provider = "prisma-client-js"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = "file:./dev.db"
+}
+
+model Site {
+    id         Int      @id @default(autoincrement())
+    name       String?
+    url        String   @unique
+    created_at DateTime @default(now())
+
+    runs Run[]
+}
+
+model Run {
+    id         Int      @id @default(autoincrement())
+    siteId     Int
+    site       Site     @relation(fields: [siteId], references: [id])
+    created_at DateTime @default(now())
+
+    pageRuns PageRun[]
+}
+
+model PageRun {
+    id         Int      @id @default(autoincrement())
+    runId      Int
+    run        Run      @relation(fields: [runId], references: [id])
+    url        String
+    created_at DateTime @default(now())
+
+    ruleResults RuleResult[]
+
+    @@unique([runId, url])
+}
+
+model RuleResult {
+    id         Int      @id @default(autoincrement())
+    pageRunId  Int
+    pageRun    PageRun  @relation(fields: [pageRunId], references: [id])
+    rule_id    String
+    rule_type  String
+    passed     Boolean
+    context    Json
+    created_at DateTime @default(now())
+}
