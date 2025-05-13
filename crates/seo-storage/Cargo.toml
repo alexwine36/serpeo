@@ -7,7 +7,11 @@ edition = "2024"
 sqlx = { version = "0.8.5", features = ["runtime-tokio", "chrono"] }
 welds = { version = "0.4.16", features = ["sqlite", "migrations"] }
 tokio = { workspace = true }
-tauri-specta = { workspace = true }
+# tauri-specta = { workspace = true }
 specta = { workspace = true }
 serde = { workspace = true }
 chrono = {version = "0.4.41", features=["default", "serde"]}
+
+
+[package.metadata.cargo-machete]
+ignored = ["chrono"]
