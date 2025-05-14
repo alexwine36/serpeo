@@ -21,7 +21,10 @@ impl MigrationTrait for Migration {
                             .default(Expr::current_timestamp())
                             .not_null(),
                     )
-                    .col(string(SiteRun::Status))
+                    .col(
+                        // TODO: Figure out how to define Sqlite enum
+                        string(SiteRun::Status),
+                    )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_site_run_site_id")

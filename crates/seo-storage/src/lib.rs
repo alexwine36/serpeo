@@ -1,15 +1,16 @@
 use entities::prelude::SiteRun;
-use entities::site_run::SiteRunStatus;
 use entities::{site, site_run};
+use enums::site_run_status::SiteRunStatus;
 use migration::{Migrator, MigratorTrait, OnConflict};
 use sea_orm::*;
 use sea_orm::{Database, DbErr};
-
 pub mod entities;
+pub mod enums;
 use crate::entities::prelude::Site;
 
 const DATABASE_URL: &str = "sqlite::memory:";
 
+#[derive(Clone)]
 pub struct SeoStorage {
     db: DatabaseConnection,
 }
@@ -45,6 +46,12 @@ impl SeoStorage {
     }
 
     // Database interaction
+
+    pub async fn get_sites(&self) -> Result<Vec<site::Model>, DbErr> {
+        let sites = Site::find().all(&self.db).await.unwrap();
+        Ok(sites)
+    }
+
     pub async fn upsert_site(&self, url: &str) -> Result<i32, DbErr> {
         let site = site::ActiveModel {
             url: ActiveValue::Set(url.to_string()),

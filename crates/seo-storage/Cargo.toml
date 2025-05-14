@@ -8,6 +8,9 @@ futures = {workspace = true}
 sea-orm = { version = "^1.1.11", features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros" ] }
 tokio = {workspace = true}
 migration = {workspace = true}
+specta = {workspace = true} 
+serde = {workspace = true}
+
 
 [dev-dependencies]
 tokio-test = "0.4.4"

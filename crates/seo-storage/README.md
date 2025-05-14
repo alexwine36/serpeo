@@ -14,5 +14,5 @@ echo DATABASE_URL="sqlite:./sqlite.db?mode=rwc" >> .env
 - Generate entities
   ```sh
   sea-orm-cli migrate refresh
-  sea-orm-cli generate entity -o src/entitie
+  sea-orm-cli generate entity -o src/entities --with-serde both --model-extra-derives specta::Type
   ```

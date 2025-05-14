@@ -1,9 +1,9 @@
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
+use seo_storage::entities::{prelude::Site, site};
 use seo_storage::SeoStorage;
 use specta_typescript::Typescript;
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State};
-
 use tauri_specta::{collect_commands, collect_events, Builder};
 
 // #[derive(Default)]
@@ -46,6 +46,20 @@ async fn analyze_url_seo(app: tauri::AppHandle) -> Result<CrawlResult, String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn get_sites(app: tauri::AppHandle) -> Result<Vec<site::Model>, String> {
+    let app_handle = app.clone();
+    let storage = app_handle
+        .state::<Mutex<AppData>>()
+        .lock()
+        .unwrap()
+        .storage
+        .clone();
+    let sites = storage.get_sites().await.map_err(|e| e.to_string())?;
+    Ok(sites)
+}
+
 // #[tauri::command]
 // #[specta::specta]
 // async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResult, String> {
@@ -63,7 +77,12 @@ async fn analyze_url_seo(app: tauri::AppHandle) -> Result<CrawlResult, String> {
 fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![get_config, set_config, analyze_url_seo,])
+        .commands(collect_commands![
+            get_config,
+            set_config,
+            analyze_url_seo,
+            get_sites
+        ])
         .events(collect_events![AnalysisProgress])
 }
 
