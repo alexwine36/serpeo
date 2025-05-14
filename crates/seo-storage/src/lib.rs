@@ -16,9 +16,16 @@ pub struct SeoStorage {
 
 impl SeoStorage {
     // Utilities
-    pub async fn new_with_default() -> Self {
-        let db = Database::connect(DATABASE_URL).await.unwrap();
+
+    pub async fn new(db_url: &str) -> Self {
+        let db = Database::connect(db_url).await.unwrap();
         SeoStorage { db }
+    }
+
+    pub async fn new_with_default() -> Self {
+        let seo_storage = SeoStorage::new(DATABASE_URL).await;
+        let _ = seo_storage.migrate_up().await;
+        seo_storage
     }
 
     pub async fn new_migrated_with_default() -> Self {

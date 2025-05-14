@@ -25,10 +25,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 seo-analyzer = { workspace = true }
 tauri-plugin-opener = "2.2.6"
-
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 specta = { workspace=true }
+seo-storage = { workspace = true }
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

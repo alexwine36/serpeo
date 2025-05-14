@@ -1,13 +1,15 @@
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
+use seo_storage::SeoStorage;
 use specta_typescript::Typescript;
 use std::sync::Mutex;
 use tauri::{Emitter, Manager, State};
 
 use tauri_specta::{collect_commands, collect_events, Builder};
 
-#[derive(Default)]
+// #[derive(Default)]
 struct AppData {
     config: CrawlConfig,
+    storage: SeoStorage,
 }
 
 #[tauri::command]
@@ -77,7 +79,17 @@ pub fn run() {
     // Create the tauri app
     tauri::Builder::default()
         .setup(|app| {
-            app.manage(Mutex::new(AppData::default()));
+            tauri::async_runtime::block_on(async move {
+                let db_path = app.path().app_data_dir().unwrap().join("serpeo.db");
+                let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
+                let storage = SeoStorage::new(&db_url).await;
+                storage.migrate_up().await.unwrap();
+                app.manage(Mutex::new(AppData {
+                    config: CrawlConfig::default(),
+                    storage,
+                }));
+            });
+
             Ok(())
         })
         .plugin(tauri_plugin_opener::init())
