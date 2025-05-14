@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, specta::Type)]
 #[sea_orm(table_name = "site")]
+#[specta(rename = "SiteModel")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,

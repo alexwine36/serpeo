@@ -28,6 +28,14 @@ async analyzeUrlSeo() : Promise<Result<CrawlResult, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getSites() : Promise<Result<SiteModel[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_sites") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -59,6 +67,7 @@ export type RuleCategory = "Accessibility" | "Performance" | "BestPractices" | "
 export type RuleResult = { rule_id: string; name: string; plugin_name: string; passed: boolean; message: string; severity: Severity; category: RuleCategory; context: SiteCheckContext }
 export type Severity = "Info" | "Warning" | "Error" | "Critical"
 export type SiteCheckContext = { Urls: string[] } | { Values: Partial<{ [key in string]: string[] }> } | "Empty"
+export type SiteModel = { id: number; name: string; url: string; created_at: string }
 
 /** tauri-specta globals **/
 
