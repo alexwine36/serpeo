@@ -8,8 +8,10 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20250514_154203_create_site_table::Migration),
             Box::new(m20250514_171121_create_site_run_table::Migration),
+            Box::new(m20250514_211317_create_site_page_table::Migration),
         ]
     }
 }
 mod m20250514_154203_create_site_table;
 mod m20250514_171121_create_site_run_table;
+mod m20250514_211317_create_site_page_table;

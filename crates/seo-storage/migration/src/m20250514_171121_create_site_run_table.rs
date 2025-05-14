@@ -44,7 +44,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum SiteRun {
+pub enum SiteRun {
     Table,
     Id,
     SiteId,

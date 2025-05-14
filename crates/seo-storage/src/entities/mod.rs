@@ -3,4 +3,5 @@
 pub mod prelude;
 
 pub mod site;
+pub mod site_page;
 pub mod site_run;

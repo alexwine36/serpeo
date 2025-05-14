@@ -1,9 +1,11 @@
-use entities::prelude::SiteRun;
-use entities::{site, site_run};
+use entities::prelude::{SitePage, SiteRun};
+use entities::{site, site_page, site_run};
+use enums::db_link_type::DbLinkType;
 use enums::site_run_status::SiteRunStatus;
 use migration::{Migrator, MigratorTrait, OnConflict};
 use sea_orm::*;
 use sea_orm::{Database, DbErr};
+use seo_plugins::utils::link_parser::LinkType;
 pub mod entities;
 pub mod enums;
 use crate::entities::prelude::Site;
@@ -103,6 +105,33 @@ impl SeoStorage {
             Err(DbErr::RecordNotFound("SiteRun not found".to_string()))
         }
     }
+
+    pub async fn upsert_site_page(
+        &self,
+        site_run_id: i32,
+        url: &str,
+        link_type: LinkType,
+    ) -> Result<i32, DbErr> {
+        let site_page = site_page::ActiveModel {
+            site_run_id: ActiveValue::Set(site_run_id),
+            url: ActiveValue::Set(url.to_string()),
+            db_link_type: ActiveValue::Set(DbLinkType::from(link_type)),
+            ..Default::default()
+        };
+
+        let on_conflict =
+            OnConflict::columns([site_page::Column::Url, site_page::Column::SiteRunId])
+                .update_column(site_page::Column::Url)
+                .to_owned();
+
+        let res = SitePage::insert(site_page)
+            .on_conflict(on_conflict)
+            .exec(&self.db)
+            .await
+            .unwrap();
+
+        Ok(res.last_insert_id)
+    }
 }
 
 #[cfg(test)]
@@ -184,5 +213,36 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(found_site_run.unwrap().status, SiteRunStatus::Running);
+    }
+
+    #[tokio::test]
+    async fn it_should_upsert_site_pages() {
+        let seo_storage = SeoStorage::new_migrated_with_default().await;
+
+        let site_run_id = seo_storage
+            .create_site_run("https://forest-fitness-website-1dfad0.gitlab.io/")
+            .await
+            .unwrap();
+        let site_page_id = seo_storage
+            .upsert_site_page(
+                site_run_id,
+                "https://forest-fitness-website-1dfad0.gitlab.io/",
+                LinkType::Internal,
+            )
+            .await
+            .unwrap();
+        let duplicate_site_page_id = seo_storage
+            .upsert_site_page(
+                site_run_id,
+                "https://forest-fitness-website-1dfad0.gitlab.io/",
+                LinkType::Internal,
+            )
+            .await
+            .unwrap();
+        assert_eq!(site_page_id, 1);
+        assert_eq!(duplicate_site_page_id, 1);
+        let site_pages = SitePage::find().all(&seo_storage.get_db()).await.unwrap();
+        assert_eq!(site_pages.len(), 1);
+        println!("site_pages: {:?}", site_pages);
     }
 }

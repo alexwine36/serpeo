@@ -3,23 +3,31 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::enums::db_link_type::DbLinkType;
+
 #[derive(
     Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, specta :: Type,
 )]
-#[sea_orm(table_name = "site")]
-#[specta(rename = "SiteModel")]
+#[sea_orm(table_name = "site_page")]
+#[specta(rename = "SitePageModel")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub name: String,
-    #[sea_orm(unique)]
+    pub site_run_id: i32,
     pub url: String,
+    pub db_link_type: DbLinkType,
     pub created_at: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::site_run::Entity")]
+    #[sea_orm(
+        belongs_to = "super::site_run::Entity",
+        from = "Column::SiteRunId",
+        to = "super::site_run::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
     SiteRun,
 }
 
