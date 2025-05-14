@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/serpeo/src-tauri", "crates/*"]
+members = ["apps/serpeo/src-tauri", "crates/*", "crates/seo-storage/migration"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -22,6 +22,8 @@ once_cell = "1.19"
 criterion = {version = "0.5", features=["async_futures"]}
 seo-plugins = { path = "crates/seo-plugins" }
 seo-analyzer = { path = "crates/seo-analyzer" }
+seo-storage = {path = "crates/seo-storage"}
+migration = {path = "crates/seo-storage/migration"}
 
 
 [profile.dev]
