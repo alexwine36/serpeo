@@ -1,26 +1,32 @@
 use sea_orm_migration::{prelude::*, schema::*};
 
+use crate::m20250514_154203_create_site_table::Site;
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-
         manager
             .create_table(
                 Table::create()
-                    .table(Site::Table)
+                    .table(SiteRun::Table)
                     .if_not_exists()
-                    .col(pk_auto(Site::Id))
-                    .col(string(Site::Name).default(""))
-                    .col(string(Site::Url).not_null().unique_key())
+                    .col(pk_auto(SiteRun::Id))
+                    .col(integer(SiteRun::SiteId))
                     .col(
-                        ColumnDef::new(Site::CreatedAt)
+                        ColumnDef::new(SiteRun::CreatedAt)
                             .timestamp()
                             .default(Expr::current_timestamp())
                             .not_null(),
+                    )
+                    .col(string(SiteRun::Status))
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_site_run_site_id")
+                            .from(SiteRun::Table, SiteRun::SiteId)
+                            .to(Site::Table, Site::Id),
                     )
                     .to_owned(),
             )
@@ -28,19 +34,17 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // Replace the sample below with your own migration scripts
-
         manager
-            .drop_table(Table::drop().table(Site::Table).to_owned())
+            .drop_table(Table::drop().table(SiteRun::Table).to_owned())
             .await
     }
 }
 
 #[derive(DeriveIden)]
-pub enum Site {
+enum SiteRun {
     Table,
     Id,
-    Name,
-    Url,
+    SiteId,
     CreatedAt,
+    Status,
 }

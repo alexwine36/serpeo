@@ -8,11 +8,21 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub name: String,
+    #[sea_orm(unique)]
     pub url: String,
     pub created_at: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::site_run::Entity")]
+    SiteRun,
+}
+
+impl Related<super::site_run::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::SiteRun.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
