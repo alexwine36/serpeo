@@ -106,8 +106,7 @@ pub fn run() {
                 let db_path = app.path().app_data_dir().unwrap().join("serpeo.db");
                 let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
                 let storage = SeoStorage::new(&db_url).await;
-                // TODO: REMOVE THIS
-                storage.migrate_reset().await.unwrap();
+
                 storage.migrate_up().await.unwrap();
                 app.manage(Mutex::new(AppData {
                     storage,

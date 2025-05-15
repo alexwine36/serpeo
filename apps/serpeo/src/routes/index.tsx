@@ -1,3 +1,4 @@
+import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   Dialog,
@@ -17,6 +18,7 @@ import { useEffect, useState } from "react";
 import { crawlResultAtom } from "../atoms/crawl-result";
 import { AnalysisStatus } from "../components/analysis-status";
 import { commands } from "../generated/bindings";
+import { useSitesQuery } from "../queries/sites";
 export const Route = createFileRoute("/")({
   component: Index,
 });
@@ -25,9 +27,10 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const setResult = useSetAtom(crawlResultAtom);
   const navigate = useNavigate();
-
+  const { data: sites } = useSitesQuery();
   const [baseUrl, setBaseUrl] = useState("");
 
+  console.log(sites);
   const analyzeSeo = async () => {
     try {
       setLoading(true);
@@ -84,27 +87,45 @@ function Index() {
             <Settings />
           </Link>
         </Button>
-        <div className="space-4 grid w-[calc(100vw-4rem)] grid-cols-1 gap-4 sm:w-sm md:w-md md:grid-cols-[1fr_auto]">
-          <div className="flex flex-col gap-2">
-            <Label>Analyze Your Website</Label>
-            <Input
-              type="url"
-              placeholder="https://"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              className="flex-1"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="space-4 grid w-[calc(100vw-4rem)] grid-cols-1 gap-4 sm:w-sm md:w-md md:grid-cols-[1fr_auto]">
+            <div className="flex flex-col gap-2">
+              <Label>Analyze Your Website</Label>
+              <Input
+                type="url"
+                placeholder="https://"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+                className="flex-1"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                className="min-w-24"
+                onClick={analyzeSeo}
+                disabled={loading || !baseUrl}
+              >
+                {loading ? "Analyzing..." : "Analyze"}
+              </Button>
+            </div>
           </div>
-          <div className="flex items-end">
-            <Button
-              className="min-w-24"
-              onClick={analyzeSeo}
-              disabled={loading || !baseUrl}
-            >
-              {loading ? "Analyzing..." : "Analyze"}
-            </Button>
-          </div>
+          {sites && (
+            <div className="flex w-full flex-row flex-wrap gap-2">
+              {sites
+                ?.filter((_, idx) => idx < 5)
+                .map((site) => (
+                  <Badge
+                    key={site.id}
+                    onClick={() => setBaseUrl(site.url)}
+                    className="cursor-pointer"
+                  >
+                    {site.url}
+                  </Badge>
+                ))}
+            </div>
+          )}
         </div>
+
         <Dialog open={loading}>
           <DialogContent>
             <DialogHeader>
