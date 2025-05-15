@@ -6,7 +6,7 @@ use migration::{Migrator, MigratorTrait, OnConflict};
 use sea_orm::ConnectOptions;
 use sea_orm::*;
 use sea_orm::{Database, DbErr};
-use seo_plugins::site_analyzer::{CrawlResult, PageLink};
+use seo_plugins::site_analyzer::PageLink;
 use seo_plugins::utils::link_parser::LinkType;
 pub mod entities;
 pub mod enums;
@@ -25,7 +25,7 @@ impl SeoStorage {
     /* #region Utilities */
     pub async fn new(db_url: &str) -> Self {
         let mut options = ConnectOptions::from(db_url.to_string());
-        options.max_connections(10);
+        // options.max_connections(10);
         options.sqlx_logging(true);
         let db = Database::connect(options).await.unwrap();
         SeoStorage { db }
@@ -367,12 +367,12 @@ mod tests {
         };
         let test_page_results_clone = test_page_results.clone();
 
-        let _ = seo_storage
+        seo_storage
             .insert_many_page_rule_results(site_run_id, test_page_results)
             .await
             .unwrap();
 
-        let _ = seo_storage
+        seo_storage
             .insert_many_page_rule_results(site_run_id, test_page_results_clone)
             .await
             .unwrap();

@@ -1,13 +1,13 @@
-use seo_analyzer::{AnalysisProgress, AnalysisProgressType, CrawlConfig, CrawlResult};
+use seo_analyzer::{AnalysisProgress, AnalysisProgressType};
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::{
     future::Future,
-    sync::{Arc, Mutex},
+    sync::Mutex,
 };
-use tauri::{Emitter, Listener, Manager, State};
+use tauri::{Listener, Manager};
 
-use tauri_specta::{collect_commands, collect_events, Builder, Event};
+use tauri_specta::Event;
 
 use crate::AppData;
 
@@ -54,14 +54,11 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
             .unwrap()
             .site_run_id
             .unwrap();
-        match payload.progress_type {
-            AnalysisProgressType::AnalyzedPage(page_link) => {
-                storage_clone
-                    .insert_many_page_rule_results(site_run_id, page_link)
-                    .await
-                    .unwrap();
-            }
-            _ => {}
+        if let AnalysisProgressType::AnalyzedPage(page_link) = payload.progress_type {
+            storage_clone
+                .insert_many_page_rule_results(site_run_id, page_link)
+                .await
+                .unwrap();
         }
     });
     // setup_start_listener(app);

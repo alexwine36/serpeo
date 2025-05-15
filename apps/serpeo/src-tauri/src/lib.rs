@@ -1,11 +1,11 @@
 use listeners::{setup_listeners, AnalysisStart};
-use seo_analyzer::{crawl_url, AnalysisProgress, AnalysisProgressType, CrawlConfig, CrawlResult};
-use seo_storage::entities::{prelude::Site, site};
+use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
+use seo_storage::entities::site;
 use seo_storage::SeoStorage;
 use specta_typescript::Typescript;
 use std::sync::Mutex;
 use stores::crawl_settings::{self, CrawlSettingsStore, CRAWL_SETTINGS_KEY};
-use tauri::{Emitter, Listener, Manager, State};
+use tauri::{Emitter, Manager};
 use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 mod listeners;
