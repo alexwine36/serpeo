@@ -1,5 +1,11 @@
 # serpeo
 
+## 1.1.0
+
+### Minor Changes
+
+- 1051403: Added persistent data storage to application
+
 ## 1.0.6
 
 ### Patch Changes
