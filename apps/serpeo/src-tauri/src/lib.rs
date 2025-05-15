@@ -1,9 +1,9 @@
-use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
+use seo_analyzer::{crawl_url, AnalysisProgress, AnalysisProgressType, CrawlConfig, CrawlResult};
 use seo_storage::entities::{prelude::Site, site};
 use seo_storage::SeoStorage;
 use specta_typescript::Typescript;
 use std::sync::Mutex;
-use tauri::{Emitter, Manager, State};
+use tauri::{Emitter, Listener, Manager, State};
 use tauri_specta::{collect_commands, collect_events, Builder};
 
 // #[derive(Default)]
@@ -103,10 +103,35 @@ pub fn run() {
                 let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
                 let storage = SeoStorage::new(&db_url).await;
                 storage.migrate_up().await.unwrap();
+                let storage_clone = storage.clone();
                 app.manage(Mutex::new(AppData {
                     config: CrawlConfig::default(),
                     storage,
                 }));
+                app.listen("analysis-progress", move |event| {
+                    if let Ok(payload) = serde_json::from_str::<AnalysisProgress>(event.payload()) {
+                        match payload.progress_type {
+                            AnalysisProgressType::AnalyzedPage(page_link) => {
+                                futures::executor::block_on(async {
+                                    // TODO: get actual run instead of hardcoding
+                                    let site_run_id = storage_clone
+                                        .create_site_run(
+                                            "https://forest-fitness-website-1dfad0.gitlab.io/",
+                                        )
+                                        .await
+                                        .unwrap();
+                                    storage_clone
+                                        .insert_many_page_rule_results(site_run_id, page_link)
+                                        .await
+                                        .unwrap();
+                                });
+                            }
+                            _ => {}
+                        }
+                        // println!("analysis-progress: {:?}", payload);
+                    }
+                    ()
+                });
             });
 
             Ok(())

@@ -3,6 +3,7 @@ use entities::{page_rule_result, site, site_page, site_run};
 use enums::db_link_type::DbLinkType;
 use enums::site_run_status::SiteRunStatus;
 use migration::{Migrator, MigratorTrait, OnConflict};
+use sea_orm::ConnectOptions;
 use sea_orm::*;
 use sea_orm::{Database, DbErr};
 use seo_plugins::site_analyzer::{CrawlResult, PageLink};
@@ -23,7 +24,10 @@ impl SeoStorage {
 
     /* #region Utilities */
     pub async fn new(db_url: &str) -> Self {
-        let db = Database::connect(db_url).await.unwrap();
+        let mut options = ConnectOptions::from(db_url.to_string());
+        options.max_connections(10);
+        options.sqlx_logging(true);
+        let db = Database::connect(options).await.unwrap();
         SeoStorage { db }
     }
 
@@ -375,7 +379,5 @@ mod tests {
             .unwrap();
         assert_eq!(page_rule_results.len(), 1);
         println!("page_rule_results: {:?}", page_rule_results);
-
-        assert!(false);
     }
 }

@@ -55,7 +55,7 @@ analysisProgress: "analysis-progress"
 /** user-defined types **/
 
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
-export type AnalysisProgressType = "FoundLink" | "AnalyzedPage"
+export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink }
 export type CrawlConfig = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
