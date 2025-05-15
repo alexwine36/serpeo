@@ -15,7 +15,6 @@ import { RESET } from "jotai/utils";
 import { Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { crawlResultAtom } from "../atoms/crawl-result";
-import { useSettings } from "../atoms/settings";
 import { AnalysisStatus } from "../components/analysis-status";
 import { commands } from "../generated/bindings";
 export const Route = createFileRoute("/")({
@@ -26,13 +25,14 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const setResult = useSetAtom(crawlResultAtom);
   const navigate = useNavigate();
-  const { baseUrl, setBaseUrl } = useSettings();
+
+  const [baseUrl, setBaseUrl] = useState("");
 
   const analyzeSeo = async () => {
     try {
       setLoading(true);
       setResult(RESET);
-      const analysis = await commands.analyzeUrlSeo();
+      const analysis = await commands.analyzeUrlSeo(baseUrl);
       console.log("Analysis", analysis);
       if (analysis.status === "ok") {
         setResult(analysis.data);
