@@ -4,44 +4,50 @@ use seo_storage::entities::{prelude::Site, site};
 use seo_storage::SeoStorage;
 use specta_typescript::Typescript;
 use std::sync::Mutex;
+use stores::crawl_settings::{self, CrawlSettingsStore, CRAWL_SETTINGS_KEY};
 use tauri::{Emitter, Listener, Manager, State};
 use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 mod listeners;
+mod stores;
+
+pub const STORE_FILE: &str = "store.json";
 // #[derive(Default)]
 struct AppData {
-    config: CrawlConfig,
     storage: SeoStorage,
     site_run_id: Option<i32>,
 }
 
-#[tauri::command]
-#[specta::specta]
-async fn get_config(state: State<'_, Mutex<AppData>>) -> Result<CrawlConfig, String> {
-    // let mut app_data = app.state::<Mutex<AppData>>();
-    Ok(state.lock().unwrap().config.clone())
-}
+// #[tauri::command]
+// #[specta::specta]
+// async fn get_config(state: State<'_, Mutex<AppData>>) -> Result<CrawlConfig, String> {
+//     // let mut app_data = app.state::<Mutex<AppData>>();
+//     Ok(state.lock().unwrap().config.clone())
+// }
+
+// #[tauri::command]
+// #[specta::specta]
+// async fn set_config(state: State<'_, Mutex<AppData>>, config: CrawlConfig) -> Result<(), String> {
+//     // let app_data = app.state::<Mutex<AppData>>();
+//     let mut state = state.lock().unwrap();
+//     state.config = config;
+//     Ok(())
+// }
 
 #[tauri::command]
 #[specta::specta]
-async fn set_config(state: State<'_, Mutex<AppData>>, config: CrawlConfig) -> Result<(), String> {
-    // let app_data = app.state::<Mutex<AppData>>();
-    let mut state = state.lock().unwrap();
-    state.config = config;
-    Ok(())
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn analyze_url_seo(app: tauri::AppHandle) -> Result<CrawlResult, String> {
+async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResult, String> {
     let app_handle = app.clone();
-    let config = app_handle
-        .state::<Mutex<AppData>>()
-        .lock()
-        .unwrap()
-        .config
-        .clone();
-    let base_url = config.base_url.clone();
+    let base_url = url.clone();
+
+    let crawl_settings = CrawlSettingsStore::get_or_default(&app_handle).unwrap();
+
+    let config = CrawlConfig {
+        base_url: url,
+        max_concurrent_requests: crawl_settings.max_concurrent_requests,
+        request_delay_ms: crawl_settings.request_delay_ms,
+    };
+
     {
         AnalysisStart { base_url }.emit(&app_handle).unwrap();
     }
@@ -67,30 +73,14 @@ async fn get_sites(app: tauri::AppHandle) -> Result<Vec<site::Model>, String> {
     Ok(sites)
 }
 
-// #[tauri::command]
-// #[specta::specta]
-// async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResult, String> {
-//     let site = SiteAnalyzer::new_with_default(url);
-//     let app_handle = app.clone();
-//     site.with_progress_callback(move |progress| {
-//         let _ = app_handle.emit("analysis-progress", progress);
-//     })
-//     .await
-//     .crawl()
-//     .await
-//     .map_err(|e| e.to_string())
-// }
-
 fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![
-            get_config,
-            set_config,
-            analyze_url_seo,
-            get_sites
-        ])
+        .commands(collect_commands![analyze_url_seo, get_sites])
         .events(collect_events![AnalysisProgress, AnalysisStart])
+        .constant("STORE_FILE", STORE_FILE)
+        .constant("CRAWL_SETTINGS_KEY", CRAWL_SETTINGS_KEY)
+        .typ::<crawl_settings::CrawlSettingsStore>()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -104,10 +94,14 @@ pub fn run() {
 
     // Create the tauri app
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             let app_clone = app.handle().clone();
+
             builder.mount_events(&app_clone);
+            stores::crawl_settings::init(&app_clone);
+
             tauri::async_runtime::block_on(async move {
                 let db_path = app.path().app_data_dir().unwrap().join("serpeo.db");
                 let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
@@ -116,35 +110,10 @@ pub fn run() {
                 storage.migrate_reset().await.unwrap();
                 storage.migrate_up().await.unwrap();
                 app.manage(Mutex::new(AppData {
-                    config: CrawlConfig::default(),
                     storage,
                     site_run_id: None,
                 }));
                 setup_listeners(app.handle());
-                // app.listen("analysis-progress", move |event| {
-                //     if let Ok(payload) = serde_json::from_str::<AnalysisProgress>(event.payload()) {
-                //         match payload.progress_type {
-                //             AnalysisProgressType::AnalyzedPage(page_link) => {
-                //                 futures::executor::block_on(async {
-                //                     // TODO: get actual run instead of hardcoding
-                //                     let site_run_id = storage_clone
-                //                         .create_site_run(
-                //                             "https://forest-fitness-website-1dfad0.gitlab.io/",
-                //                         )
-                //                         .await
-                //                         .unwrap();
-                //                     storage_clone
-                //                         .insert_many_page_rule_results(site_run_id, page_link)
-                //                         .await
-                //                         .unwrap();
-                //                 });
-                //             }
-                //             _ => {}
-                //         }
-                //         // println!("analysis-progress: {:?}", payload);
-                //     }
-                //     ()
-                // });
             });
 
             Ok(())

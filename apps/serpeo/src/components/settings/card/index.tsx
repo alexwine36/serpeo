@@ -1,4 +1,3 @@
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   Card,
@@ -16,9 +15,7 @@ import { Separator } from "@repo/ui/components/separator";
 import { cn } from "@repo/ui/lib/utils";
 import { ChevronDownIcon } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
-import { useSettings } from "../../../atoms/settings";
-import type { CrawlConfig } from "../../../generated/bindings";
+import { crawlSettingsStore } from "../../../store";
 import { SettingsForm } from "../form";
 
 type SettingsCardProps = {
@@ -27,55 +24,15 @@ type SettingsCardProps = {
 };
 
 export const SettingsCard = ({ collapsible = false }: SettingsCardProps) => {
-  const { settings: config, setSettings: setConfig } = useSettings();
-  const [isLoading, setIsLoading] = useState(false);
+  // const { settings: config, setSettings: setConfig } = useSettings();
+  const { data: config, isLoading } = crawlSettingsStore.useQuery();
+  const handleSave = crawlSettingsStore.set;
+  // const [isLoading, setIsLoading] = useState(false);
 
   const [isOpen, setIsOpen] = useState(!collapsible);
 
-  // useEffect(() => {
-  //   loadConfig();
-  // }, []);
-
-  // const loadConfig = async () => {
-  //   try {
-  //     const result = await commands.getConfig();
-  //     if (result.status === "ok") {
-  //       console.log("Loaded config", result.data);
-  //       setConfig(result.data);
-  //     } else {
-  //       toast.error("Failed to load config");
-  //     }
-  //   } catch (error) {
-  //     toast.error("Failed to load config");
-  //   }
-  // };
-
-  const handleSave = async (data: CrawlConfig) => {
-    setIsLoading(true);
-    try {
-      // const result = await commands.setConfig(data);
-      setConfig(data);
-      // if (result.status === "ok") {
-      toast.success("Settings saved successfully");
-      // await loadConfig();
-      // onSubmit?.(data);
-      // } else {
-      // toast.error("Failed to save settings");
-      // }
-    } catch (error) {
-      toast.error("Failed to save settings");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <Collapsible
-      open={isOpen}
-      onOpenChange={setIsOpen}
-
-      // className="w-[350px] space-y-2"
-    >
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card>
         <CardHeader>
           {collapsible ? (
@@ -97,22 +54,16 @@ export const SettingsCard = ({ collapsible = false }: SettingsCardProps) => {
 
           <CardDescription>
             Configure your SEO analysis settings
-            <br />
-            {config?.base_url && (
+            {/* <br /> */}
+            {/* {config?.base_url && (
               <Badge variant="outline">{config?.base_url}</Badge>
-            )}
+            )} */}
           </CardDescription>
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="mt-4 space-y-4">
             <Separator />
-            {config && (
-              <SettingsForm
-                config={config}
-                setConfig={handleSave}
-                isLoading={isLoading}
-              />
-            )}
+            {config && <SettingsForm config={config} setConfig={handleSave} />}
           </CardContent>
         </CollapsibleContent>
       </Card>

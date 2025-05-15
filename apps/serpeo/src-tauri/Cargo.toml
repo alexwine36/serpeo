@@ -30,12 +30,9 @@ tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 specta = { workspace=true }
 seo-storage = { workspace = true }
 futures = { workspace = true }
-async-trait = { workspace = true }
 tokio = { workspace = true }
+tauri-plugin-store = "2"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
 
-
-[package.metadata.cargo-machete]
-ignored = ["serde_json", "serde"]
