@@ -1,5 +1,4 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@repo/ui/components/button";
 import {
   Card,
   CardContent,
@@ -10,68 +9,42 @@ import { Form } from "@repo/ui/components/form";
 import { FormInput } from "@repo/ui/custom/form-input";
 import { useEffect } from "react";
 import { type SubmitHandler, useForm, useWatch } from "react-hook-form";
-import { isDeepEqual } from "remeda";
 import { z } from "zod";
-import type { CrawlConfig } from "../../../generated/bindings";
-const schema: z.ZodSchema<CrawlConfig> = z.object({
-  base_url: z.string().url(),
+import type { CrawlSettingsStore } from "../../../generated/bindings";
+const schema: z.ZodSchema<CrawlSettingsStore> = z.object({
   max_concurrent_requests: z.coerce.number().min(1), //.max(20),
   request_delay_ms: z.coerce.number().min(0).max(1000),
 });
 
 type SettingsFormProps = {
-  config: CrawlConfig;
-  setConfig: (config: CrawlConfig) => void;
-  isLoading: boolean;
+  config: CrawlSettingsStore;
+  setConfig: (config: CrawlSettingsStore) => void;
 };
 
-export const SettingsForm = ({
-  config,
-  setConfig,
-  isLoading,
-}: SettingsFormProps) => {
-  const form = useForm<CrawlConfig>({
+export const SettingsForm = ({ config, setConfig }: SettingsFormProps) => {
+  const form = useForm<CrawlSettingsStore>({
     resolver: zodResolver(schema),
     defaultValues: config,
   });
 
-  // // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-  // useEffect(() => {
-  //   form.reset(config);
-  // }, [config]);
   const watchedValues = useWatch({ control: form.control });
 
-  const onSubmit: SubmitHandler<CrawlConfig> = (data) => {
-    if (isDeepEqual(data, config)) {
-      return;
-    }
-    console.log("Submitting", data);
+  const onSubmit: SubmitHandler<CrawlSettingsStore> = (data) => {
     setConfig(data);
   };
-
-  // const handleSubmit = (data: Config) => {
-  //   setConfig(data);
-  // };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     if (!form.formState.isDirty) {
       return;
     }
-    console.log("Watched values", watchedValues);
+
     form.handleSubmit(onSubmit)();
   }, [watchedValues, form.handleSubmit, form.formState.isDirty]);
 
   return (
     <Form {...form}>
       <form className="space-y-2" onSubmit={form.handleSubmit(onSubmit)}>
-        <FormInput
-          control={form.control}
-          name="base_url"
-          label="Base URL"
-          description="The base URL of the API"
-        />
-
         <Card>
           <CardHeader>
             <CardTitle>Requests</CardTitle>
@@ -94,11 +67,11 @@ export const SettingsForm = ({
             />
           </CardContent>
         </Card>
-        <div className="mt-4 flex justify-end">
+        {/* <div className="mt-4 flex justify-end">
           <Button type="submit" disabled={isLoading}>
             {isLoading ? "Saving..." : "Save Settings"}
           </Button>
-        </div>
+        </div> */}
       </form>
     </Form>
   );

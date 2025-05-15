@@ -5,25 +5,17 @@
 
 
 export const commands = {
-async getConfig() : Promise<Result<CrawlConfig, string>> {
+async analyzeUrlSeo(url: string) : Promise<Result<CrawlResult, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_config") };
+    return { status: "ok", data: await TAURI_INVOKE("analyze_url_seo", { url }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async setConfig(config: CrawlConfig) : Promise<Result<null, string>> {
+async getSites() : Promise<Result<SiteModel[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("set_config", { config }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async analyzeUrlSeo() : Promise<Result<CrawlResult, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("analyze_url_seo") };
+    return { status: "ok", data: await TAURI_INVOKE("get_sites") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -35,21 +27,25 @@ async analyzeUrlSeo() : Promise<Result<CrawlResult, string>> {
 
 
 export const events = __makeEvents__<{
-analysisProgress: AnalysisProgress
+analysisProgress: AnalysisProgress,
+analysisStart: AnalysisStart
 }>({
-analysisProgress: "analysis-progress"
+analysisProgress: "analysis-progress",
+analysisStart: "analysis-start"
 })
 
 /** user-defined constants **/
 
-
+export const STORE_FILE = "store.json" as const;
+export const CRAWL_SETTINGS_KEY = "crawl_settings" as const;
 
 /** user-defined types **/
 
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
-export type AnalysisProgressType = "FoundLink" | "AnalyzedPage"
-export type CrawlConfig = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
+export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink }
+export type AnalysisStart = { base_url: string }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
+export type CrawlSettingsStore = { max_concurrent_requests: number; request_delay_ms: number }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
 export type LinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
 export type PageLink = { url: string; link_type: LinkType; found_in: PageLinkSource[]; result: PageResult | null }
@@ -59,6 +55,7 @@ export type RuleCategory = "Accessibility" | "Performance" | "BestPractices" | "
 export type RuleResult = { rule_id: string; name: string; plugin_name: string; passed: boolean; message: string; severity: Severity; category: RuleCategory; context: SiteCheckContext }
 export type Severity = "Info" | "Warning" | "Error" | "Critical"
 export type SiteCheckContext = { Urls: string[] } | { Values: Partial<{ [key in string]: string[] }> } | "Empty"
+export type SiteModel = { id: number; name: string; url: string; created_at: string }
 
 /** tauri-specta globals **/
 

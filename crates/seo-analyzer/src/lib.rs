@@ -1,7 +1,7 @@
 // mod lighthouse;
 
 pub use seo_plugins::{
-    site_analyzer::{AnalysisProgress, CrawlResult, SiteAnalyzer},
+    site_analyzer::{AnalysisProgress, AnalysisProgressType, CrawlResult, SiteAnalyzer},
     utils::{crawl_config::CrawlConfig, page::Page},
 };
 use thiserror::Error;

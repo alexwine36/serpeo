@@ -25,14 +25,13 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 seo-analyzer = { workspace = true }
 tauri-plugin-opener = "2.2.6"
-
 specta-typescript = "0.0.9"
 tauri-specta = { version = "=2.0.0-rc.21", features = ["derive", "typescript"] }
 specta = { workspace=true }
+seo-storage = { workspace = true }
+tokio = { workspace = true }
+tauri-plugin-store = "2"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
 
-
-[package.metadata.cargo-machete]
-ignored = ["serde_json", "serde"]
