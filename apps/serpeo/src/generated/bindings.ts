@@ -43,9 +43,11 @@ async getSites() : Promise<Result<SiteModel[], string>> {
 
 
 export const events = __makeEvents__<{
-analysisProgress: AnalysisProgress
+analysisProgress: AnalysisProgress,
+analysisStart: AnalysisStart
 }>({
-analysisProgress: "analysis-progress"
+analysisProgress: "analysis-progress",
+analysisStart: "analysis-start"
 })
 
 /** user-defined constants **/
@@ -56,6 +58,7 @@ analysisProgress: "analysis-progress"
 
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
 export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink }
+export type AnalysisStart = { base_url: string }
 export type CrawlConfig = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"

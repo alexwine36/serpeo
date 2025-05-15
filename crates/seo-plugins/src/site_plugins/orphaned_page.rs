@@ -88,7 +88,7 @@ impl SitePlugin for OrphanedPagePlugin {
         // });
 
         let orphaned_pages_count = orphaned_pages.len();
-        println!("Orphaned pages: {:#?}", orphaned_pages);
+        // println!("Orphaned pages: {:#?}", orphaned_pages);
 
         match rule.id {
             "orphaned_page.check" => SiteCheckResult {

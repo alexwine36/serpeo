@@ -52,6 +52,10 @@ impl SeoStorage {
 
         Ok(())
     }
+    pub async fn migrate_reset(&self) -> Result<(), DbErr> {
+        Migrator::reset(&self.db).await.unwrap();
+        Ok(())
+    }
     /* #endregion */
 
     // Database interaction
