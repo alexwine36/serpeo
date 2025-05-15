@@ -54,7 +54,7 @@ pub struct CrawlResult {
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub enum AnalysisProgressType {
     FoundLink,
-    AnalyzedPage,
+    AnalyzedPage(PageLink),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type, Event)]
@@ -155,13 +155,14 @@ impl SiteAnalyzer {
         let mut links = self.links.lock().await;
         if let Some(link) = links.get_mut(&url.to_string()) {
             link.result = Some(result);
+            self.report_progress(
+                AnalysisProgressType::AnalyzedPage(link.clone()),
+                Some(url.to_string()),
+                &links,
+            )
+            .await;
         }
-        self.report_progress(
-            AnalysisProgressType::AnalyzedPage,
-            Some(url.to_string()),
-            &links,
-        )
-        .await;
+
         Ok(())
     }
 

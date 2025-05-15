@@ -1,0 +1,17 @@
+[package]
+name = "seo-storage"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+futures = {workspace = true}
+sea-orm = { version = "^1.1.11", features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros" ] }
+tokio = {workspace = true}
+migration = {workspace = true}
+specta = {workspace = true} 
+serde = {workspace = true}
+seo-plugins = {workspace = true}
+
+
+[dev-dependencies]
+tokio-test = "0.4.4"

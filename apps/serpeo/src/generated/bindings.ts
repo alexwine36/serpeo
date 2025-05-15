@@ -28,6 +28,14 @@ async analyzeUrlSeo() : Promise<Result<CrawlResult, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getSites() : Promise<Result<SiteModel[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_sites") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -47,7 +55,7 @@ analysisProgress: "analysis-progress"
 /** user-defined types **/
 
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
-export type AnalysisProgressType = "FoundLink" | "AnalyzedPage"
+export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink }
 export type CrawlConfig = { base_url: string; max_concurrent_requests: number; request_delay_ms: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
@@ -59,6 +67,7 @@ export type RuleCategory = "Accessibility" | "Performance" | "BestPractices" | "
 export type RuleResult = { rule_id: string; name: string; plugin_name: string; passed: boolean; message: string; severity: Severity; category: RuleCategory; context: SiteCheckContext }
 export type Severity = "Info" | "Warning" | "Error" | "Critical"
 export type SiteCheckContext = { Urls: string[] } | { Values: Partial<{ [key in string]: string[] }> } | "Empty"
+export type SiteModel = { id: number; name: string; url: string; created_at: string }
 
 /** tauri-specta globals **/
 
