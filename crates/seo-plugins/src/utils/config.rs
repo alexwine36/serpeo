@@ -62,7 +62,10 @@ pub enum RuleCategory {
 pub struct Rule {
     pub id: &'static str,
     pub name: &'static str,
+    pub plugin_name: &'static str,
     pub description: &'static str,
+    pub passed_message: &'static str,
+    pub failed_message: &'static str,
     pub default_severity: Severity,
     pub check: fn(&Page) -> CheckResult,
     pub category: RuleCategory,
@@ -73,7 +76,10 @@ pub struct Rule {
 pub struct SiteRule {
     pub id: &'static str,
     pub name: &'static str,
+    pub plugin_name: &'static str,
     pub description: &'static str,
+    pub passed_message: &'static str,
+    pub failed_message: &'static str,
     pub default_severity: Severity,
     // pub check: fn(&Site) -> CheckResult,
     pub category: RuleCategory,
@@ -93,6 +99,8 @@ pub struct RuleDisplay {
     pub severity: Severity,
     pub category: RuleCategory,
     pub rule_type: RuleType,
+    pub passed_message: String,
+    pub failed_message: String,
 }
 
 impl Rule {
@@ -112,11 +120,13 @@ impl From<Rule> for RuleDisplay {
         RuleDisplay {
             id: rule.id.to_string(),
             name: rule.name.to_string(),
-            plugin_name: "".to_string(),
+            plugin_name: rule.plugin_name.to_string(),
             description: rule.description.to_string(),
             severity: rule.default_severity,
             category: rule.category,
             rule_type: RuleType::Page,
+            passed_message: rule.passed_message.to_string(),
+            failed_message: rule.failed_message.to_string(),
         }
     }
 }
@@ -132,11 +142,13 @@ impl From<SiteRule> for RuleDisplay {
         RuleDisplay {
             id: rule.id.to_string(),
             name: rule.name.to_string(),
-            plugin_name: "".to_string(),
+            plugin_name: rule.plugin_name.to_string(),
             description: rule.description.to_string(),
             severity: rule.default_severity,
             category: rule.category,
             rule_type: RuleType::Site,
+            passed_message: rule.passed_message.to_string(),
+            failed_message: rule.failed_message.to_string(),
         }
     }
 }
