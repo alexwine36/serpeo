@@ -21,9 +21,11 @@ impl TitlePlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "Title";
+
 impl SeoPlugin for TitlePlugin {
     fn name(&self) -> &str {
-        "Title"
+        PLUGIN_NAME
     }
     fn description(&self) -> &str {
         "The title tag of a web page is meant to be an accurate and concise description of
@@ -42,6 +44,7 @@ impl SeoPlugin for TitlePlugin {
             Rule {
                 id: "title.has_title",
                 name: "Page has title tag",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page has a proper title tag",
                 default_severity: Severity::Critical,
                 passed_message: "Page has a title tag",
@@ -67,6 +70,7 @@ impl SeoPlugin for TitlePlugin {
             Rule {
                 id: "title.title_length",
                 name: "Title length is less than 60 characters",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the title length is less than 60 characters",
                 default_severity: Severity::Warning,
                 passed_message: "Title length is less than 60 characters",

@@ -31,9 +31,11 @@ impl MetaDescriptionSitePlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "Meta Description Plugin";
+
 impl SitePlugin for MetaDescriptionSitePlugin {
     fn name(&self) -> &str {
-        "Meta Description Plugin"
+        PLUGIN_NAME
     }
 
     fn description(&self) -> &str {
@@ -66,6 +68,7 @@ impl SitePlugin for MetaDescriptionSitePlugin {
         vec![SiteRule {
             id: "meta_description_uniqueness",
             name: "Meta Description Uniqueness",
+            plugin_name: PLUGIN_NAME,
             description: "Checks if meta descriptions are unique 90% of the time",
             default_severity: Severity::Warning,
             category: RuleCategory::SEO,

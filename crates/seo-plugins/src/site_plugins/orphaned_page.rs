@@ -19,9 +19,11 @@ impl OrphanedPagePlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "OrphanedPage Plugin";
+
 impl SitePlugin for OrphanedPagePlugin {
     fn name(&self) -> &str {
-        "OrphanedPage Plugin"
+        PLUGIN_NAME
     }
 
     fn description(&self) -> &str {
@@ -42,6 +44,7 @@ impl SitePlugin for OrphanedPagePlugin {
         vec![SiteRule {
             id: "orphaned_page.check",
             name: "Orphaned Page",
+            plugin_name: PLUGIN_NAME,
             description: "Check if pages are found only in sitemap but not in links",
             default_severity: Severity::Warning,
             category: RuleCategory::SEO,

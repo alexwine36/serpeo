@@ -21,9 +21,11 @@ impl RequestPlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "Request";
+
 impl SeoPlugin for RequestPlugin {
     fn name(&self) -> &str {
-        "Request"
+        PLUGIN_NAME
     }
     fn description(&self) -> &str {
         "Check the status of network requests"
@@ -40,6 +42,7 @@ impl SeoPlugin for RequestPlugin {
         vec![Rule {
             id: "request.redirects",
             name: "Redirects",
+            plugin_name: PLUGIN_NAME,
             description: "Checks if the page has redirects",
             passed_message: "Page does not have redirects",
             failed_message: "Page has redirects",

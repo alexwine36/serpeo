@@ -29,9 +29,11 @@ impl ImagePlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "Images";
+
 impl SeoPlugin for ImagePlugin {
     fn name(&self) -> &str {
-        "Images"
+        PLUGIN_NAME
     }
     fn description(&self) -> &str {
         "Image optimization analysis"
@@ -54,6 +56,7 @@ impl SeoPlugin for ImagePlugin {
             Rule {
                 id: "images.responsive",
                 name: "Images are responsive",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if images use srcset for responsive design",
                 passed_message: "All images use srcset",
                 failed_message: "{} images missing srcset",

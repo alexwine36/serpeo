@@ -62,6 +62,7 @@ pub enum RuleCategory {
 pub struct Rule {
     pub id: &'static str,
     pub name: &'static str,
+    pub plugin_name: &'static str,
     pub description: &'static str,
     pub passed_message: &'static str,
     pub failed_message: &'static str,
@@ -75,6 +76,7 @@ pub struct Rule {
 pub struct SiteRule {
     pub id: &'static str,
     pub name: &'static str,
+    pub plugin_name: &'static str,
     pub description: &'static str,
     pub passed_message: &'static str,
     pub failed_message: &'static str,
@@ -118,7 +120,7 @@ impl From<Rule> for RuleDisplay {
         RuleDisplay {
             id: rule.id.to_string(),
             name: rule.name.to_string(),
-            plugin_name: "".to_string(),
+            plugin_name: rule.plugin_name.to_string(),
             description: rule.description.to_string(),
             severity: rule.default_severity,
             category: rule.category,
@@ -140,7 +142,7 @@ impl From<SiteRule> for RuleDisplay {
         RuleDisplay {
             id: rule.id.to_string(),
             name: rule.name.to_string(),
-            plugin_name: "".to_string(),
+            plugin_name: rule.plugin_name.to_string(),
             description: rule.description.to_string(),
             severity: rule.default_severity,
             category: rule.category,

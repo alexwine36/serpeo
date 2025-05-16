@@ -81,7 +81,17 @@ impl SeoStorage {
                 ..Default::default()
             };
             let on_conflict = OnConflict::column(plugin_rule::Column::Id)
-                .update_column(plugin_rule::Column::Id)
+                .update_columns([
+                    plugin_rule::Column::Name,
+                    plugin_rule::Column::Description,
+                    plugin_rule::Column::Category,
+                    plugin_rule::Column::Severity,
+                    plugin_rule::Column::PluginName,
+                    plugin_rule::Column::RuleType,
+                    plugin_rule::Column::PassedMessage,
+                    plugin_rule::Column::FailedMessage,
+                    // plugin_rule::Column::Enabled,
+                ])
                 .to_owned();
 
             let res = PluginRule::insert(rule)

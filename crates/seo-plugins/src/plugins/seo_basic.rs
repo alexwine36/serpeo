@@ -21,9 +21,11 @@ impl SeoBasicPlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "SeoBasic";
+
 impl SeoPlugin for SeoBasicPlugin {
     fn name(&self) -> &str {
-        "SeoBasic"
+        PLUGIN_NAME
     }
     fn description(&self) -> &str {
         ""
@@ -41,6 +43,7 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.has_canonical_url",
                 name: "Page has canonical url",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page has a canonical url",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
@@ -65,6 +68,7 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.canonical_url_matches_site",
                 name: "Canonical url matches site",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the canonical url matches the site",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
@@ -90,6 +94,7 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.is_scrapeable",
                 name: "Page is scrapeable",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page is scrapeable",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
@@ -115,6 +120,7 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.has_valid_charset",
                 name: "Page has valid charset",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page has a valid charset",
                 default_severity: Severity::Warning,
                 passed_message: "Page has a valid charset",
@@ -139,6 +145,7 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.has_html_doctype",
                 name: "Page has html doctype",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page has an html doctype",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,

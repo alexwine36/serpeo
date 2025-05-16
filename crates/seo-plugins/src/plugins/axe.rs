@@ -22,9 +22,11 @@ impl AxePlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "Axe";
+
 impl SeoPlugin for AxePlugin {
     fn name(&self) -> &str {
-        "Axe"
+        PLUGIN_NAME
     }
     fn description(&self) -> &str {
         "Accessibility testing using Axe rules"
@@ -42,6 +44,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.html_has_lang",
                 name: "HTML has lang attribute",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures every HTML document has a lang attribute",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -66,6 +69,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.image_alt",
                 name: "Images have alt text",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures <img> elements have alternate text or a role of none or presentation",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -93,6 +97,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.meta_viewport",
                 name: "Meta viewport allows zoom",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures the meta viewport element does not disable text scaling and zooming",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -122,6 +127,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.document_title",
                 name: "Document has title",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures the document has a title element",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -145,6 +151,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.button_name",
                 name: "Buttons have accessible name",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures buttons have an accessible name",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -180,6 +187,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.link_name",
                 name: "Links have accessible name",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures links have an accessible name",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -216,6 +224,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.form_field_labels",
                 name: "Form fields have labels",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures form fields have associated labels",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -251,6 +260,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.aria_valid_attr",
                 name: "ARIA attributes are valid",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures ARIA attributes are valid",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -295,6 +305,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.aria_required_attr",
                 name: "ARIA required attributes",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures elements with ARIA roles have required attributes",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -342,6 +353,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.duplicate_id",
                 name: "No duplicate IDs",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures IDs are unique",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -377,6 +389,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.frame_title",
                 name: "Frames have title",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures frames have title attributes",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
@@ -437,6 +450,7 @@ impl SeoPlugin for AxePlugin {
             Rule {
                 id: "axe.tabindex",
                 name: "Valid tabindex values",
+                plugin_name: PLUGIN_NAME,
                 description: "Ensures tabindex values are valid",
                 default_severity: Severity::Warning,
                 category: RuleCategory::Accessibility,
