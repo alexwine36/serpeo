@@ -1,5 +1,5 @@
-use entities::prelude::{PageRuleResult, SitePage, SiteRun};
-use entities::{page_rule_result, site, site_page, site_run};
+use entities::prelude::{PageRuleResult, PluginRule, SitePage, SiteRun};
+use entities::{page_rule_result, plugin_rule, site, site_page, site_run};
 use enums::db_link_type::DbLinkType;
 use enums::site_run_status::SiteRunStatus;
 use migration::{Migrator, MigratorTrait, OnConflict};
@@ -8,6 +8,7 @@ use sea_orm::*;
 use sea_orm::{Database, DbErr};
 use seo_plugins::site_analyzer::PageLink;
 use seo_plugins::utils::link_parser::LinkType;
+use seo_plugins::utils::registry::PluginRegistry;
 pub mod entities;
 pub mod enums;
 use crate::entities::prelude::Site;
@@ -48,12 +49,48 @@ impl SeoStorage {
     }
 
     pub async fn migrate_up(&self) -> Result<(), DbErr> {
-        Migrator::up(&self.db, None).await.unwrap();
-
+        let pending_migrations = Migrator::get_pending_migrations(&self.db).await?;
+        println!("pending migrations: {:?}", pending_migrations.len());
+        if pending_migrations.len() > 0 {
+            Migrator::up(&self.db, None).await.unwrap();
+        }
+        self.seed_plugin_rule_table().await?;
         Ok(())
     }
     pub async fn migrate_reset(&self) -> Result<(), DbErr> {
         Migrator::reset(&self.db).await.unwrap();
+        Ok(())
+    }
+
+    pub async fn seed_plugin_rule_table(&self) -> Result<(), DbErr> {
+        let registry = PluginRegistry::default_with_config();
+        let rules = registry.get_available_rules();
+
+        for rule in rules {
+            let rule = plugin_rule::ActiveModel {
+                id: ActiveValue::Set(rule.id),
+                name: ActiveValue::Set(rule.name),
+                description: ActiveValue::Set(rule.description),
+                category: ActiveValue::Set(rule.category.into()),
+                severity: ActiveValue::Set(rule.severity.into()),
+                plugin_name: ActiveValue::Set(rule.plugin_name),
+                rule_type: ActiveValue::Set(rule.rule_type.into()),
+                passed_message: ActiveValue::Set(rule.passed_message),
+                failed_message: ActiveValue::Set(rule.failed_message),
+                enabled: ActiveValue::Set(true),
+                ..Default::default()
+            };
+            let on_conflict = OnConflict::column(plugin_rule::Column::Id)
+                .update_column(plugin_rule::Column::Id)
+                .to_owned();
+
+            let res = PluginRule::insert(rule)
+                .on_conflict(on_conflict)
+                .exec(&self.db)
+                .await
+                .unwrap();
+            println!("rule upsert: {:?}", res);
+        }
         Ok(())
     }
     /* #endregion */

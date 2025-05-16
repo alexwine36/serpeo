@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn all_ids_are_unique() {
-        let registry = PluginRegistry::default();
+        let registry = PluginRegistry::default_with_config();
         let ids = registry
             .get_available_rules()
             .iter()

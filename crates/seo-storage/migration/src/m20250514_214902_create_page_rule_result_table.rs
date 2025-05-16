@@ -49,7 +49,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum PageRuleResult {
+pub enum PageRuleResult {
     Table,
     Id,
     SitePageId,

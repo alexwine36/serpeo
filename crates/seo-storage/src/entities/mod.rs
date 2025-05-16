@@ -3,6 +3,7 @@
 pub mod prelude;
 
 pub mod page_rule_result;
+pub mod plugin_rule;
 pub mod site;
 pub mod site_page;
 pub mod site_run;
