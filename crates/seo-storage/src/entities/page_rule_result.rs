@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
+    pub site_id: i32,
+    pub site_run_id: i32,
     pub site_page_id: i32,
     pub rule_id: String,
     pub passed: bool,
@@ -28,6 +30,14 @@ pub enum Relation {
     )]
     PluginRule,
     #[sea_orm(
+        belongs_to = "super::site::Entity",
+        from = "Column::SiteId",
+        to = "super::site::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Site,
+    #[sea_orm(
         belongs_to = "super::site_page::Entity",
         from = "Column::SitePageId",
         to = "super::site_page::Column::Id",
@@ -35,6 +45,14 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     SitePage,
+    #[sea_orm(
+        belongs_to = "super::site_run::Entity",
+        from = "Column::SiteRunId",
+        to = "super::site_run::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    SiteRun,
 }
 
 impl Related<super::plugin_rule::Entity> for Entity {
@@ -43,9 +61,21 @@ impl Related<super::plugin_rule::Entity> for Entity {
     }
 }
 
+impl Related<super::site::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Site.def()
+    }
+}
+
 impl Related<super::site_page::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::SitePage.def()
+    }
+}
+
+impl Related<super::site_run::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::SiteRun.def()
     }
 }
 

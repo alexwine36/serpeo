@@ -49,11 +49,15 @@ impl SeoStorage {
     }
 
     pub async fn migrate_up(&self) -> Result<(), DbErr> {
-        let pending_migrations = Migrator::get_pending_migrations(&self.db).await?;
-        println!("pending migrations: {:?}", pending_migrations.len());
-        if pending_migrations.len() > 0 {
-            Migrator::up(&self.db, None).await.unwrap();
+        // let pending_migrations = Migrator::get_pending_migrations(&self.db).await?;
+        // println!("pending migrations: {:?}", pending_migrations.len());
+        // if pending_migrations.len() > 0 {
+        if let Err(e) = Migrator::up(&self.db, None).await {
+            println!("migration error: {:?}", e);
+            Migrator::fresh(&self.db).await?;
+            Migrator::up(&self.db, None).await?;
         }
+        // }
         self.seed_plugin_rule_table().await?;
         Ok(())
     }
@@ -166,17 +170,26 @@ impl SeoStorage {
             Err(DbErr::RecordNotFound("SiteRun not found".to_string()))
         }
     }
+
+    pub async fn get_site_run_by_id(&self, id: i32) -> Result<site_run::Model, DbErr> {
+        let site_run = SiteRun::find_by_id(id).one(&self.db).await?;
+        Ok(site_run.unwrap())
+    }
+
     /* #endregion */
 
     /* #region SitePage */
+
     pub async fn upsert_site_page(
         &self,
         site_run_id: i32,
         url: &str,
         link_type: LinkType,
-    ) -> Result<i32, DbErr> {
+    ) -> Result<site_page::Model, DbErr> {
+        let site = self.get_site_run_by_id(site_run_id).await?;
         let site_page = site_page::ActiveModel {
             site_run_id: ActiveValue::Set(site_run_id),
+            site_id: ActiveValue::Set(site.site_id),
             url: ActiveValue::Set(url.to_string()),
             db_link_type: ActiveValue::Set(DbLinkType::from(link_type)),
             ..Default::default()
@@ -192,8 +205,10 @@ impl SeoStorage {
             .exec(&self.db)
             .await
             .unwrap();
-
-        Ok(res.last_insert_id)
+        let site_page = SitePage::find_by_id(res.last_insert_id)
+            .one(&self.db)
+            .await?;
+        Ok(site_page.unwrap())
     }
     /* #endregion */
 
@@ -206,13 +221,15 @@ impl SeoStorage {
     ) -> Result<(), DbErr> {
         let url = page_results.url;
         let link_type = page_results.link_type;
-        let site_page_id = self.upsert_site_page(site_run_id, &url, link_type).await?;
+        let site_page = self.upsert_site_page(site_run_id, &url, link_type).await?;
 
         let mut rule_results = vec![];
 
         for rule_result in page_results.result.unwrap().results {
             rule_results.push(self.format_rule_result(
-                site_page_id,
+                site_page.id,
+                site_run_id,
+                site_page.site_id,
                 &rule_result.rule_id,
                 rule_result.passed,
             ));
@@ -239,32 +256,21 @@ impl SeoStorage {
     fn format_rule_result(
         &self,
         site_page_id: i32,
+        site_run_id: i32,
+        site_id: i32,
         rule_id: &str,
         passed: bool,
     ) -> page_rule_result::ActiveModel {
         page_rule_result::ActiveModel {
             site_page_id: ActiveValue::Set(site_page_id),
+            site_run_id: ActiveValue::Set(site_run_id),
+            site_id: ActiveValue::Set(site_id),
             rule_id: ActiveValue::Set(rule_id.to_string()),
             passed: ActiveValue::Set(passed),
             ..Default::default()
         }
     }
 
-    pub async fn upsert_page_rule_result(
-        &self,
-        site_page_id: i32,
-        rule_id: &str,
-        passed: bool,
-    ) -> Result<i32, DbErr> {
-        let page_rule_result = self.format_rule_result(site_page_id, rule_id, passed);
-
-        let res = PageRuleResult::insert(page_rule_result)
-            .exec(&self.db)
-            .await
-            .unwrap();
-
-        Ok(res.last_insert_id)
-    }
     /* #endregion */
 }
 
@@ -363,7 +369,7 @@ mod tests {
             .create_site_run("https://forest-fitness-website-1dfad0.gitlab.io/")
             .await
             .unwrap();
-        let site_page_id = seo_storage
+        let site_page = seo_storage
             .upsert_site_page(
                 site_run_id,
                 "https://forest-fitness-website-1dfad0.gitlab.io/",
@@ -371,7 +377,7 @@ mod tests {
             )
             .await
             .unwrap();
-        let duplicate_site_page_id = seo_storage
+        let duplicate_site_page = seo_storage
             .upsert_site_page(
                 site_run_id,
                 "https://forest-fitness-website-1dfad0.gitlab.io/",
@@ -379,8 +385,8 @@ mod tests {
             )
             .await
             .unwrap();
-        assert_eq!(site_page_id, 1);
-        assert_eq!(duplicate_site_page_id, 1);
+        assert_eq!(site_page.id, 1);
+        assert_eq!(duplicate_site_page.id, 1);
         let site_pages = SitePage::find().all(&seo_storage.get_db()).await.unwrap();
         assert_eq!(site_pages.len(), 1);
         println!("site_pages: {:?}", site_pages);
