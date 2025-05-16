@@ -20,6 +20,14 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(
+        belongs_to = "super::plugin_rule::Entity",
+        from = "Column::RuleId",
+        to = "super::plugin_rule::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    PluginRule,
+    #[sea_orm(
         belongs_to = "super::site_page::Entity",
         from = "Column::SitePageId",
         to = "super::site_page::Column::Id",
@@ -27,6 +35,12 @@ pub enum Relation {
         on_delete = "NoAction"
     )]
     SitePage,
+}
+
+impl Related<super::plugin_rule::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PluginRule.def()
+    }
 }
 
 impl Related<super::site_page::Entity> for Entity {

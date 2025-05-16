@@ -44,7 +44,7 @@ impl MigrationTrait for Migration {
 }
 
 #[derive(DeriveIden)]
-enum PluginRule {
+pub enum PluginRule {
     Table,
     Id,
     Name,

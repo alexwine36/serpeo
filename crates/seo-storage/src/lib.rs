@@ -401,7 +401,7 @@ mod tests {
             result: Some(PageResult {
                 error: false,
                 results: vec![RuleResult {
-                    rule_id: "test".to_string(),
+                    rule_id: "title.has_title".to_string(),
                     name: "test".to_string(),
                     plugin_name: "test".to_string(),
                     passed: true,

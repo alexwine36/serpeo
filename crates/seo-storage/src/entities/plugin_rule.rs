@@ -27,6 +27,15 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(has_many = "super::page_rule_result::Entity")]
+    PageRuleResult,
+}
+
+impl Related<super::page_rule_result::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PageRuleResult.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
