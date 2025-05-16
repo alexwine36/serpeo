@@ -174,3 +174,22 @@ impl Default for PluginRegistry {
         registry
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_ids_are_unique() {
+        let registry = PluginRegistry::default();
+        let ids = registry
+            .get_available_rules()
+            .iter()
+            .map(|rule| rule.id.clone())
+            .collect::<Vec<String>>();
+        let mut unique_ids = ids.clone();
+        unique_ids.sort();
+        unique_ids.dedup();
+        assert_eq!(ids.len(), unique_ids.len());
+    }
+}

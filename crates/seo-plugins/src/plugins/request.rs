@@ -41,6 +41,8 @@ impl SeoPlugin for RequestPlugin {
             id: "request.redirects",
             name: "Redirects",
             description: "Checks if the page has redirects",
+            passed_message: "Page does not have redirects",
+            failed_message: "Page has redirects",
             default_severity: Severity::Error,
             category: RuleCategory::Performance,
             check: |page| {

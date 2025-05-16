@@ -44,6 +44,8 @@ impl SeoPlugin for MetaDescriptionPlugin {
                 description: "Checks if the page has a meta description",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Page has a meta description",
+                failed_message: "Page is missing a meta description",
                 check: |page| {
                     let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
@@ -66,6 +68,8 @@ impl SeoPlugin for MetaDescriptionPlugin {
                 name: "Meta description length is less than 155 characters",
                 description: "Checks if the meta description length is less than 155 characters",
                 default_severity: Severity::Warning,
+                passed_message: "Meta description length is less than 155 characters",
+                failed_message: "Meta description length is greater than 155 characters",
                 category: RuleCategory::SEO,
                 check: |page| {
                     let page = page.clone();

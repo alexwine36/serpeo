@@ -55,6 +55,8 @@ impl SeoPlugin for ImagePlugin {
                 id: "images.responsive",
                 name: "Images are responsive",
                 description: "Checks if images use srcset for responsive design",
+                passed_message: "All images use srcset",
+                failed_message: "{} images missing srcset",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
                 check: |page| {

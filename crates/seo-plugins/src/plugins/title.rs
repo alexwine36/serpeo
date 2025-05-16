@@ -44,6 +44,8 @@ impl SeoPlugin for TitlePlugin {
                 name: "Page has title tag",
                 description: "Checks if the page has a proper title tag",
                 default_severity: Severity::Critical,
+                passed_message: "Page has a title tag",
+                failed_message: "Page is missing a title tag",
                 category: RuleCategory::SEO,
                 check: |page| {
                     let page = page.clone();
@@ -67,6 +69,8 @@ impl SeoPlugin for TitlePlugin {
                 name: "Title length is less than 60 characters",
                 description: "Checks if the title length is less than 60 characters",
                 default_severity: Severity::Warning,
+                passed_message: "Title length is less than 60 characters",
+                failed_message: "Title length is greater than 60 characters",
                 category: RuleCategory::SEO,
                 check: |page| {
                     let page = page.clone();

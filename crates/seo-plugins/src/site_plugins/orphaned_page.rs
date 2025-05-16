@@ -45,6 +45,8 @@ impl SitePlugin for OrphanedPagePlugin {
             description: "Check if pages are found only in sitemap but not in links",
             default_severity: Severity::Warning,
             category: RuleCategory::SEO,
+            passed_message: "No orphaned pages found",
+            failed_message: "Orphaned pages found",
         }]
     }
 

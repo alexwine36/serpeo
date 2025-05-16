@@ -45,6 +45,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures every HTML document has a lang attribute",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "HTML has lang attribute",
+                failed_message: "HTML is missing lang attribute",
                 check: |page| {
                     let page = page.clone();
                     let lang = page.get_element("html").unwrap();
@@ -67,6 +69,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures <img> elements have alternate text or a role of none or presentation",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "All images have alt text",
+                failed_message: "Images missing alt text",
                 check: |page| {
                     let page = page.clone();
                     let images = page.extract_images();
@@ -92,6 +96,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures the meta viewport element does not disable text scaling and zooming",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "Meta viewport allows zooming",
+                failed_message: "Meta viewport disables zooming",
                 check: |page| {
                     let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
@@ -119,6 +125,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures the document has a title element",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "Document has title",
+                failed_message: "Document is missing title",
                 check: |page| {
                     let page = page.clone();
                     let has_title = page.get_element("title").is_ok();
@@ -140,6 +148,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures buttons have an accessible name",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "All buttons have accessible names",
+                failed_message: "Buttons missing accessible names",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("button").unwrap();
@@ -173,6 +183,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures links have an accessible name",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "All links have accessible names",
+                failed_message: "Links missing accessible names",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("a").unwrap();
@@ -207,6 +219,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures form fields have associated labels",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "All form fields have labels",
+                failed_message: "Form fields missing labels",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("input, select, textarea").unwrap();
@@ -240,6 +254,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures ARIA attributes are valid",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "All ARIA attributes are valid",
+                failed_message: "Found elements with invalid ARIA attributes",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("[aria-]").unwrap();
@@ -282,6 +298,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures elements with ARIA roles have required attributes",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "All ARIA roles have required attributes",
+                failed_message: "Found elements missing required ARIA attributes",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("[role]").unwrap();
@@ -327,6 +345,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures IDs are unique",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "No duplicate IDs found",
+                failed_message: "Found duplicate IDs",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("[id]").unwrap();
@@ -360,6 +380,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures frames have title attributes",
                 default_severity: Severity::Error,
                 category: RuleCategory::Accessibility,
+                passed_message: "All frames have title attributes",
+                failed_message: "Frames missing title attributes",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("frame, iframe").unwrap();
@@ -418,6 +440,8 @@ impl SeoPlugin for AxePlugin {
                 description: "Ensures tabindex values are valid",
                 default_severity: Severity::Warning,
                 category: RuleCategory::Accessibility,
+                passed_message: "No invalid tabindex values found",
+                failed_message: "Found elements with invalid tabindex values",
                 check: |page| {
                     let page = page.clone();
                     let selector = Selector::parse("[tabindex]").unwrap();

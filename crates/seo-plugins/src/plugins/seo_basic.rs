@@ -44,6 +44,8 @@ impl SeoPlugin for SeoBasicPlugin {
                 description: "Checks if the page has a canonical url",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Page has a canonical url",
+                failed_message: "Page is missing a canonical url",
                 check: |page| {
                     let page = page.clone();
                     let canonical_url = page.extract_meta_tags().canonical;
@@ -66,6 +68,8 @@ impl SeoPlugin for SeoBasicPlugin {
                 description: "Checks if the canonical url matches the site",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Canonical url matches site",
+                failed_message: "Canonical url does not match site",
                 check: |page| {
                     let page = page.clone();
                     let canonical_url = page.extract_meta_tags().canonical;
@@ -89,6 +93,8 @@ impl SeoPlugin for SeoBasicPlugin {
                 description: "Checks if the page is scrapeable",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Page is scrapeable",
+                failed_message: "Page is not scrapeable",
                 check: |page| {
                     let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
@@ -111,6 +117,8 @@ impl SeoPlugin for SeoBasicPlugin {
                 name: "Page has valid charset",
                 description: "Checks if the page has a valid charset",
                 default_severity: Severity::Warning,
+                passed_message: "Page has a valid charset",
+                failed_message: "Page is missing a valid charset",
                 category: RuleCategory::SEO,
                 check: |page| {
                     let page = page.clone();
@@ -134,6 +142,8 @@ impl SeoPlugin for SeoBasicPlugin {
                 description: "Checks if the page has an html doctype",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Page has an html doctype",
+                failed_message: "Page is missing an html doctype",
                 check: |page| {
                     let page = page.clone();
                     let html = page.get_html().unwrap();
