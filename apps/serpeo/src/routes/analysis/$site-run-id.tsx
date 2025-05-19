@@ -16,9 +16,9 @@ import { commands } from "../../generated/bindings";
 import { useSiteByIdQuery } from "../../queries/sites";
 
 dayjs.extend(relativeTime);
-export const Route = createFileRoute("/analysis/$siteRunId")({
+export const Route = createFileRoute("/analysis/$site-run-id")({
   loader: async ({ params }) => {
-    const siteRunId = params.siteRunId;
+    const siteRunId = params["site-run-id"];
     console.log(siteRunId);
     const siteRun = await commands.getSiteRunById(Number(siteRunId));
     if (siteRun.status === "error") {
@@ -32,7 +32,7 @@ export const Route = createFileRoute("/analysis/$siteRunId")({
 });
 
 function SiteRun() {
-  const { siteRun } = useLoaderData({ from: "/analysis/$siteRunId" });
+  const { siteRun } = useLoaderData({ from: "/analysis/$site-run-id" });
   console.log(siteRun);
   const { data: site } = useSiteByIdQuery(siteRun.site_id);
   return (
