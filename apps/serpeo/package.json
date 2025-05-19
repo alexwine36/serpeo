@@ -27,6 +27,7 @@
     "@tauri-apps/plugin-store": "2.2.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
+    "dayjs": "^1.11.13",
     "jotai": "2.12.3",
     "jotai-effect": "2.0.2",
     "jotai-optics": "0.4.0",

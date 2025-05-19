@@ -119,9 +119,15 @@ impl SeoStorage {
     // Database interaction
 
     /* #region Site */
-    pub async fn get_sites(&self) -> Result<Vec<site::Model>, DbErr> {
-        let sites = Site::find().all(&self.db).await.unwrap();
-        Ok(sites)
+    pub async fn get_sites(
+        &self,
+    ) -> Result<Vec<utils::sites_with_site_runs::SiteWithSiteRuns>, DbErr> {
+        let sites: Vec<(site::Model, Vec<site_run::Model>)> = Site::find()
+            .find_with_related(site_run::Entity)
+            .all(&self.db)
+            .await
+            .unwrap();
+        Ok(utils::sites_with_site_runs::get_sites_with_site_runs(sites))
     }
 
     pub async fn upsert_site(&self, url: &str) -> Result<i32, DbErr> {
@@ -155,6 +161,14 @@ impl SeoStorage {
     /* #endregion */
 
     /* #region SiteRun */
+    pub async fn get_site_runs(&self, site_id: i32) -> Result<Vec<site_run::Model>, DbErr> {
+        let site_runs = SiteRun::find()
+            .filter(site_run::Column::SiteId.eq(site_id))
+            .all(&self.db)
+            .await?;
+        Ok(site_runs)
+    }
+    /* #endregion */
     pub async fn create_site_run(&self, url: &str) -> Result<i32, DbErr> {
         let site = self.upsert_site(url).await?;
         let site_run = site_run::ActiveModel {

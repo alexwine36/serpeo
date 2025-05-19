@@ -1,5 +1,8 @@
-use listeners::{setup_listeners, AnalysisStart};
+use listeners::{setup_listeners, AnalysisFinished, AnalysisStart};
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
+
+use seo_storage::entities::site_run;
+use seo_storage::utils::sites_with_site_runs::SiteWithSiteRuns;
 use seo_storage::SeoStorage;
 use seo_storage::{entities::site, utils::category_counts::CategoryResultDisplay};
 use specta_typescript::Typescript;
@@ -18,26 +21,11 @@ struct AppData {
     site_run_id: Option<i32>,
 }
 
-// #[tauri::command]
-// #[specta::specta]
-// async fn get_config(state: State<'_, Mutex<AppData>>) -> Result<CrawlConfig, String> {
-//     // let mut app_data = app.state::<Mutex<AppData>>();
-//     Ok(state.lock().unwrap().config.clone())
-// }
-
-// #[tauri::command]
-// #[specta::specta]
-// async fn set_config(state: State<'_, Mutex<AppData>>, config: CrawlConfig) -> Result<(), String> {
-//     // let app_data = app.state::<Mutex<AppData>>();
-//     let mut state = state.lock().unwrap();
-//     state.config = config;
-//     Ok(())
-// }
-
 #[tauri::command]
 #[specta::specta]
 async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResult, String> {
     let app_handle = app.clone();
+    let app_handle_clone = app_handle.clone();
     let base_url = url.clone();
 
     let crawl_settings = CrawlSettingsStore::get_or_default(&app_handle).unwrap();
@@ -54,14 +42,31 @@ async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResu
     let progress_callback = Box::new(move |progress| {
         let _ = app_handle.emit("analysis-progress", progress);
     });
-    crawl_url(&config, progress_callback)
+    let res = crawl_url(&config, progress_callback)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    let res_clone = res.clone();
+    {
+        let site_run_id = app_handle_clone
+            .state::<Mutex<AppData>>()
+            .lock()
+            .unwrap()
+            .site_run_id
+            .unwrap();
+        AnalysisFinished {
+            site_run_id,
+            result: res_clone,
+        }
+        .emit(&app_handle_clone)
+        .unwrap();
+    }
+
+    Ok(res)
 }
 
 #[tauri::command]
 #[specta::specta]
-async fn get_sites(app: tauri::AppHandle) -> Result<Vec<site::Model>, String> {
+async fn get_sites(app: tauri::AppHandle) -> Result<Vec<SiteWithSiteRuns>, String> {
     let app_handle = app.clone();
     let storage = app_handle
         .state::<Mutex<AppData>>()
@@ -71,6 +76,26 @@ async fn get_sites(app: tauri::AppHandle) -> Result<Vec<site::Model>, String> {
         .clone();
     let sites = storage.get_sites().await.map_err(|e| e.to_string())?;
     Ok(sites)
+}
+
+#[tauri::command]
+#[specta::specta]
+async fn get_site_run_by_id(
+    app: tauri::AppHandle,
+    site_run_id: i32,
+) -> Result<site_run::Model, String> {
+    let app_handle = app.clone();
+    let storage = app_handle
+        .state::<Mutex<AppData>>()
+        .lock()
+        .unwrap()
+        .storage
+        .clone();
+    let site_run = storage
+        .get_site_run_by_id(site_run_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(site_run)
 }
 
 #[tauri::command]
@@ -99,9 +124,14 @@ fn builder() -> Builder<tauri::Wry> {
         .commands(collect_commands![
             analyze_url_seo,
             get_sites,
-            get_category_result
+            get_category_result,
+            get_site_run_by_id
         ])
-        .events(collect_events![AnalysisProgress, AnalysisStart])
+        .events(collect_events![
+            AnalysisProgress,
+            AnalysisStart,
+            AnalysisFinished
+        ])
         .constant("STORE_FILE", STORE_FILE)
         .constant("CRAWL_SETTINGS_KEY", CRAWL_SETTINGS_KEY)
         .typ::<crawl_settings::CrawlSettingsStore>()

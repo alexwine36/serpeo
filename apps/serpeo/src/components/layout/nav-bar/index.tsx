@@ -38,6 +38,10 @@ const routeList: RouteDef[] = [
     label: "Analysis",
     to: "/analysis",
   },
+  {
+    label: "Sites",
+    to: "/analysis/sites",
+  },
 ];
 
 export const NavBar = () => {
