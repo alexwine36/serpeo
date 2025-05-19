@@ -26,7 +26,7 @@ impl SeoStorage {
     /* #region Utilities */
     pub async fn new(db_url: &str) -> Self {
         let mut options = ConnectOptions::from(db_url.to_string());
-        // options.max_connections(10);
+        options.max_connections(5);
         options.sqlx_logging(true);
         let db = Database::connect(options).await.unwrap();
         SeoStorage { db }
@@ -118,6 +118,14 @@ impl SeoStorage {
     }
 
     pub async fn upsert_site(&self, url: &str) -> Result<i32, DbErr> {
+        let site = Site::find()
+            .filter(site::Column::Url.eq(url.to_string()))
+            .one(&self.db)
+            .await?;
+        if site.is_some() {
+            return Ok(site.unwrap().id);
+        }
+
         let site = site::ActiveModel {
             url: ActiveValue::Set(url.to_string()),
             ..Default::default()
