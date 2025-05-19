@@ -1,7 +1,7 @@
 use listeners::{setup_listeners, AnalysisStart};
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
-use seo_storage::entities::site;
 use seo_storage::SeoStorage;
+use seo_storage::{entities::site, utils::category_counts::CategoryResultDisplay};
 use specta_typescript::Typescript;
 use std::sync::Mutex;
 use stores::crawl_settings::{self, CrawlSettingsStore, CRAWL_SETTINGS_KEY};
@@ -73,10 +73,34 @@ async fn get_sites(app: tauri::AppHandle) -> Result<Vec<site::Model>, String> {
     Ok(sites)
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn get_category_result(
+    app: tauri::AppHandle,
+    site_run_id: i32,
+) -> Result<CategoryResultDisplay, String> {
+    let app_handle = app.clone();
+    let storage = app_handle
+        .state::<Mutex<AppData>>()
+        .lock()
+        .unwrap()
+        .storage
+        .clone();
+    let category_result = storage
+        .get_category_result(&site_run_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(category_result)
+}
+
 fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![analyze_url_seo, get_sites])
+        .commands(collect_commands![
+            analyze_url_seo,
+            get_sites,
+            get_category_result
+        ])
         .events(collect_events![AnalysisProgress, AnalysisStart])
         .constant("STORE_FILE", STORE_FILE)
         .constant("CRAWL_SETTINGS_KEY", CRAWL_SETTINGS_KEY)

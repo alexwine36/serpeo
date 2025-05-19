@@ -1,16 +1,23 @@
+use std::collections::HashMap;
+
 use entities::prelude::{PageRuleResult, PluginRule, SitePage, SiteRun};
 use entities::{page_rule_result, plugin_rule, site, site_page, site_run};
 use enums::db_link_type::DbLinkType;
+use enums::plugin_rule_enums::{DbRuleCategory, DbSeverity};
 use enums::site_run_status::SiteRunStatus;
 use migration::{Migrator, MigratorTrait, OnConflict};
 use sea_orm::ConnectOptions;
 use sea_orm::*;
 use sea_orm::{Database, DbErr};
 use seo_plugins::site_analyzer::PageLink;
+use seo_plugins::utils::config::RuleCategory;
 use seo_plugins::utils::link_parser::LinkType;
+use seo_plugins::utils::page_plugin;
 use seo_plugins::utils::registry::PluginRegistry;
+use utils::category_counts::{CategoryResult, CategoryResultDisplay};
 pub mod entities;
 pub mod enums;
+pub mod utils;
 use crate::entities::prelude::Site;
 
 const DATABASE_URL: &str = "sqlite::memory:";
@@ -280,6 +287,27 @@ impl SeoStorage {
     }
 
     /* #endregion */
+
+    /* #region Results Display */
+    pub async fn get_category_result(
+        &self,
+        site_run_id: &i32,
+    ) -> Result<CategoryResultDisplay, DbErr> {
+        let res: Vec<(plugin_rule::Model, Vec<page_rule_result::Model>)> = PluginRule::find()
+            .find_with_related(page_rule_result::Entity)
+            .filter(page_rule_result::Column::SiteRunId.eq(site_run_id.to_owned()))
+            .all(&self.db)
+            .await?;
+
+        let category_counts = utils::category_counts::get_category_counts(res);
+        println!("category_counts: {:?}", category_counts);
+        let category_result_display =
+            utils::category_counts::get_category_result_display(category_counts);
+        println!("category_result_display: {:?}", category_result_display);
+
+        Ok(category_result_display)
+    }
+    /* #endregion */
 }
 
 #[cfg(test)]
@@ -421,7 +449,7 @@ mod tests {
                     passed: true,
                     message: "test".to_string(),
                     severity: Severity::Info,
-                    category: RuleCategory::Performance,
+                    category: RuleCategory::SEO,
                     context: SiteCheckContext::Empty,
                 }],
             }),
@@ -439,10 +467,22 @@ mod tests {
             .unwrap();
 
         let page_rule_results = PageRuleResult::find()
+            .find_also_related(plugin_rule::Entity)
             .all(&seo_storage.get_db())
             .await
             .unwrap();
         assert_eq!(page_rule_results.len(), 1);
         println!("page_rule_results: {:?}", page_rule_results);
+
+        let category_result = seo_storage.get_category_result(&site_run_id).await.unwrap();
+        println!("category_result: {:?}", category_result);
+
+        assert_eq!(category_result.data.len(), 1);
+        assert_eq!(category_result.total, 1);
+        assert_eq!(category_result.passed, 1);
+        assert_eq!(category_result.failed, 0);
+        assert_eq!(category_result.data[&DbRuleCategory::SEO].total, 1);
+        assert_eq!(category_result.data[&DbRuleCategory::SEO].passed, 1);
+        assert_eq!(category_result.data[&DbRuleCategory::SEO].failed, 0);
     }
 }

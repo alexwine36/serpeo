@@ -1,6 +1,9 @@
 use sea_orm::entity::prelude::*;
 use seo_plugins::utils::config::{RuleCategory, RuleType, Severity};
 
+#[cfg(test)]
+use fake::Dummy;
+
 #[derive(
     Clone,
     Debug,
@@ -12,6 +15,7 @@ use seo_plugins::utils::config::{RuleCategory, RuleType, Severity};
     serde::Deserialize,
     specta::Type,
 )]
+#[cfg_attr(test, derive(Dummy))]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum DbSeverity {
     #[sea_orm(string_value = "Info")]
@@ -45,7 +49,9 @@ impl From<Severity> for DbSeverity {
     serde::Serialize,
     serde::Deserialize,
     specta::Type,
+    Hash,
 )]
+#[cfg_attr(test, derive(Dummy))]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum DbRuleCategory {
     #[sea_orm(string_value = "Accessibility")]
@@ -80,6 +86,7 @@ impl From<RuleCategory> for DbRuleCategory {
     serde::Deserialize,
     specta::Type,
 )]
+#[cfg_attr(test, derive(Dummy))]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum DbRuleType {
     #[sea_orm(string_value = "Page")]

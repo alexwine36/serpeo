@@ -3,9 +3,13 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
+use fake::Dummy;
+
 #[derive(
     Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, specta :: Type,
 )]
+#[cfg_attr(test, derive(Dummy))]
 #[sea_orm(table_name = "page_rule_result")]
 #[specta(rename = "PageRuleResultModel")]
 pub struct Model {

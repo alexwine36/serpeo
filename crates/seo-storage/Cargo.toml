@@ -13,5 +13,7 @@ serde = {workspace = true}
 seo-plugins = {workspace = true}
 
 
+
 [dev-dependencies]
 tokio-test = "0.4.4"
+fake = { version = "4", features = ["derive", "chrono"] }
