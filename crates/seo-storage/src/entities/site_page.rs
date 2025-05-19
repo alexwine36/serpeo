@@ -5,9 +5,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::enums::db_link_type::DbLinkType;
 
+#[cfg(test)]
+use fake::Dummy;
+
 #[derive(
     Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, specta :: Type,
 )]
+#[cfg_attr(test, derive(Dummy))]
 #[sea_orm(table_name = "site_page")]
 #[specta(rename = "SitePageModel")]
 pub struct Model {

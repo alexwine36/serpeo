@@ -52,6 +52,14 @@ async getSiteRunLinkCounts(siteRunId: number) : Promise<Result<SitePageLinkCount
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getCategoryResultDetail(siteRunId: number, passed: boolean | null) : Promise<Result<CategoryDetailResponse, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_category_result_detail", { siteRunId, passed }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -72,8 +80,8 @@ siteRunIdSet: "site-run-id-set"
 
 /** user-defined constants **/
 
-export const STORE_FILE = "store.json" as const;
 export const CRAWL_SETTINGS_KEY = "crawl_settings" as const;
+export const STORE_FILE = "store.json" as const;
 
 /** user-defined types **/
 
@@ -81,12 +89,15 @@ export type AnalysisFinished = { site_run_id: number; result: CrawlResult }
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
 export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink }
 export type AnalysisStart = { base_url: string }
+export type CategoryDetailResponse = { data: Partial<{ [key in DbRuleCategory]: FlatRuleResult[] }> }
 export type CategoryResult = { total: number; passed: number; failed: number }
 export type CategoryResultDisplay = { data: Partial<{ [key in DbRuleCategory]: CategoryResult }>; total: number; passed: number; failed: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
 export type CrawlSettingsStore = { max_concurrent_requests: number; request_delay_ms: number }
 export type DbLinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
 export type DbRuleCategory = "Accessibility" | "Performance" | "BestPractices" | "SEO"
+export type DbSeverity = "Info" | "Warning" | "Error" | "Critical"
+export type FlatRuleResult = { rule_id: string; name: string; plugin_name: string; passed: boolean; message: string; severity: DbSeverity; category: DbRuleCategory; page_url: string }
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
 export type LinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
 export type PageLink = { url: string; link_type: LinkType; found_in: PageLinkSource[]; result: PageResult | null }

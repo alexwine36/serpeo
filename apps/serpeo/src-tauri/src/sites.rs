@@ -1,6 +1,7 @@
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
 
 use seo_storage::entities::site_run;
+use seo_storage::utils::category_detail::CategoryDetailResponse;
 use seo_storage::utils::sites_with_site_runs::SiteWithSiteRuns;
 use seo_storage::{entities::site, utils::category_counts::CategoryResultDisplay};
 use seo_storage::{SeoStorage, SitePageLinkCount};
@@ -78,6 +79,27 @@ pub async fn get_category_result(
         .clone();
     let category_result = storage
         .get_category_result(&site_run_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(category_result)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_category_result_detail(
+    app: tauri::AppHandle,
+    site_run_id: i32,
+    passed: Option<bool>,
+) -> Result<CategoryDetailResponse, String> {
+    let app_handle = app.clone();
+    let storage = app_handle
+        .state::<Mutex<AppData>>()
+        .lock()
+        .unwrap()
+        .storage
+        .clone();
+    let category_result = storage
+        .get_category_result_detail(&site_run_id, passed)
         .await
         .map_err(|e| e.to_string())?;
     Ok(category_result)

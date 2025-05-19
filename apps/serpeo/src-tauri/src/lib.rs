@@ -74,7 +74,8 @@ fn builder() -> Builder<tauri::Wry> {
             sites::get_category_result,
             sites::get_site_run_by_id,
             sites::get_site_by_id,
-            sites::get_site_run_link_counts
+            sites::get_site_run_link_counts,
+            sites::get_category_result_detail,
         ])
         .events(collect_events![
             AnalysisProgress,

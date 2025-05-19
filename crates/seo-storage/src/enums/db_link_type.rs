@@ -1,6 +1,9 @@
 use sea_orm::entity::prelude::*;
 use seo_plugins::utils::link_parser::LinkType;
 
+#[cfg(test)]
+use fake::Dummy;
+
 #[derive(
     Clone,
     Debug,
@@ -13,6 +16,7 @@ use seo_plugins::utils::link_parser::LinkType;
     specta::Type,
 )]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
+#[cfg_attr(test, derive(Dummy))]
 pub enum DbLinkType {
     #[sea_orm(string_value = "Internal")]
     Internal,

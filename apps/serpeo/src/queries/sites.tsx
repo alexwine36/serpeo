@@ -67,3 +67,20 @@ export const useSiteRunLinkCountsQuery = (siteRunId: number) => {
     },
   });
 };
+
+export const useSiteRunCategoryResultDetailQuery = (
+  siteRunId: number,
+  passed: boolean | null
+) => {
+  return useQuery({
+    queryKey: ["siteRunCategoryResultDetail", siteRunId, passed],
+    queryFn: async () => {
+      const siteRunCategoryResultDetail =
+        await commands.getCategoryResultDetail(siteRunId, passed);
+      if (siteRunCategoryResultDetail.status === "ok") {
+        return siteRunCategoryResultDetail.data.data;
+      }
+      return null;
+    },
+  });
+};

@@ -9,6 +9,7 @@ import { Separator } from "@repo/ui/components/separator";
 import { createFileRoute, useLoaderData } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { IssueCategoryDetail } from "../../components/display/issue-category-detail";
 import { IssueCategoryOverview } from "../../components/display/issue-category-overview";
 import { LinkDisplay } from "../../components/display/link-display";
 import { commands } from "../../generated/bindings";
@@ -50,6 +51,7 @@ function SiteRun() {
           <Separator />
           <LinkDisplay siteRunId={siteRun.id} />
           <IssueCategoryOverview siteRunId={siteRun.id} />
+          <IssueCategoryDetail siteRunId={siteRun.id} />
         </div>
       </CardContent>
     </Card>

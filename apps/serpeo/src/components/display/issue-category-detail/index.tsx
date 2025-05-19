@@ -7,13 +7,42 @@ import {
 import { Badge } from "@repo/ui/components/badge";
 import { useAtomValue } from "jotai";
 import { groupBy, prop } from "remeda";
-import {
-  type IssueCategoryItem,
-  issueCategoriesAtom,
-} from "../../../atoms/crawl-result";
+import { issueCategoriesAtom } from "../../../atoms/crawl-result";
+import type { FlatRuleResult } from "../../../generated/bindings";
+import { useSiteRunCategoryResultDetailQuery } from "../../../queries/sites";
 import { SeverityBadge } from "../severity-badge";
-export const IssueCategoryDetail = () => {
+export const IssueCategoryDetailOld = () => {
   const categories = useAtomValue(issueCategoriesAtom);
+  return (
+    <div>
+      {Object.entries(categories).map(([category, issues]) => (
+        <IssueCategoryDetailItem
+          key={category}
+          category={category}
+          issues={issues}
+        />
+      ))}
+    </div>
+  );
+};
+
+type IssueCategoryDetailProps = {
+  siteRunId: number;
+};
+
+export const IssueCategoryDetail = ({
+  siteRunId,
+}: IssueCategoryDetailProps) => {
+  const { data: categories, isLoading } = useSiteRunCategoryResultDetailQuery(
+    siteRunId,
+    null
+  );
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (!categories) {
+    return <div>No data</div>;
+  }
   return (
     <div>
       {Object.entries(categories).map(([category, issues]) => (
@@ -30,7 +59,7 @@ export const IssueCategoryDetail = () => {
 const IssueCategoryDetailItem = ({
   category,
   issues,
-}: { category: string; issues: IssueCategoryItem[] }) => {
+}: { category: string; issues: FlatRuleResult[] }) => {
   const failedTests = issues.filter((i) => !i.passed);
 
   if (failedTests.length === 0) {
@@ -63,7 +92,7 @@ const IssueCategoryDetailItem = ({
                 return (
                   <div key={`${t.rule_id}-${idx}`}>
                     <p>{t.message}</p>
-                    <p>{t.pathname}</p>
+                    <p>{t.page_url}</p>
                   </div>
                 );
               })}

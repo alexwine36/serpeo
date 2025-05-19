@@ -16,6 +16,7 @@ use seo_plugins::utils::page_plugin;
 use seo_plugins::utils::registry::PluginRegistry;
 use serde::{Deserialize, Serialize};
 use utils::category_counts::{CategoryResult, CategoryResultDisplay};
+use utils::category_detail::CategoryDetailResponse;
 pub mod entities;
 pub mod enums;
 pub mod utils;
@@ -431,6 +432,27 @@ impl SeoStorage {
 
         Ok(category_result_display)
     }
+
+    pub async fn get_category_result_detail(
+        &self,
+        site_run_id: &i32,
+        passed: Option<bool>,
+    ) -> Result<CategoryDetailResponse, DbErr> {
+        let mut res = PageRuleResult::find()
+            .filter(page_rule_result::Column::SiteRunId.eq(site_run_id.to_owned()))
+            .find_also_related(site_page::Entity)
+            .find_also_related(plugin_rule::Entity);
+
+        if let Some(passed) = passed {
+            res = res.filter(page_rule_result::Column::Passed.eq(passed));
+        }
+
+        let res = res.all(&self.db).await?;
+
+        let category_detail = utils::category_detail::get_category_detail(res).unwrap();
+        println!("category_detail: {:?}", category_detail);
+        Ok(category_detail)
+    }
     /* #endregion */
 }
 
@@ -622,5 +644,45 @@ mod tests {
         assert_eq!(site_page_link_counts.len(), 1);
         assert_eq!(site_page_link_counts[0].db_link_type, DbLinkType::Internal);
         assert_eq!(site_page_link_counts[0].count, 1);
+
+        let test_page_results = PageLink {
+            url: "https://forest-fitness-website-1dfad0.gitlab.io/".to_string(),
+            link_type: LinkType::Internal,
+            found_in: HashSet::new(),
+            result: Some(PageResult {
+                error: false,
+                results: vec![RuleResult {
+                    rule_id: "title.title_length".to_string(),
+                    name: "test".to_string(),
+                    plugin_name: "test".to_string(),
+                    passed: false,
+                    message: "test".to_string(),
+                    severity: Severity::Info,
+                    category: RuleCategory::SEO,
+                    context: SiteCheckContext::Empty,
+                }],
+            }),
+        };
+
+        seo_storage
+            .insert_many_page_rule_results(site_run_id, test_page_results)
+            .await
+            .unwrap();
+
+        let category_detail = seo_storage
+            .get_category_result_detail(&site_run_id, Some(false))
+            .await
+            .unwrap();
+        println!("category_detail: {:?}", category_detail);
+
+        assert_eq!(category_detail.data.len(), 1);
+        assert_eq!(category_detail.data[&DbRuleCategory::SEO].len(), 1);
+        let category_detail = seo_storage
+            .get_category_result_detail(&site_run_id, None)
+            .await
+            .unwrap();
+        println!("category_detail: {:?}", category_detail);
+        assert_eq!(category_detail.data.len(), 1);
+        assert_eq!(category_detail.data[&DbRuleCategory::SEO].len(), 2);
     }
 }
