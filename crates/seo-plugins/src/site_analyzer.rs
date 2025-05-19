@@ -46,7 +46,7 @@ pub struct PageLink {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct CrawlResult {
-    page_results: Vec<PageLink>,
+    pub page_results: Vec<PageLink>,
     site_result: Vec<RuleResult>,
     total_pages: u32,
 }

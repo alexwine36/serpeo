@@ -36,6 +36,22 @@ async getSiteRunById(siteRunId: number) : Promise<Result<SiteRunModel, string>> 
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getSiteById(id: number) : Promise<Result<SiteModel, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_site_by_id", { id }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getSiteRunLinkCounts(siteRunId: number) : Promise<Result<SitePageLinkCount[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_site_run_link_counts", { siteRunId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -45,11 +61,13 @@ async getSiteRunById(siteRunId: number) : Promise<Result<SiteRunModel, string>> 
 export const events = __makeEvents__<{
 analysisFinished: AnalysisFinished,
 analysisProgress: AnalysisProgress,
-analysisStart: AnalysisStart
+analysisStart: AnalysisStart,
+siteRunIdSet: SiteRunIdSet
 }>({
 analysisFinished: "analysis-finished",
 analysisProgress: "analysis-progress",
-analysisStart: "analysis-start"
+analysisStart: "analysis-start",
+siteRunIdSet: "site-run-id-set"
 })
 
 /** user-defined constants **/
@@ -67,6 +85,7 @@ export type CategoryResult = { total: number; passed: number; failed: number }
 export type CategoryResultDisplay = { data: Partial<{ [key in DbRuleCategory]: CategoryResult }>; total: number; passed: number; failed: number }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
 export type CrawlSettingsStore = { max_concurrent_requests: number; request_delay_ms: number }
+export type DbLinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
 export type DbRuleCategory = "Accessibility" | "Performance" | "BestPractices" | "SEO"
 export type LinkSourceType = "Sitemap" | "Root" | "Link"
 export type LinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
@@ -78,6 +97,8 @@ export type RuleResult = { rule_id: string; name: string; plugin_name: string; p
 export type Severity = "Info" | "Warning" | "Error" | "Critical"
 export type SiteCheckContext = { Urls: string[] } | { Values: Partial<{ [key in string]: string[] }> } | "Empty"
 export type SiteModel = { id: number; name: string; url: string; created_at: string }
+export type SitePageLinkCount = { db_link_type: DbLinkType; count: number }
+export type SiteRunIdSet = { site_run_id: number }
 export type SiteRunModel = { id: number; site_id: number; created_at: string; status: SiteRunStatus }
 export type SiteRunStatus = "Pending" | "Running" | "Finished" | "Error"
 export type SiteWithSiteRuns = { site: SiteModel; site_runs: SiteRunModel[] }

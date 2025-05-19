@@ -74,6 +74,7 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
     AnalysisFinished::listen_any_spawn(app, |data, app| async move {
         println!("AnalysisFinishedHandler");
         let payload = data;
+        let result = payload.result;
         let app_handle = app;
         let storage_clone = app_handle
             .state::<Mutex<AppData>>()
@@ -85,6 +86,13 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
             .update_site_run_status(payload.site_run_id, SiteRunStatus::Finished)
             .await
             .unwrap();
+
+        for page_link in result.page_results {
+            storage_clone
+                .insert_many_page_rule_results(payload.site_run_id, page_link)
+                .await
+                .unwrap();
+        }
     });
 
     // setup_start_listener(app);

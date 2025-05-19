@@ -14,6 +14,7 @@ use seo_plugins::utils::config::RuleCategory;
 use seo_plugins::utils::link_parser::LinkType;
 use seo_plugins::utils::page_plugin;
 use seo_plugins::utils::registry::PluginRegistry;
+use serde::{Deserialize, Serialize};
 use utils::category_counts::{CategoryResult, CategoryResultDisplay};
 pub mod entities;
 pub mod enums;
@@ -130,6 +131,11 @@ impl SeoStorage {
         Ok(utils::sites_with_site_runs::get_sites_with_site_runs(sites))
     }
 
+    pub async fn get_site_by_id(&self, id: i32) -> Result<site::Model, DbErr> {
+        let site = Site::find_by_id(id).one(&self.db).await?;
+        Ok(site.unwrap())
+    }
+
     pub async fn upsert_site(&self, url: &str) -> Result<i32, DbErr> {
         let site = Site::find()
             .filter(site::Column::Url.eq(url.to_string()))
@@ -205,6 +211,24 @@ impl SeoStorage {
         Ok(site_run.unwrap())
     }
 
+    pub async fn get_site_run_link_counts(
+        &self,
+        site_run_id: i32,
+    ) -> Result<Vec<SitePageLinkCount>, DbErr> {
+        println!("site_run_id: {:?}", site_run_id);
+        let site_pages = SitePage::find()
+            .filter(site_page::Column::SiteRunId.eq(site_run_id))
+            .select_only()
+            .column(site_page::Column::DbLinkType)
+            .column_as(site_page::Column::Url.count(), "count")
+            .group_by(site_page::Column::DbLinkType)
+            .into_model::<SitePageLinkCount>()
+            .all(&self.db)
+            .await?;
+        println!("site_pages: {:#?}", site_pages);
+        Ok(site_pages)
+    }
+
     /* #endregion */
 
     /* #region SitePage */
@@ -216,6 +240,16 @@ impl SeoStorage {
         link_type: LinkType,
     ) -> Result<site_page::Model, DbErr> {
         let site = self.get_site_run_by_id(site_run_id).await?;
+
+        let site_page = SitePage::find()
+            .filter(site_page::Column::Url.eq(url.to_string()))
+            .filter(site_page::Column::SiteRunId.eq(site_run_id))
+            .one(&self.db)
+            .await?;
+
+        if site_page.is_some() {
+            return Ok(site_page.unwrap());
+        }
         let site_page = site_page::ActiveModel {
             site_run_id: ActiveValue::Set(site_run_id),
             site_id: ActiveValue::Set(site.site_id),
@@ -234,6 +268,7 @@ impl SeoStorage {
             .exec(&self.db)
             .await
             .unwrap();
+
         let site_page = SitePage::find_by_id(res.last_insert_id)
             .one(&self.db)
             .await?;
@@ -254,31 +289,34 @@ impl SeoStorage {
 
         let mut rule_results = vec![];
 
-        for rule_result in page_results.result.unwrap().results {
-            rule_results.push(self.format_rule_result(
-                site_page.id,
-                site_run_id,
-                site_page.site_id,
-                &rule_result.rule_id,
-                rule_result.passed,
-            ));
+        let page_results = page_results.result;
+
+        if let Some(page_results) = page_results {
+            for rule_result in page_results.results {
+                rule_results.push(self.format_rule_result(
+                    site_page.id,
+                    site_run_id,
+                    site_page.site_id,
+                    &rule_result.rule_id,
+                    rule_result.passed,
+                ));
+            }
+
+            let on_conflict = OnConflict::columns([
+                page_rule_result::Column::SitePageId,
+                page_rule_result::Column::RuleId,
+            ])
+            .update_column(page_rule_result::Column::Passed)
+            .to_owned();
+
+            let res = PageRuleResult::insert_many(rule_results)
+                .on_conflict(on_conflict)
+                .exec(&self.db)
+                .await
+                .unwrap();
+
+            println!("page rule results: {:?}", res);
         }
-
-        let on_conflict = OnConflict::columns([
-            page_rule_result::Column::SitePageId,
-            page_rule_result::Column::RuleId,
-        ])
-        .update_column(page_rule_result::Column::Passed)
-        .to_owned();
-
-        let res = PageRuleResult::insert_many(rule_results)
-            .on_conflict(on_conflict)
-            .exec(&self.db)
-            .await
-            .unwrap();
-
-        println!("page rule results: {:?}", res);
-
         Ok(())
     }
 
@@ -322,6 +360,12 @@ impl SeoStorage {
         Ok(category_result_display)
     }
     /* #endregion */
+}
+
+#[derive(Debug, Clone, FromQueryResult, PartialEq, Eq, Serialize, Deserialize, specta::Type)]
+pub struct SitePageLinkCount {
+    pub db_link_type: DbLinkType,
+    pub count: i32,
 }
 
 #[cfg(test)]
@@ -498,5 +542,11 @@ mod tests {
         assert_eq!(category_result.data[&DbRuleCategory::SEO].total, 1);
         assert_eq!(category_result.data[&DbRuleCategory::SEO].passed, 1);
         assert_eq!(category_result.data[&DbRuleCategory::SEO].failed, 0);
+
+        let site_page_link_counts = seo_storage
+            .get_site_run_link_counts(site_run_id)
+            .await
+            .unwrap();
+        assert!(false);
     }
 }

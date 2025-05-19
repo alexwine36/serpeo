@@ -1,4 +1,4 @@
-use listeners::{setup_listeners, AnalysisFinished, AnalysisStart};
+use listeners::{setup_listeners, AnalysisFinished, AnalysisStart, SiteRunIdSet};
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
 
 use seo_storage::entities::site_run;
@@ -12,6 +12,7 @@ use tauri::{Emitter, Manager};
 use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 mod listeners;
+mod sites;
 mod stores;
 
 pub const STORE_FILE: &str = "store.json";
@@ -64,73 +65,22 @@ async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResu
     Ok(res)
 }
 
-#[tauri::command]
-#[specta::specta]
-async fn get_sites(app: tauri::AppHandle) -> Result<Vec<SiteWithSiteRuns>, String> {
-    let app_handle = app.clone();
-    let storage = app_handle
-        .state::<Mutex<AppData>>()
-        .lock()
-        .unwrap()
-        .storage
-        .clone();
-    let sites = storage.get_sites().await.map_err(|e| e.to_string())?;
-    Ok(sites)
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn get_site_run_by_id(
-    app: tauri::AppHandle,
-    site_run_id: i32,
-) -> Result<site_run::Model, String> {
-    let app_handle = app.clone();
-    let storage = app_handle
-        .state::<Mutex<AppData>>()
-        .lock()
-        .unwrap()
-        .storage
-        .clone();
-    let site_run = storage
-        .get_site_run_by_id(site_run_id)
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(site_run)
-}
-
-#[tauri::command]
-#[specta::specta]
-async fn get_category_result(
-    app: tauri::AppHandle,
-    site_run_id: i32,
-) -> Result<CategoryResultDisplay, String> {
-    let app_handle = app.clone();
-    let storage = app_handle
-        .state::<Mutex<AppData>>()
-        .lock()
-        .unwrap()
-        .storage
-        .clone();
-    let category_result = storage
-        .get_category_result(&site_run_id)
-        .await
-        .map_err(|e| e.to_string())?;
-    Ok(category_result)
-}
-
 fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
         .commands(collect_commands![
             analyze_url_seo,
-            get_sites,
-            get_category_result,
-            get_site_run_by_id
+            sites::get_sites,
+            sites::get_category_result,
+            sites::get_site_run_by_id,
+            sites::get_site_by_id,
+            sites::get_site_run_link_counts
         ])
         .events(collect_events![
             AnalysisProgress,
             AnalysisStart,
-            AnalysisFinished
+            AnalysisFinished,
+            SiteRunIdSet
         ])
         .constant("STORE_FILE", STORE_FILE)
         .constant("CRAWL_SETTINGS_KEY", CRAWL_SETTINGS_KEY)
