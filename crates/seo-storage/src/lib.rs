@@ -9,8 +9,8 @@ use migration::{Migrator, MigratorTrait, OnConflict};
 use sea_orm::ConnectOptions;
 use sea_orm::*;
 use sea_orm::{Database, DbErr};
-use seo_plugins::site_analyzer::PageLink;
-use seo_plugins::utils::config::RuleCategory;
+use seo_plugins::site_analyzer::{CrawlResult, PageLink};
+use seo_plugins::utils::config::{RuleCategory, RuleResult, SiteCheckContext};
 use seo_plugins::utils::link_parser::LinkType;
 use seo_plugins::utils::page_plugin;
 use seo_plugins::utils::registry::PluginRegistry;
@@ -316,6 +316,78 @@ impl SeoStorage {
                 .unwrap();
 
             println!("page rule results: {:?}", res);
+        }
+        Ok(())
+    }
+
+    pub async fn insert_many_site_rule_results(
+        &self,
+        site_run_id: i32,
+        site_rule_results: Vec<RuleResult>,
+    ) -> Result<(), DbErr> {
+        for rule_result in site_rule_results {
+            let rule_result_clone = rule_result.clone();
+            match rule_result.context {
+                SiteCheckContext::Urls(urls) => {
+                    for url in urls {
+                        let site_page = self
+                            .upsert_site_page(site_run_id, &url, LinkType::Internal)
+                            .await?;
+                        let site_page_id = site_page.id;
+                        let site_rule_result = self.format_rule_result(
+                            site_page_id,
+                            site_run_id,
+                            site_page.site_id,
+                            &rule_result.rule_id,
+                            rule_result.passed,
+                        );
+                        let res = PageRuleResult::insert(site_rule_result)
+                            .exec(&self.db)
+                            .await
+                            .unwrap();
+                        println!("site_rule_result: {:?}", res);
+                    }
+                }
+                SiteCheckContext::Values(values) => {
+                    for (_key, urls) in values {
+                        for url in urls {
+                            let site_page = self
+                                .upsert_site_page(site_run_id, &url, LinkType::Internal)
+                                .await?;
+                            let site_page_id = site_page.id;
+                            let site_rule_result = self.format_rule_result(
+                                site_page_id,
+                                site_run_id,
+                                site_page.site_id,
+                                &rule_result_clone.rule_id,
+                                rule_result_clone.passed,
+                            );
+                            let res = PageRuleResult::insert(site_rule_result)
+                                .exec(&self.db)
+                                .await
+                                .unwrap();
+                            println!("site_rule_result: {:?}", res);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn handle_crawl_result(
+        &self,
+        site_run_id: i32,
+        crawl_result: CrawlResult,
+    ) -> Result<(), DbErr> {
+        let site_rule_results = crawl_result.site_result;
+        let page_results = crawl_result.page_results;
+        self.insert_many_site_rule_results(site_run_id, site_rule_results)
+            .await?;
+        for page_result in page_results {
+            self.insert_many_page_rule_results(site_run_id, page_result)
+                .await?;
         }
         Ok(())
     }

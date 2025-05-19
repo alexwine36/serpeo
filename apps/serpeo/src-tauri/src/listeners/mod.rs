@@ -87,12 +87,10 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
             .await
             .unwrap();
 
-        for page_link in result.page_results {
-            storage_clone
-                .insert_many_page_rule_results(payload.site_run_id, page_link)
-                .await
-                .unwrap();
-        }
+        storage_clone
+            .handle_crawl_result(payload.site_run_id, result)
+            .await
+            .unwrap();
     });
 
     // setup_start_listener(app);

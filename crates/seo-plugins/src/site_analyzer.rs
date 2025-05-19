@@ -47,7 +47,7 @@ pub struct PageLink {
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct CrawlResult {
     pub page_results: Vec<PageLink>,
-    site_result: Vec<RuleResult>,
+    pub site_result: Vec<RuleResult>,
     total_pages: u32,
 }
 
@@ -278,7 +278,7 @@ impl SiteAnalyzer {
         }
         {
             self.add_link(
-                self.url.as_ref(),
+                &self.url.to_string(),
                 PageLinkSource {
                     link_source_type: LinkSourceType::Root,
                     url: self.url.to_string(),
@@ -327,7 +327,7 @@ impl SiteAnalyzer {
 
         let site_result = self.registry.lock().await.analyze_site(self).await;
         let links = self.links.lock().await;
-        let page_results: Vec<PageLink> = links.values().cloned().collect();
+        let page_results: Vec<PageLink> = links.values().map(|link| link.clone()).collect();
         Ok(CrawlResult {
             page_results,
             site_result,
