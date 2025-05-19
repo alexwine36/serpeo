@@ -105,7 +105,7 @@ importers:
         specifier: 2.1.1
         version: 2.1.1
       dayjs:
-        specifier: ^1.11.13
+        specifier: 1.11.13
         version: 1.11.13
       jotai:
         specifier: 2.12.3

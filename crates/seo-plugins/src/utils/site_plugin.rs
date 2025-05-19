@@ -48,7 +48,8 @@ pub trait SitePlugin: Send + Sync + 'static {
             .filter(|rule| config.is_rule_enabled(rule.id))
             .collect();
 
-        let results = stream::iter(rules)
+        
+        stream::iter(rules)
             .map(|rule| {
                 let result = self.check(rule, site);
                 RuleResult {
@@ -63,7 +64,6 @@ pub trait SitePlugin: Send + Sync + 'static {
                 }
             })
             .collect::<Vec<_>>()
-            .await;
-        results
+            .await
     }
 }

@@ -278,7 +278,7 @@ impl SiteAnalyzer {
         }
         {
             self.add_link(
-                &self.url.to_string(),
+                self.url.as_ref(),
                 PageLinkSource {
                     link_source_type: LinkSourceType::Root,
                     url: self.url.to_string(),
@@ -327,7 +327,7 @@ impl SiteAnalyzer {
 
         let site_result = self.registry.lock().await.analyze_site(self).await;
         let links = self.links.lock().await;
-        let page_results: Vec<PageLink> = links.values().map(|link| link.clone()).collect();
+        let page_results: Vec<PageLink> = links.values().cloned().collect();
         Ok(CrawlResult {
             page_results,
             site_result,

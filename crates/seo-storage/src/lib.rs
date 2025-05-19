@@ -547,6 +547,8 @@ mod tests {
             .get_site_run_link_counts(site_run_id)
             .await
             .unwrap();
-        assert!(false);
+        assert_eq!(site_page_link_counts.len(), 1);
+        assert_eq!(site_page_link_counts[0].db_link_type, DbLinkType::Internal);
+        assert_eq!(site_page_link_counts[0].count, 1);
     }
 }

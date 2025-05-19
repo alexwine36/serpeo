@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use crate::site_analyzer::SiteAnalyzer;
 use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
-    config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
+    config::{RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
     registry::PluginRegistry,
     site_plugin::SitePlugin,
@@ -21,6 +21,12 @@ struct PageDescription {
 #[derive(Clone)]
 pub struct MetaDescriptionSitePlugin {
     page_descriptions: Arc<StdMutex<HashMap<String, PageDescription>>>,
+}
+
+impl Default for MetaDescriptionSitePlugin {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MetaDescriptionSitePlugin {

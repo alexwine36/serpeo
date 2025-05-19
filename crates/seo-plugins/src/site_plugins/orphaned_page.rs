@@ -4,7 +4,7 @@ use crate::site_analyzer::{LinkSourceType, SiteAnalyzer};
 
 use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
-    config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
+    config::{RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
     registry::PluginRegistry,
     site_plugin::SitePlugin,
@@ -12,6 +12,12 @@ use crate::utils::{
 
 #[derive(Clone)]
 pub struct OrphanedPagePlugin {}
+
+impl Default for OrphanedPagePlugin {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl OrphanedPagePlugin {
     pub fn new() -> Self {
