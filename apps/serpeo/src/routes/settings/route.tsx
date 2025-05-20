@@ -5,7 +5,7 @@ export const Route = createRootRoute({
   component: () => (
     <div>
       <NavBar />
-      <div className="container mx-auto px-8 py-8 [view-transition-name:warp]">
+      <div className="container mx-auto px-8 py-8 [view-transition-name:main-content]">
         <Outlet />
       </div>
     </div>

@@ -7,7 +7,7 @@ export const Route = createFileRoute("/settings/")({
 
 function SettingsPage() {
   return (
-    <div className="container mx-auto py-8 [view-transition-name:warp]">
+    <div className="container mx-auto py-8 ">
       <SettingsCard />
     </div>
   );
