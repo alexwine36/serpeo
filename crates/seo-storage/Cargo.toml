@@ -11,6 +11,7 @@ migration = {workspace = true}
 specta = {workspace = true} 
 serde = {workspace = true}
 seo-plugins = {workspace = true}
+chrono = {version = "0.4.41", features = ["serde"]}
 
 
 
