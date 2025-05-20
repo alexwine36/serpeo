@@ -101,7 +101,7 @@ impl SeoStorage {
                 ])
                 .to_owned();
 
-            let res = PluginRule::insert(rule)
+            let _ = PluginRule::insert(rule)
                 .on_conflict(on_conflict)
                 .exec(&self.db)
                 .await
@@ -301,7 +301,7 @@ impl SeoStorage {
             .to_owned();
 
             if !rule_results.is_empty() {
-                let res = PageRuleResult::insert_many(rule_results)
+                let _ = PageRuleResult::insert_many(rule_results)
                     .on_conflict(on_conflict)
                     .exec(&self.db)
                     .await
@@ -332,7 +332,7 @@ impl SeoStorage {
                             &rule_result.rule_id,
                             rule_result.passed,
                         );
-                        let res = PageRuleResult::insert(site_rule_result)
+                        let _ = PageRuleResult::insert(site_rule_result)
                             .exec(&self.db)
                             .await
                             .unwrap();
@@ -360,7 +360,7 @@ impl SeoStorage {
                             .update_column(page_rule_result::Column::Passed)
                             .to_owned();
 
-                            let res = PageRuleResult::insert(site_rule_result)
+                            let _ = PageRuleResult::insert(site_rule_result)
                                 .on_conflict(on_conflict)
                                 .exec(&self.db)
                                 .await
