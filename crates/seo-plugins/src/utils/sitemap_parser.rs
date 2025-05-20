@@ -17,6 +17,8 @@ pub enum SitemapParserError {
     SitemapError(String),
     #[error("Page error: {0}")]
     PageError(#[from] PageError),
+    #[error("Client error: {0}")]
+    ClientError(String),
 }
 
 pub struct SitemapParser {
@@ -34,7 +36,7 @@ impl SitemapParser {
         let client = Client::builder()
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
             .build()
-            .map_err(|e| SitemapParserError::UrlParseError(e.to_string()))?;
+            .map_err(|e| SitemapParserError::ClientError(e.to_string()))?;
         Ok(Self {
             _url: url,
             base_url,
