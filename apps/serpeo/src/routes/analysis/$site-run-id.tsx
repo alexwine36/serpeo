@@ -25,7 +25,7 @@ import { AnalysisStatus } from "../../components/analysis-status";
 import { IssueCategoryDetail } from "../../components/display/issue-category-detail";
 import { IssueCategoryOverview } from "../../components/display/issue-category-overview";
 import { LinkDisplay } from "../../components/display/link-display";
-import { commands, events } from "../../generated/bindings";
+import { events, commands } from "../../generated/bindings";
 
 dayjs.extend(relativeTime);
 export const Route = createFileRoute("/analysis/$site-run-id")({
