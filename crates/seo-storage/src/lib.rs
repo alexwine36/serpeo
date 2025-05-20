@@ -54,15 +54,13 @@ impl SeoStorage {
     }
 
     pub async fn migrate_up(&self) -> Result<(), DbErr> {
-        // let pending_migrations = Migrator::get_pending_migrations(&self.db).await?;
-        // println!("pending migrations: {:?}", pending_migrations.len());
-        // if pending_migrations.len() > 0 {
         if let Err(e) = Migrator::up(&self.db, None).await {
             println!("migration error: {:?}", e);
+            // TODO: remove this once we have a better way to handle migration failures
             Migrator::fresh(&self.db).await?;
             Migrator::up(&self.db, None).await?;
         }
-        // }
+
         self.seed_plugin_rule_table().await?;
         Ok(())
     }
@@ -108,7 +106,6 @@ impl SeoStorage {
                 .exec(&self.db)
                 .await
                 .unwrap();
-            println!("rule upsert: {:?}", res);
         }
         Ok(())
     }
@@ -156,8 +153,6 @@ impl SeoStorage {
             .exec(&self.db)
             .await
             .unwrap();
-
-        println!("site upsert: {:?}", res);
 
         Ok(res.last_insert_id)
     }
@@ -212,7 +207,6 @@ impl SeoStorage {
         &self,
         site_run_id: i32,
     ) -> Result<Vec<SitePageLinkCount>, DbErr> {
-        println!("site_run_id: {:?}", site_run_id);
         let site_pages = SitePage::find()
             .filter(site_page::Column::SiteRunId.eq(site_run_id))
             .select_only()
@@ -222,7 +216,7 @@ impl SeoStorage {
             .into_model::<SitePageLinkCount>()
             .all(&self.db)
             .await?;
-        println!("site_pages: {:#?}", site_pages);
+
         Ok(site_pages)
     }
 
@@ -311,8 +305,6 @@ impl SeoStorage {
                 .exec(&self.db)
                 .await
                 .unwrap();
-
-            println!("page rule results: {:?}", res);
         }
         Ok(())
     }
@@ -342,7 +334,6 @@ impl SeoStorage {
                             .exec(&self.db)
                             .await
                             .unwrap();
-                        println!("site_rule_result: {:?}", res);
                     }
                 }
                 SiteCheckContext::Values(values) => {
@@ -363,7 +354,6 @@ impl SeoStorage {
                                 .exec(&self.db)
                                 .await
                                 .unwrap();
-                            println!("site_rule_result: {:?}", res);
                         }
                     }
                 }
@@ -421,10 +411,9 @@ impl SeoStorage {
             .await?;
 
         let category_counts = utils::category_counts::get_category_counts(res);
-        println!("category_counts: {:?}", category_counts);
+
         let category_result_display =
             utils::category_counts::get_category_result_display(category_counts);
-        println!("category_result_display: {:?}", category_result_display);
 
         Ok(category_result_display)
     }
@@ -446,7 +435,7 @@ impl SeoStorage {
         let res = res.all(&self.db).await?;
 
         let category_detail = utils::category_detail::get_category_detail(res).unwrap();
-        println!("category_detail: {:?}", category_detail);
+
         Ok(category_detail)
     }
     /* #endregion */
@@ -501,7 +490,6 @@ mod tests {
 
         let sites = Site::find().all(&db).await.unwrap();
         assert_eq!(sites.len(), 1);
-        println!("sites: {:?}", sites);
     }
 
     #[tokio::test]
@@ -518,7 +506,6 @@ mod tests {
 
         let site_runs = SiteRun::find().all(&seo_storage.get_db()).await.unwrap();
         assert_eq!(site_runs.len(), 1);
-        println!("site_runs: {:?}", site_runs);
 
         // It should be pending
         assert_eq!(site_runs[0].status, SiteRunStatus::Pending);
@@ -539,7 +526,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(site_run.status, SiteRunStatus::Running);
-        println!("site_run: {:?}", site_run);
+
         let found_site_run = SiteRun::find_by_id(site_run_id)
             .one(&seo_storage.get_db())
             .await
@@ -575,7 +562,6 @@ mod tests {
         assert_eq!(duplicate_site_page.id, 1);
         let site_pages = SitePage::find().all(&seo_storage.get_db()).await.unwrap();
         assert_eq!(site_pages.len(), 1);
-        println!("site_pages: {:?}", site_pages);
     }
 
     #[tokio::test]

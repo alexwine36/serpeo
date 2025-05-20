@@ -1,9 +1,8 @@
-
 use seo_storage::entities::site_run;
 use seo_storage::utils::category_detail::CategoryDetailResponse;
 use seo_storage::utils::sites_with_site_runs::SiteWithSiteRuns;
-use seo_storage::{entities::site, utils::category_counts::CategoryResultDisplay};
 use seo_storage::SitePageLinkCount;
+use seo_storage::{entities::site, utils::category_counts::CategoryResultDisplay};
 use std::sync::Mutex;
 
 use tauri::Manager;
@@ -119,6 +118,6 @@ pub async fn get_site_run_link_counts(
         .get_site_run_link_counts(site_run_id)
         .await
         .map_err(|e| e.to_string())?;
-    println!("site_run_link_counts: {:?}", site_run_link_counts);
+
     Ok(site_run_link_counts)
 }

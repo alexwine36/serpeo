@@ -27,7 +27,6 @@ pub struct AnalysisFinished {
 
 pub fn setup_listeners(app: &tauri::AppHandle) {
     AnalysisStart::listen_any_spawn(app, |data, app| async move {
-        // println!("AnalysisStartHandler");
         let payload = data;
         let app_handle = app;
         let storage_clone = app_handle
@@ -49,7 +48,6 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
     });
 
     AnalysisProgress::listen_any_spawn(app, |data, app| async move {
-        // println!("AnalysisProgressHandler");
         let payload = data;
         let app_handle = app;
         let storage_clone = app_handle
@@ -72,7 +70,6 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
         }
     });
     AnalysisFinished::listen_any_spawn(app, |data, app| async move {
-        println!("AnalysisFinishedHandler");
         let payload = data;
         let result = payload.result;
         let app_handle = app;
@@ -92,9 +89,6 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
             .await
             .unwrap();
     });
-
-    // setup_start_listener(app);
-    // setup_progress_listener(app);
 }
 
 trait EventExt: tauri_specta::Event {

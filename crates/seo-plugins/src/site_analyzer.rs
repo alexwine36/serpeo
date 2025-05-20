@@ -213,7 +213,6 @@ impl SiteAnalyzer {
     }
 
     async fn process_page(&mut self, url: Url) -> Result<(), SiteAnalyzerError> {
-        // println!("processing page: {}", url);
         let page = Page::from_url(url.clone())
             .await
             .map_err(SiteAnalyzerError::PageError);
