@@ -31,10 +31,14 @@ impl SitemapParser {
             .to_url()
             .map_err(|e| SitemapParserError::UrlParseError(e.to_string()))?;
         let base_url = url.clone();
+        let client = Client::builder()
+            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+            .build()
+            .map_err(|e| SitemapParserError::UrlParseError(e.to_string()))?;
         Ok(Self {
             _url: url,
             base_url,
-            client: Client::new(),
+            client,
         })
     }
 
