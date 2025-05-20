@@ -1,5 +1,18 @@
 # serpeo
 
+## 1.1.1
+
+### Patch Changes
+
+- 21e7c5d: Updated URL input for analyzing
+- 38ae6a5: Updated rule config with success and failure messages for consistent formatting
+- 23d5345: Updated analyze seo to redirect to results page
+- c8dee3e: Updated site overview display with chart and loader
+- 60ae7dc: Added User Agent to Sitemap Parser client
+- Updated dependencies [21e7c5d]
+- Updated dependencies [c8dee3e]
+  - @repo/ui@0.1.2
+
 ## 1.1.0
 
 ### Minor Changes

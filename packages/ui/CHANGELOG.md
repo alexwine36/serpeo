@@ -1,5 +1,12 @@
 # @repo/ui
 
+## 0.1.2
+
+### Patch Changes
+
+- 21e7c5d: Updated URL input for analyzing
+- c8dee3e: Updated site overview display with chart and loader
+
 ## 0.1.1
 
 ### Patch Changes
