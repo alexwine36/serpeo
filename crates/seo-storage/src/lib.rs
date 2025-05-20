@@ -1,21 +1,17 @@
-use std::collections::HashMap;
-
 use entities::prelude::{PageRuleResult, PluginRule, SitePage, SiteRun};
 use entities::{page_rule_result, plugin_rule, site, site_page, site_run};
 use enums::db_link_type::DbLinkType;
-use enums::plugin_rule_enums::{DbRuleCategory, DbSeverity};
 use enums::site_run_status::SiteRunStatus;
 use migration::{Migrator, MigratorTrait, OnConflict};
 use sea_orm::ConnectOptions;
 use sea_orm::*;
 use sea_orm::{Database, DbErr};
 use seo_plugins::site_analyzer::{CrawlResult, PageLink};
-use seo_plugins::utils::config::{RuleCategory, RuleResult, SiteCheckContext};
+use seo_plugins::utils::config::{RuleResult, SiteCheckContext};
 use seo_plugins::utils::link_parser::LinkType;
-use seo_plugins::utils::page_plugin;
 use seo_plugins::utils::registry::PluginRegistry;
 use serde::{Deserialize, Serialize};
-use utils::category_counts::{CategoryResult, CategoryResultDisplay};
+use utils::category_counts::CategoryResultDisplay;
 use utils::category_detail::CategoryDetailResponse;
 pub mod entities;
 pub mod enums;
@@ -472,6 +468,8 @@ mod tests {
         site_analyzer::PageResult,
         utils::config::{RuleCategory, RuleResult, Severity, SiteCheckContext},
     };
+
+    use crate::enums::plugin_rule_enums::DbRuleCategory;
 
     use super::*;
 

@@ -41,8 +41,8 @@ const SiteDisplay = ({ site }: { site: SiteWithSiteRuns }) => {
         {mostRecentRun && (
           <Button size="icon" asChild variant="outline">
             <Link
-              to={"/analysis/$siteRunId"}
-              params={{ siteRunId: mostRecentRun.id.toString() }}
+              to={"/analysis/$site-run-id"}
+              params={{ "site-run-id": mostRecentRun.id.toString() }}
             >
               <ScanSearch className="h-4 w-4" />
             </Link>

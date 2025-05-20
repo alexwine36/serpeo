@@ -1,10 +1,7 @@
 use listeners::{setup_listeners, AnalysisFinished, AnalysisStart, SiteRunIdSet};
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
 
-use seo_storage::entities::site_run;
-use seo_storage::utils::sites_with_site_runs::SiteWithSiteRuns;
 use seo_storage::SeoStorage;
-use seo_storage::{entities::site, utils::category_counts::CategoryResultDisplay};
 use specta_typescript::Typescript;
 use std::sync::Mutex;
 use stores::crawl_settings::{self, CrawlSettingsStore, CRAWL_SETTINGS_KEY};

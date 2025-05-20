@@ -32,14 +32,14 @@ pub fn get_category_detail(
             name: plugin_rule.name,
             plugin_name: plugin_rule.plugin_name,
             passed: page_rule_result.passed,
-            message: message,
+            message,
             severity: plugin_rule.severity,
-            category: category,
+            category,
             page_url: site_page.url,
         };
         category_detail
             .entry(category_clone)
-            .or_insert(Vec::new())
+            .or_default()
             .push(flat_rule_result);
     }
     // Ok(res_vec)
@@ -109,7 +109,7 @@ mod tests {
         let res = get_test_data();
         let category_detail = get_category_detail(res);
         println!("{:?}", category_detail);
-        assert_eq!(category_detail.is_ok(), true);
+        assert!(category_detail.is_ok());
         let category_detail = category_detail.unwrap();
         assert_eq!(category_detail.data.len(), 2);
         assert_eq!(

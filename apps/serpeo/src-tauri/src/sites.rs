@@ -1,15 +1,12 @@
-use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
 
 use seo_storage::entities::site_run;
 use seo_storage::utils::category_detail::CategoryDetailResponse;
 use seo_storage::utils::sites_with_site_runs::SiteWithSiteRuns;
 use seo_storage::{entities::site, utils::category_counts::CategoryResultDisplay};
-use seo_storage::{SeoStorage, SitePageLinkCount};
-use specta_typescript::Typescript;
+use seo_storage::SitePageLinkCount;
 use std::sync::Mutex;
 
-use tauri::{Emitter, Manager};
-use tauri_specta::{collect_commands, collect_events, Builder, Event};
+use tauri::Manager;
 
 use crate::AppData;
 
