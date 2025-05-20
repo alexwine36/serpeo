@@ -15,7 +15,6 @@ import { Route as SettingsRouteImport } from './routes/settings/route'
 import { Route as AnalysisRouteImport } from './routes/analysis/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as SettingsIndexImport } from './routes/settings/index'
-import { Route as AnalysisIndexImport } from './routes/analysis/index'
 import { Route as AnalysisSiteRunIdImport } from './routes/analysis/$site-run-id'
 import { Route as AnalysisSitesIndexImport } from './routes/analysis/sites/index'
 
@@ -43,12 +42,6 @@ const SettingsIndexRoute = SettingsIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => SettingsRouteRoute,
-} as any)
-
-const AnalysisIndexRoute = AnalysisIndexImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AnalysisRouteRoute,
 } as any)
 
 const AnalysisSiteRunIdRoute = AnalysisSiteRunIdImport.update({
@@ -95,13 +88,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalysisSiteRunIdImport
       parentRoute: typeof AnalysisRouteImport
     }
-    '/analysis/': {
-      id: '/analysis/'
-      path: '/'
-      fullPath: '/analysis/'
-      preLoaderRoute: typeof AnalysisIndexImport
-      parentRoute: typeof AnalysisRouteImport
-    }
     '/settings/': {
       id: '/settings/'
       path: '/'
@@ -123,13 +109,11 @@ declare module '@tanstack/react-router' {
 
 interface AnalysisRouteRouteChildren {
   AnalysisSiteRunIdRoute: typeof AnalysisSiteRunIdRoute
-  AnalysisIndexRoute: typeof AnalysisIndexRoute
   AnalysisSitesIndexRoute: typeof AnalysisSitesIndexRoute
 }
 
 const AnalysisRouteRouteChildren: AnalysisRouteRouteChildren = {
   AnalysisSiteRunIdRoute: AnalysisSiteRunIdRoute,
-  AnalysisIndexRoute: AnalysisIndexRoute,
   AnalysisSitesIndexRoute: AnalysisSitesIndexRoute,
 }
 
@@ -154,15 +138,14 @@ export interface FileRoutesByFullPath {
   '/analysis': typeof AnalysisRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/analysis/$site-run-id': typeof AnalysisSiteRunIdRoute
-  '/analysis/': typeof AnalysisIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/analysis/sites': typeof AnalysisSitesIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analysis': typeof AnalysisRouteRouteWithChildren
   '/analysis/$site-run-id': typeof AnalysisSiteRunIdRoute
-  '/analysis': typeof AnalysisIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/analysis/sites': typeof AnalysisSitesIndexRoute
 }
@@ -173,7 +156,6 @@ export interface FileRoutesById {
   '/analysis': typeof AnalysisRouteRouteWithChildren
   '/settings': typeof SettingsRouteRouteWithChildren
   '/analysis/$site-run-id': typeof AnalysisSiteRunIdRoute
-  '/analysis/': typeof AnalysisIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/analysis/sites/': typeof AnalysisSitesIndexRoute
 }
@@ -185,14 +167,13 @@ export interface FileRouteTypes {
     | '/analysis'
     | '/settings'
     | '/analysis/$site-run-id'
-    | '/analysis/'
     | '/settings/'
     | '/analysis/sites'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/analysis/$site-run-id'
     | '/analysis'
+    | '/analysis/$site-run-id'
     | '/settings'
     | '/analysis/sites'
   id:
@@ -201,7 +182,6 @@ export interface FileRouteTypes {
     | '/analysis'
     | '/settings'
     | '/analysis/$site-run-id'
-    | '/analysis/'
     | '/settings/'
     | '/analysis/sites/'
   fileRoutesById: FileRoutesById
@@ -241,7 +221,6 @@ export const routeTree = rootRoute
       "filePath": "analysis/route.tsx",
       "children": [
         "/analysis/$site-run-id",
-        "/analysis/",
         "/analysis/sites/"
       ]
     },
@@ -253,10 +232,6 @@ export const routeTree = rootRoute
     },
     "/analysis/$site-run-id": {
       "filePath": "analysis/$site-run-id.tsx",
-      "parent": "/analysis"
-    },
-    "/analysis/": {
-      "filePath": "analysis/index.tsx",
       "parent": "/analysis"
     },
     "/settings/": {

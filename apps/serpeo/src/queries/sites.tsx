@@ -41,7 +41,7 @@ export const useSiteByIdQuery = (id: number) => {
 
 export const useSiteRunCategoryResultQuery = (siteRunId: number) => {
   return useQuery({
-    queryKey: ["siteRunCategoryResult", siteRunId],
+    queryKey: ["siteRun", "categoryResult", siteRunId],
     queryFn: async () => {
       const siteRunCategoryResult = await commands.getCategoryResult(siteRunId);
       if (siteRunCategoryResult.status === "ok") {
@@ -59,7 +59,7 @@ export type SiteRunLinkModified = {
 
 export const useSiteRunLinkCountsQuery = (siteRunId: number) => {
   return useQuery({
-    queryKey: ["siteRunLinkCounts", siteRunId],
+    queryKey: ["siteRun", "linkCounts", siteRunId],
     queryFn: async (): Promise<SiteRunLinkModified[]> => {
       const siteRunLinkCounts = await commands.getSiteRunLinkCounts(siteRunId);
       if (siteRunLinkCounts.status === "ok") {
@@ -85,7 +85,7 @@ export const useSiteRunCategoryResultDetailQuery = (
   passed: boolean | null
 ) => {
   return useQuery({
-    queryKey: ["siteRunCategoryResultDetail", siteRunId, passed],
+    queryKey: ["siteRun", "categoryResultDetail", siteRunId, passed],
     queryFn: async () => {
       const siteRunCategoryResultDetail =
         await commands.getCategoryResultDetail(siteRunId, passed);
