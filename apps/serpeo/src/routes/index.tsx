@@ -117,9 +117,9 @@ function Index() {
                   <Badge
                     key={site.id}
                     onClick={() => setBaseUrl(site.url)}
-                    className="cursor-pointer"
+                    className="cursor-pointer "
                   >
-                    {site.url}
+                    <span className="max-w-40 truncate">{site.url}</span>
                   </Badge>
                 ))}
             </div>

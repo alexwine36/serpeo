@@ -14,6 +14,18 @@ export const useSitesQuery = () => {
   });
 };
 
+export const useSiteCategoryHistoryQuery = (siteId: number) => {
+  return useQuery({
+    queryKey: ["siteCategoryHistory", siteId],
+    queryFn: async () => {
+      const siteCategoryHistory = await commands.getSiteCategoryHistory(siteId);
+      if (siteCategoryHistory.status === "ok") {
+        return siteCategoryHistory.data;
+      }
+      return [];
+    },
+  });
+};
 export const useSiteByIdQuery = (id: number) => {
   return useQuery({
     queryKey: ["site", id],

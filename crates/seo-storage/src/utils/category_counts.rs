@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -63,6 +64,12 @@ pub struct CategoryResultDisplay {
     pub total: i32,
     pub passed: i32,
     pub failed: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, specta::Type, Clone)]
+pub struct CategoryResultHistory {
+    pub data: HashMap<DbRuleCategory, CategoryResult>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[cfg(test)]

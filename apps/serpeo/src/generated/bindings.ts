@@ -60,6 +60,14 @@ async getCategoryResultDetail(siteRunId: number, passed: boolean | null) : Promi
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getSiteCategoryHistory(siteId: number) : Promise<Result<CategoryResultHistory[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_site_category_history", { siteId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -80,8 +88,8 @@ siteRunIdSet: "site-run-id-set"
 
 /** user-defined constants **/
 
-export const STORE_FILE = "store.json" as const;
 export const CRAWL_SETTINGS_KEY = "crawl_settings" as const;
+export const STORE_FILE = "store.json" as const;
 
 /** user-defined types **/
 
@@ -92,6 +100,7 @@ export type AnalysisStart = { base_url: string }
 export type CategoryDetailResponse = { data: Partial<{ [key in DbRuleCategory]: FlatRuleResult[] }> }
 export type CategoryResult = { total: number; passed: number; failed: number }
 export type CategoryResultDisplay = { data: Partial<{ [key in DbRuleCategory]: CategoryResult }>; total: number; passed: number; failed: number }
+export type CategoryResultHistory = { data: Partial<{ [key in DbRuleCategory]: CategoryResult }>; created_at: string }
 export type CrawlResult = { page_results: PageLink[]; site_result: RuleResult[]; total_pages: number }
 export type CrawlSettingsStore = { max_concurrent_requests: number; request_delay_ms: number }
 export type DbLinkType = "Internal" | "External" | "Mailto" | "Tel" | "Unknown"
