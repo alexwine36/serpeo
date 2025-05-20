@@ -64,7 +64,8 @@ function SiteRun() {
         setDone(true);
         router.invalidate();
         queryClient.invalidateQueries({
-          predicate: (query) => query.queryKey[0] === "siteRun",
+          predicate: (query) =>
+            query.queryKey[0] === "siteRun" || query.queryKey[0] === "sites",
         });
       }
     });
