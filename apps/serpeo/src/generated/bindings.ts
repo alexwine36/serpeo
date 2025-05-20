@@ -121,7 +121,7 @@ export type SitePageLinkCount = { db_link_type: DbLinkType; count: number }
 export type SiteRunIdSet = { site_run_id: number }
 export type SiteRunModel = { id: number; site_id: number; created_at: string; status: SiteRunStatus }
 export type SiteRunStatus = "Pending" | "Running" | "Finished" | "Error"
-export type SiteWithSiteRuns = { site: SiteModel; site_runs: SiteRunModel[] }
+export type SiteWithSiteRuns = { site: SiteModel; last_site_run_at: string; site_runs: SiteRunModel[] }
 
 /** tauri-specta globals **/
 

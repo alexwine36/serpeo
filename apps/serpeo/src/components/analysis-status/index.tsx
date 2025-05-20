@@ -1,7 +1,5 @@
 import { CircleProgress } from "@repo/ui/components/circle-progress";
-import { useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
-import { crawlResultAtom } from "../../atoms/crawl-result";
 import { events } from "../../generated/bindings";
 
 export const AnalysisStatus = () => {
@@ -17,7 +15,6 @@ export const AnalysisStatus = () => {
     maxValue: 0,
     url: "",
   });
-  const crawlResult = useAtomValue(crawlResultAtom);
 
   useEffect(() => {
     events.analysisProgress.listen((e) => {
@@ -30,7 +27,7 @@ export const AnalysisStatus = () => {
     });
   }, []);
 
-  if (!progress || crawlResult.total_pages !== 0) {
+  if (!progress) {
     return null;
   }
 

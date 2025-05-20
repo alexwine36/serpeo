@@ -433,9 +433,11 @@ impl SeoStorage {
     ) -> Result<Vec<CategoryResultHistory>, DbErr> {
         let site_runs = SiteRun::find()
             .filter(site_run::Column::SiteId.eq(site_id.to_owned()))
-            .order_by_asc(site_run::Column::CreatedAt)
+            .order_by_desc(site_run::Column::CreatedAt)
+            .limit(10)
             .all(&self.db)
             .await?;
+        let site_runs: Vec<site_run::Model> = site_runs.into_iter().rev().collect();
         let mut category_result_displays = vec![];
         // TODO: Update query to get all site run categories
         // The get_site_category_history function processes each site run sequentially, making a separate database query for each run. This could be inefficient for sites with many runs.

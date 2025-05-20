@@ -34,10 +34,7 @@ const routeList: RouteDef[] = [
     label: "Settings",
     to: "/settings",
   },
-  {
-    label: "Analysis",
-    to: "/analysis",
-  },
+
   {
     label: "Sites",
     to: "/analysis/sites",

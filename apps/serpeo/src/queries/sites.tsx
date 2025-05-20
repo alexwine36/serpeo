@@ -7,7 +7,12 @@ export const useSitesQuery = () => {
     queryFn: async () => {
       const sites = await commands.getSites();
       if (sites.status === "ok") {
-        return sites.data;
+        return sites.data.sort((a, b) => {
+          return (
+            new Date(b.last_site_run_at).getTime() -
+            new Date(a.last_site_run_at).getTime()
+          );
+        });
       }
       return [];
     },
@@ -41,7 +46,7 @@ export const useSiteByIdQuery = (id: number) => {
 
 export const useSiteRunCategoryResultQuery = (siteRunId: number) => {
   return useQuery({
-    queryKey: ["siteRunCategoryResult", siteRunId],
+    queryKey: ["siteRun", "categoryResult", siteRunId],
     queryFn: async () => {
       const siteRunCategoryResult = await commands.getCategoryResult(siteRunId);
       if (siteRunCategoryResult.status === "ok") {
@@ -59,7 +64,7 @@ export type SiteRunLinkModified = {
 
 export const useSiteRunLinkCountsQuery = (siteRunId: number) => {
   return useQuery({
-    queryKey: ["siteRunLinkCounts", siteRunId],
+    queryKey: ["siteRun", "linkCounts", siteRunId],
     queryFn: async (): Promise<SiteRunLinkModified[]> => {
       const siteRunLinkCounts = await commands.getSiteRunLinkCounts(siteRunId);
       if (siteRunLinkCounts.status === "ok") {
@@ -85,7 +90,7 @@ export const useSiteRunCategoryResultDetailQuery = (
   passed: boolean | null
 ) => {
   return useQuery({
-    queryKey: ["siteRunCategoryResultDetail", siteRunId, passed],
+    queryKey: ["siteRun", "categoryResultDetail", siteRunId, passed],
     queryFn: async () => {
       const siteRunCategoryResultDetail =
         await commands.getCategoryResultDetail(siteRunId, passed);
