@@ -41,6 +41,9 @@ const SiteDisplay = ({ site }: { site: SiteWithSiteRuns }) => {
               <Link
                 // disabled
                 to={"/"}
+                viewTransition={{
+                  types: ["slide-left"],
+                }}
                 //   params={{ siteId: site.site.id.toString() }}
               >
                 <RefreshCcw className="h-4 w-4" />
@@ -51,6 +54,9 @@ const SiteDisplay = ({ site }: { site: SiteWithSiteRuns }) => {
                 <Link
                   to={"/analysis/$site-run-id"}
                   params={{ "site-run-id": mostRecentRun.id.toString() }}
+                  viewTransition={{
+                    types: ["slide-left"],
+                  }}
                 >
                   <ScanSearch className="h-4 w-4" />
                 </Link>

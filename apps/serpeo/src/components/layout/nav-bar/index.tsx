@@ -82,9 +82,7 @@ export const NavBar = () => {
                     variant="ghost"
                     className="justify-start text-base"
                   >
-                    <Link {...rest} viewTransition>
-                      {label}
-                    </Link>
+                    <Link {...rest}>{label}</Link>
                   </Button>
                 ))}
               </div>
@@ -105,7 +103,7 @@ export const NavBar = () => {
           <NavigationMenuItem className="flex flex-row">
             {routeList.map(({ label, ...rest }) => (
               <NavigationMenuLink key={label} asChild>
-                <Link {...rest} viewTransition className="px-2 text-base">
+                <Link {...rest} className="px-2 text-base">
                   {label}
                 </Link>
               </NavigationMenuLink>

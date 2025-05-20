@@ -55,7 +55,7 @@ function Index() {
   }, []);
 
   return (
-    <WavyBackground className="flex max-h-dvh max-w-dvh items-center justify-center overflow-hidden [view-transition-name:warp]">
+    <WavyBackground className="flex max-h-dvh max-w-dvh items-center justify-center overflow-hidden [view-transition-name:main-content]">
       <div className="relative rounded-md bg-background p-4 shadow-lg">
         <ShineBorder borderWidth={2} shineColor={"chart"} />
         <Button
