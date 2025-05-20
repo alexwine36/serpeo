@@ -300,11 +300,13 @@ impl SeoStorage {
             .update_column(page_rule_result::Column::Passed)
             .to_owned();
 
-            let res = PageRuleResult::insert_many(rule_results)
-                .on_conflict(on_conflict)
-                .exec(&self.db)
-                .await
-                .unwrap();
+            if rule_results.len() > 0 {
+                let res = PageRuleResult::insert_many(rule_results)
+                    .on_conflict(on_conflict)
+                    .exec(&self.db)
+                    .await
+                    .unwrap();
+            }
         }
         Ok(())
     }
@@ -350,7 +352,16 @@ impl SeoStorage {
                                 &rule_result_clone.rule_id,
                                 rule_result_clone.passed,
                             );
+
+                            let on_conflict = OnConflict::columns([
+                                page_rule_result::Column::SitePageId,
+                                page_rule_result::Column::RuleId,
+                            ])
+                            .update_column(page_rule_result::Column::Passed)
+                            .to_owned();
+
                             let res = PageRuleResult::insert(site_rule_result)
+                                .on_conflict(on_conflict)
                                 .exec(&self.db)
                                 .await
                                 .unwrap();

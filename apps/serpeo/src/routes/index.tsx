@@ -1,4 +1,3 @@
-import { Badge } from "@repo/ui/components/badge";
 import { Button } from "@repo/ui/components/button";
 import {
   Dialog,
@@ -6,9 +5,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@repo/ui/components/dialog";
-import { Input } from "@repo/ui/components/input";
 import { Label } from "@repo/ui/components/label";
 import { ShineBorder } from "@repo/ui/components/shine-border";
+import { UrlInput } from "@repo/ui/components/url-input";
 import { WavyBackground } from "@repo/ui/components/wavy-background";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSetAtom } from "jotai";
@@ -28,14 +27,12 @@ function Index() {
   const setResult = useSetAtom(crawlResultAtom);
   const navigate = useNavigate();
   const { data: sites } = useSitesQuery();
-  const [baseUrl, setBaseUrl] = useState("");
 
-  console.log(sites);
-  const analyzeSeo = async () => {
+  const analyzeSeo = async (url: string) => {
     try {
       setLoading(true);
       setResult(RESET);
-      const analysis = await commands.analyzeUrlSeo(baseUrl);
+      const analysis = await commands.analyzeUrlSeo(url);
       console.log("Analysis", analysis);
       if (analysis.status === "ok") {
         setResult(analysis.data);
@@ -88,42 +85,33 @@ function Index() {
           </Link>
         </Button>
         <div className="flex flex-col gap-4">
-          <div className="space-4 grid w-[calc(100vw-4rem)] grid-cols-1 gap-4 sm:w-sm md:w-md md:grid-cols-[1fr_auto]">
+          <div className="space-4 w-[calc(100vw-4rem)] grid-cols-1 gap-4 sm:w-sm md:w-md md:grid-cols-[1fr_auto]">
             <div className="flex flex-col gap-2">
               <Label>Analyze Your Website</Label>
-              <Input
+              <UrlInput
+                onSubmit={(url) => {
+                  analyzeSeo(url);
+                }}
+                previousUrls={sites?.map(({ site }) => site.url)}
+              />
+              {/* <Input
                 type="url"
                 placeholder="https://"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
                 className="flex-1"
-              />
+              /> */}
             </div>
-            <div className="flex items-end">
+            {/* <div className="flex items-end">
               <Button
                 className="min-w-24"
-                onClick={analyzeSeo}
+                onClick={() => analyzeSeo(baseUrl)}
                 disabled={loading || !baseUrl}
               >
                 {loading ? "Analyzing..." : "Analyze"}
               </Button>
-            </div>
+            </div> */}
           </div>
-          {sites && (
-            <div className="flex w-full flex-row flex-wrap gap-2">
-              {sites
-                ?.filter((_, idx) => idx < 5)
-                .map(({ site }) => (
-                  <Badge
-                    key={site.id}
-                    onClick={() => setBaseUrl(site.url)}
-                    className="cursor-pointer"
-                  >
-                    {site.url}
-                  </Badge>
-                ))}
-            </div>
-          )}
         </div>
 
         <Dialog open={loading}>
