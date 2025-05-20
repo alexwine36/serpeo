@@ -46,8 +46,6 @@ const SiteDisplay = ({
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
-  console.log("SITE RUNS", siteRuns);
-
   const mostRecentRun = siteRuns[0];
   return (
     <Card>
