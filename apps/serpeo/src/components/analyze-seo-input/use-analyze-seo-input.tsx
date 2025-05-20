@@ -7,8 +7,6 @@ export const useAnalyzeSeoInput = () => {
 
   const analyzeSeo = async (url: string) => {
     try {
-      // setLoading(true);
-      // setResult(RESET);
       const _analysis = await commands.analyzeUrlSeo(url);
     } catch (error) {
       console.error("Error analyzing SEO:", error);
