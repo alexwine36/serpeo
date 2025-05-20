@@ -7,7 +7,12 @@ export const useSitesQuery = () => {
     queryFn: async () => {
       const sites = await commands.getSites();
       if (sites.status === "ok") {
-        return sites.data;
+        return sites.data.sort((a, b) => {
+          return (
+            new Date(b.last_site_run_at).getTime() -
+            new Date(a.last_site_run_at).getTime()
+          );
+        });
       }
       return [];
     },
