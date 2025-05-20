@@ -1,5 +1,4 @@
 import { UrlInput } from "@repo/ui/components/url-input";
-import { useNavigate } from "@tanstack/react-router";
 import { useSitesQuery } from "../../queries/sites";
 import { useAnalyzeSeoInput } from "./use-analyze-seo-input";
 
@@ -7,9 +6,8 @@ export type AnalyzeSeoInputProps = {
   onSubmit?: (url: string) => void;
 };
 
-export const AnalyzeSeoInput = (props: AnalyzeSeoInputProps) => {
+export const AnalyzeSeoInput = (_props: AnalyzeSeoInputProps) => {
   const { data: sites } = useSitesQuery();
-  const navigate = useNavigate();
 
   const { analyzeSeo } = useAnalyzeSeoInput();
 

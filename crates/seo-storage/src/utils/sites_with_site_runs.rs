@@ -10,7 +10,10 @@ pub fn get_sites_with_site_runs(
     data.into_iter()
         .map(|(site, site_runs)| SiteWithSiteRuns {
             site,
-            last_site_run_at: site_runs.last().unwrap().created_at,
+            last_site_run_at: site_runs
+                .last()
+                .map(|run| run.created_at)
+                .unwrap_or_default(),
             site_runs,
         })
         .collect()

@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { events, commands } from "../../generated/bindings";
+import { commands, events } from "../../generated/bindings";
 
 export const useAnalyzeSeoInput = () => {
   const navigate = useNavigate();
@@ -16,7 +16,7 @@ export const useAnalyzeSeoInput = () => {
   };
 
   useEffect(() => {
-    events.siteRunIdSet.listen((e) => {
+    const unsubscribe = events.siteRunIdSet.listen((e) => {
       console.log("siteRunIdSet");
       console.log(e.payload);
       navigate({
@@ -24,6 +24,12 @@ export const useAnalyzeSeoInput = () => {
         params: { "site-run-id": `${e.payload.site_run_id}` },
       });
     });
+
+    return () => {
+      unsubscribe.then((unsubscribe) => {
+        unsubscribe();
+      });
+    };
   }, [navigate]);
 
   return {

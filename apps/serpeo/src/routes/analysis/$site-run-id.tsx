@@ -25,7 +25,7 @@ import { AnalysisStatus } from "../../components/analysis-status";
 import { IssueCategoryDetail } from "../../components/display/issue-category-detail";
 import { IssueCategoryOverview } from "../../components/display/issue-category-overview";
 import { LinkDisplay } from "../../components/display/link-display";
-import { events, commands } from "../../generated/bindings";
+import { commands, events } from "../../generated/bindings";
 
 dayjs.extend(relativeTime);
 export const Route = createFileRoute("/analysis/$site-run-id")({
@@ -55,10 +55,19 @@ function SiteRun() {
 
   const router = useRouter();
 
-  const [done, setDone] = useState(siteRun.status === "Finished");
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+  const [done, setDone] = useState(true);
   useEffect(() => {
-    events.analysisFinished.listen((e) => {
+    const doneDelay = () => {
+      setTimeout(() => {
+        setDone(false);
+      }, 250);
+    };
+
+    if (siteRun.status !== "Finished") {
+      doneDelay();
+    }
+
+    const unsubscribe = events.analysisFinished.listen((e) => {
       const siteRunId = e.payload.site_run_id;
       if (siteRunId === siteRun.id) {
         setDone(true);
@@ -69,7 +78,13 @@ function SiteRun() {
         });
       }
     });
-  }, []);
+
+    return () => {
+      unsubscribe.then((unsubscribe) => {
+        unsubscribe();
+      });
+    };
+  }, [siteRun.id, router, queryClient, siteRun.status]);
 
   console.log(siteRun);
   return (
@@ -84,16 +99,18 @@ function SiteRun() {
         <CardDescription>{siteRun.created_at.fromNow()}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Dialog open={!done}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Run Status</DialogTitle>
-            </DialogHeader>
-            <div>
-              <AnalysisStatus />
-            </div>
-          </DialogContent>
-        </Dialog>
+        {!done && (
+          <Dialog open={!done}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Run Status</DialogTitle>
+              </DialogHeader>
+              <div>
+                <AnalysisStatus />
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
 
         <div className="flex flex-col gap-4">
           <Separator />
