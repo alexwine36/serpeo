@@ -49,8 +49,10 @@ export const ChartWrapper = ({ siteId }: ChartWrapperProps) => {
     // biome-ignore lint/nursery/useGuardForIn: <explanation>
     for (const key in item.data) {
       const cat = item.data[key as RuleCategory];
-      if (cat) {
+      if (cat && cat.total > 0) {
         data[key as RuleCategory] = (cat.passed / cat.total) * 100;
+      } else if (cat) {
+        data[key as RuleCategory] = 0; // Default to 0% when total is 0
       }
     }
     return data;

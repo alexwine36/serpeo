@@ -428,6 +428,8 @@ impl SeoStorage {
             .all(&self.db)
             .await?;
         let mut category_result_displays = vec![];
+        // TODO: Update query to get all site run categories
+        // The get_site_category_history function processes each site run sequentially, making a separate database query for each run. This could be inefficient for sites with many runs.
         for site_run in site_runs {
             let category_result_display = self.get_category_result(&site_run.id).await?;
             category_result_displays.push(CategoryResultHistory {
