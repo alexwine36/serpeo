@@ -35,7 +35,7 @@ export const IssueCategoryDetail = ({
 }: IssueCategoryDetailProps) => {
   const { data: categories, isLoading } = useSiteRunCategoryResultDetailQuery(
     siteRunId,
-    null
+    false
   );
   if (isLoading) {
     return <div>Loading...</div>;
@@ -84,7 +84,7 @@ const IssueCategoryDetailItem = ({
               <div className="grid grid-cols-[45px_80px_1fr] items-center gap-2">
                 <Badge variant="outline">{i.tests.length}</Badge>
                 <SeverityBadge severity={i.tests[0].severity} />
-                {i.name}
+                {i.tests[0].message}
               </div>
             </AccordionTrigger>
             <AccordionContent>

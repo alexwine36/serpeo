@@ -1,4 +1,5 @@
 use seo_storage::entities::site_run;
+use seo_storage::utils::category_counts::CategoryResultHistory;
 use seo_storage::utils::category_detail::CategoryDetailResponse;
 use seo_storage::utils::sites_with_site_runs::SiteWithSiteRuns;
 use seo_storage::SitePageLinkCount;
@@ -21,6 +22,26 @@ pub async fn get_sites(app: tauri::AppHandle) -> Result<Vec<SiteWithSiteRuns>, S
         .clone();
     let sites = storage.get_sites().await.map_err(|e| e.to_string())?;
     Ok(sites)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_site_category_history(
+    app: tauri::AppHandle,
+    site_id: i32,
+) -> Result<Vec<CategoryResultHistory>, String> {
+    let app_handle = app.clone();
+    let storage = app_handle
+        .state::<Mutex<AppData>>()
+        .lock()
+        .unwrap()
+        .storage
+        .clone();
+    let category_result_history = storage
+        .get_site_category_history(&site_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(category_result_history)
 }
 
 #[tauri::command]

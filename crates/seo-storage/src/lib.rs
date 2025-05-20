@@ -11,7 +11,7 @@ use seo_plugins::utils::config::{RuleResult, SiteCheckContext};
 use seo_plugins::utils::link_parser::LinkType;
 use seo_plugins::utils::registry::PluginRegistry;
 use serde::{Deserialize, Serialize};
-use utils::category_counts::CategoryResultDisplay;
+use utils::category_counts::{CategoryResultDisplay, CategoryResultHistory};
 use utils::category_detail::CategoryDetailResponse;
 pub mod entities;
 pub mod enums;
@@ -166,7 +166,7 @@ impl SeoStorage {
             .await?;
         Ok(site_runs)
     }
-    /* #endregion */
+
     pub async fn create_site_run(&self, url: &str) -> Result<i32, DbErr> {
         let site = self.upsert_site(url).await?;
         let site_run = site_run::ActiveModel {
@@ -416,6 +416,28 @@ impl SeoStorage {
             utils::category_counts::get_category_result_display(category_counts);
 
         Ok(category_result_display)
+    }
+
+    pub async fn get_site_category_history(
+        &self,
+        site_id: &i32,
+    ) -> Result<Vec<CategoryResultHistory>, DbErr> {
+        let site_runs = SiteRun::find()
+            .filter(site_run::Column::SiteId.eq(site_id.to_owned()))
+            .order_by_asc(site_run::Column::CreatedAt)
+            .all(&self.db)
+            .await?;
+        let mut category_result_displays = vec![];
+        // TODO: Update query to get all site run categories
+        // The get_site_category_history function processes each site run sequentially, making a separate database query for each run. This could be inefficient for sites with many runs.
+        for site_run in site_runs {
+            let category_result_display = self.get_category_result(&site_run.id).await?;
+            category_result_displays.push(CategoryResultHistory {
+                created_at: site_run.created_at,
+                data: category_result_display.data,
+            });
+        }
+        Ok(category_result_displays)
     }
 
     pub async fn get_category_result_detail(
