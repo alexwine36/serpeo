@@ -30,7 +30,8 @@ pub trait SeoPlugin: Send + Sync + 'static {
             .filter(|rule| config.is_rule_enabled(rule.id))
             .collect();
 
-        let results = stream::iter(rules)
+        
+        stream::iter(rules)
             .map(|rule| {
                 let result = (rule.check)(page);
                 RuleResult {
@@ -45,8 +46,7 @@ pub trait SeoPlugin: Send + Sync + 'static {
                 }
             })
             .collect::<Vec<_>>()
-            .await;
-        results
+            .await
     }
 
     // Run enabled rules on the given page

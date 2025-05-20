@@ -21,9 +21,11 @@ impl SeoBasicPlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "SeoBasic";
+
 impl SeoPlugin for SeoBasicPlugin {
     fn name(&self) -> &str {
-        "SeoBasic"
+        PLUGIN_NAME
     }
     fn description(&self) -> &str {
         ""
@@ -41,9 +43,12 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.has_canonical_url",
                 name: "Page has canonical url",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page has a canonical url",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Page has a canonical url",
+                failed_message: "Page is missing a canonical url",
                 check: |page| {
                     let page = page.clone();
                     let canonical_url = page.extract_meta_tags().canonical;
@@ -63,9 +68,12 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.canonical_url_matches_site",
                 name: "Canonical url matches site",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the canonical url matches the site",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Canonical url matches site",
+                failed_message: "Canonical url does not match site",
                 check: |page| {
                     let page = page.clone();
                     let canonical_url = page.extract_meta_tags().canonical;
@@ -86,9 +94,12 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.is_scrapeable",
                 name: "Page is scrapeable",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page is scrapeable",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Page is scrapeable",
+                failed_message: "Page is not scrapeable",
                 check: |page| {
                     let page = page.clone();
                     let meta_tags = page.extract_meta_tags();
@@ -109,8 +120,11 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.has_valid_charset",
                 name: "Page has valid charset",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page has a valid charset",
                 default_severity: Severity::Warning,
+                passed_message: "Page has a valid charset",
+                failed_message: "Page is missing a valid charset",
                 category: RuleCategory::SEO,
                 check: |page| {
                     let page = page.clone();
@@ -131,9 +145,12 @@ impl SeoPlugin for SeoBasicPlugin {
             Rule {
                 id: "seo_basic.has_html_doctype",
                 name: "Page has html doctype",
+                plugin_name: PLUGIN_NAME,
                 description: "Checks if the page has an html doctype",
                 default_severity: Severity::Warning,
                 category: RuleCategory::SEO,
+                passed_message: "Page has an html doctype",
+                failed_message: "Page is missing an html doctype",
                 check: |page| {
                     let page = page.clone();
                     let html = page.get_html().unwrap();

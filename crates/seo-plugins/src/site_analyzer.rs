@@ -46,8 +46,8 @@ pub struct PageLink {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type)]
 pub struct CrawlResult {
-    page_results: Vec<PageLink>,
-    site_result: Vec<RuleResult>,
+    pub page_results: Vec<PageLink>,
+    pub site_result: Vec<RuleResult>,
     total_pages: u32,
 }
 
@@ -213,7 +213,6 @@ impl SiteAnalyzer {
     }
 
     async fn process_page(&mut self, url: Url) -> Result<(), SiteAnalyzerError> {
-        // println!("processing page: {}", url);
         let page = Page::from_url(url.clone())
             .await
             .map_err(SiteAnalyzerError::PageError);

@@ -1,7 +1,7 @@
 use reqwest::{Client, redirect};
 use scraper::{
-    ElementRef, Html, Selector,
-    node::{Attributes, Element},
+    Html, Selector,
+    node::Element,
 };
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -74,15 +74,11 @@ impl Page {
     }
 
     pub fn get_content_length(&self) -> Option<u64> {
-        self.content_length.clone()
+        self.content_length
     }
 
     pub fn get_redirected(&self) -> bool {
-        if self.status_code.is_some() && self.status_code.unwrap() >= NonZeroU16::new(300).unwrap() && self.status_code.unwrap() < NonZeroU16::new(400).unwrap() {
-            true
-        } else {
-            false
-        }
+        self.status_code.is_some() && self.status_code.unwrap() >= NonZeroU16::new(300).unwrap() && self.status_code.unwrap() < NonZeroU16::new(400).unwrap()
     }
 
     pub fn set_content(&mut self, html: String) {
@@ -90,11 +86,11 @@ impl Page {
     }
 
     pub fn get_elapsed(&self) -> Option<f32> {
-        self.elapsed.clone()
+        self.elapsed
     }
 
     pub fn get_status_code(&self) -> Option<NonZeroU16> {
-        self.status_code.clone()
+        self.status_code
     }
 
     pub async fn from_url<T: FromUrl>(url: T) -> Result<Self, PageError> {

@@ -5,14 +5,19 @@ use serde::{Deserialize, Serialize};
 
 use crate::enums::db_link_type::DbLinkType;
 
+#[cfg(test)]
+use fake::Dummy;
+
 #[derive(
     Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize, specta :: Type,
 )]
+#[cfg_attr(test, derive(Dummy))]
 #[sea_orm(table_name = "site_page")]
 #[specta(rename = "SitePageModel")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
+    pub site_id: i32,
     pub site_run_id: i32,
     pub url: String,
     pub db_link_type: DbLinkType,
@@ -23,6 +28,14 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::page_rule_result::Entity")]
     PageRuleResult,
+    #[sea_orm(
+        belongs_to = "super::site::Entity",
+        from = "Column::SiteId",
+        to = "super::site::Column::Id",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Site,
     #[sea_orm(
         belongs_to = "super::site_run::Entity",
         from = "Column::SiteRunId",
@@ -36,6 +49,12 @@ pub enum Relation {
 impl Related<super::page_rule_result::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::PageRuleResult.def()
+    }
+}
+
+impl Related<super::site::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Site.def()
     }
 }
 

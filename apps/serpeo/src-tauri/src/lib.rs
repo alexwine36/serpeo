@@ -1,6 +1,6 @@
-use listeners::{setup_listeners, AnalysisStart};
+use listeners::{setup_listeners, AnalysisFinished, AnalysisStart, SiteRunIdSet};
 use seo_analyzer::{crawl_url, AnalysisProgress, CrawlConfig, CrawlResult};
-use seo_storage::entities::site;
+
 use seo_storage::SeoStorage;
 use specta_typescript::Typescript;
 use std::sync::Mutex;
@@ -9,6 +9,7 @@ use tauri::{Emitter, Manager};
 use tauri_specta::{collect_commands, collect_events, Builder, Event};
 
 mod listeners;
+mod sites;
 mod stores;
 
 pub const STORE_FILE: &str = "store.json";
@@ -18,26 +19,11 @@ struct AppData {
     site_run_id: Option<i32>,
 }
 
-// #[tauri::command]
-// #[specta::specta]
-// async fn get_config(state: State<'_, Mutex<AppData>>) -> Result<CrawlConfig, String> {
-//     // let mut app_data = app.state::<Mutex<AppData>>();
-//     Ok(state.lock().unwrap().config.clone())
-// }
-
-// #[tauri::command]
-// #[specta::specta]
-// async fn set_config(state: State<'_, Mutex<AppData>>, config: CrawlConfig) -> Result<(), String> {
-//     // let app_data = app.state::<Mutex<AppData>>();
-//     let mut state = state.lock().unwrap();
-//     state.config = config;
-//     Ok(())
-// }
-
 #[tauri::command]
 #[specta::specta]
 async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResult, String> {
     let app_handle = app.clone();
+    let app_handle_clone = app_handle.clone();
     let base_url = url.clone();
 
     let crawl_settings = CrawlSettingsStore::get_or_default(&app_handle).unwrap();
@@ -54,30 +40,46 @@ async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResu
     let progress_callback = Box::new(move |progress| {
         let _ = app_handle.emit("analysis-progress", progress);
     });
-    crawl_url(&config, progress_callback)
+    let res = crawl_url(&config, progress_callback)
         .await
-        .map_err(|e| e.to_string())
-}
+        .map_err(|e| e.to_string())?;
+    let res_clone = res.clone();
+    {
+        let site_run_id = app_handle_clone
+            .state::<Mutex<AppData>>()
+            .lock()
+            .unwrap()
+            .site_run_id
+            .unwrap();
+        AnalysisFinished {
+            site_run_id,
+            result: res_clone,
+        }
+        .emit(&app_handle_clone)
+        .unwrap();
+    }
 
-#[tauri::command]
-#[specta::specta]
-async fn get_sites(app: tauri::AppHandle) -> Result<Vec<site::Model>, String> {
-    let app_handle = app.clone();
-    let storage = app_handle
-        .state::<Mutex<AppData>>()
-        .lock()
-        .unwrap()
-        .storage
-        .clone();
-    let sites = storage.get_sites().await.map_err(|e| e.to_string())?;
-    Ok(sites)
+    Ok(res)
 }
 
 fn builder() -> Builder<tauri::Wry> {
     Builder::<tauri::Wry>::new()
         // Then register them (separated by a comma)
-        .commands(collect_commands![analyze_url_seo, get_sites])
-        .events(collect_events![AnalysisProgress, AnalysisStart])
+        .commands(collect_commands![
+            analyze_url_seo,
+            sites::get_sites,
+            sites::get_category_result,
+            sites::get_site_run_by_id,
+            sites::get_site_by_id,
+            sites::get_site_run_link_counts,
+            sites::get_category_result_detail,
+        ])
+        .events(collect_events![
+            AnalysisProgress,
+            AnalysisStart,
+            AnalysisFinished,
+            SiteRunIdSet
+        ])
         .constant("STORE_FILE", STORE_FILE)
         .constant("CRAWL_SETTINGS_KEY", CRAWL_SETTINGS_KEY)
         .typ::<crawl_settings::CrawlSettingsStore>()

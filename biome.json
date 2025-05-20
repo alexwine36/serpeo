@@ -51,6 +51,16 @@
   },
   "overrides": [
     {
+      "include": ["apps/serpeo/src/routes/analysis/$site-run-id.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
+    },
+    {
       "include": ["packages/ui/src/components"],
       "linter": {
         "rules": {

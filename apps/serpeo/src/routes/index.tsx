@@ -113,7 +113,7 @@ function Index() {
             <div className="flex w-full flex-row flex-wrap gap-2">
               {sites
                 ?.filter((_, idx) => idx < 5)
-                .map((site) => (
+                .map(({ site }) => (
                   <Badge
                     key={site.id}
                     onClick={() => setBaseUrl(site.url)}

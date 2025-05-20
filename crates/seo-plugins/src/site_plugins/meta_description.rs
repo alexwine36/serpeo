@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex as StdMutex};
 use crate::site_analyzer::SiteAnalyzer;
 use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
-    config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
+    config::{RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
     registry::PluginRegistry,
     site_plugin::SitePlugin,
@@ -23,6 +23,12 @@ pub struct MetaDescriptionSitePlugin {
     page_descriptions: Arc<StdMutex<HashMap<String, PageDescription>>>,
 }
 
+impl Default for MetaDescriptionSitePlugin {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MetaDescriptionSitePlugin {
     pub fn new() -> Self {
         Self {
@@ -31,9 +37,11 @@ impl MetaDescriptionSitePlugin {
     }
 }
 
+const PLUGIN_NAME: &str = "Meta Description Plugin";
+
 impl SitePlugin for MetaDescriptionSitePlugin {
     fn name(&self) -> &str {
-        "Meta Description Plugin"
+        PLUGIN_NAME
     }
 
     fn description(&self) -> &str {
@@ -66,9 +74,12 @@ impl SitePlugin for MetaDescriptionSitePlugin {
         vec![SiteRule {
             id: "meta_description_uniqueness",
             name: "Meta Description Uniqueness",
+            plugin_name: PLUGIN_NAME,
             description: "Checks if meta descriptions are unique 90% of the time",
             default_severity: Severity::Warning,
             category: RuleCategory::SEO,
+            passed_message: "Meta description is unique across pages",
+            failed_message: "Meta description is not unique across pages",
         }]
     }
     fn check(&self, rule: &SiteRule, _site: &SiteAnalyzer) -> SiteCheckResult {

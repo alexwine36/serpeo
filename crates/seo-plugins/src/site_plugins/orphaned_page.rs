@@ -4,7 +4,7 @@ use crate::site_analyzer::{LinkSourceType, SiteAnalyzer};
 
 use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
-    config::{CheckResult, RuleCategory, RuleResult, Severity, SiteRule},
+    config::{RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
     registry::PluginRegistry,
     site_plugin::SitePlugin,
@@ -13,15 +13,23 @@ use crate::utils::{
 #[derive(Clone)]
 pub struct OrphanedPagePlugin {}
 
+impl Default for OrphanedPagePlugin {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OrphanedPagePlugin {
     pub fn new() -> Self {
         Self {}
     }
 }
 
+const PLUGIN_NAME: &str = "OrphanedPage Plugin";
+
 impl SitePlugin for OrphanedPagePlugin {
     fn name(&self) -> &str {
-        "OrphanedPage Plugin"
+        PLUGIN_NAME
     }
 
     fn description(&self) -> &str {
@@ -42,9 +50,12 @@ impl SitePlugin for OrphanedPagePlugin {
         vec![SiteRule {
             id: "orphaned_page.check",
             name: "Orphaned Page",
+            plugin_name: PLUGIN_NAME,
             description: "Check if pages are found only in sitemap but not in links",
             default_severity: Severity::Warning,
             category: RuleCategory::SEO,
+            passed_message: "No orphaned pages found",
+            failed_message: "Orphaned pages found",
         }]
     }
 

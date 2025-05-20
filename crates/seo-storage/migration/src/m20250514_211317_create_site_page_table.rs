@@ -1,6 +1,8 @@
 use sea_orm_migration::{prelude::*, schema::*};
 
-use crate::m20250514_171121_create_site_run_table::SiteRun;
+use crate::{
+    m20250514_154203_create_site_table::Site, m20250514_171121_create_site_run_table::SiteRun,
+};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,6 +16,7 @@ impl MigrationTrait for Migration {
                     .table(SitePage::Table)
                     .if_not_exists()
                     .col(pk_auto(SitePage::Id))
+                    .col(integer(SitePage::SiteId))
                     .col(integer(SitePage::SiteRunId))
                     .col(string(SitePage::Url))
                     .col(
@@ -39,6 +42,12 @@ impl MigrationTrait for Migration {
                             .from(SitePage::Table, SitePage::SiteRunId)
                             .to(SiteRun::Table, SiteRun::Id),
                     )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk_site_page_site_id")
+                            .from(SitePage::Table, SitePage::SiteId)
+                            .to(Site::Table, Site::Id),
+                    )
                     .to_owned(),
             )
             .await
@@ -55,6 +64,7 @@ impl MigrationTrait for Migration {
 pub enum SitePage {
     Table,
     Id,
+    SiteId,
     SiteRunId,
     Url,
     DbLinkType,
