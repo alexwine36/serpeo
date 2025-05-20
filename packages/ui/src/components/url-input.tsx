@@ -82,14 +82,7 @@ export const UrlInput = ({
     if (!url) {
       return;
     }
-    // if (onSubmit && url) {
-    //   onSubmit(url);
-    // }
     setInputValue(url);
-
-    // if (onSubmit) {
-    //   onSubmit(url);
-    // }
     setOpen(false);
   };
 

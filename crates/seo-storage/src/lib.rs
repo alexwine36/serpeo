@@ -301,11 +301,10 @@ impl SeoStorage {
             .to_owned();
 
             if !rule_results.is_empty() {
-                let _ = PageRuleResult::insert_many(rule_results)
+                let res = PageRuleResult::insert_many(rule_results)
                     .on_conflict(on_conflict)
                     .exec(&self.db)
-                    .await
-                    .unwrap();
+                    .await?;
             }
         }
         Ok(())
@@ -363,8 +362,7 @@ impl SeoStorage {
                             let _ = PageRuleResult::insert(site_rule_result)
                                 .on_conflict(on_conflict)
                                 .exec(&self.db)
-                                .await
-                                .unwrap();
+                                .await?;
                         }
                     }
                 }
