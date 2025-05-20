@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { commands, events } from "../../generated/bindings";
+import { events, commands } from "../../generated/bindings";
 
 export const useAnalyzeSeoInput = () => {
   const navigate = useNavigate();
