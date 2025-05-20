@@ -300,7 +300,7 @@ impl SeoStorage {
             .update_column(page_rule_result::Column::Passed)
             .to_owned();
 
-            if rule_results.len() > 0 {
+            if !rule_results.is_empty() {
                 let res = PageRuleResult::insert_many(rule_results)
                     .on_conflict(on_conflict)
                     .exec(&self.db)

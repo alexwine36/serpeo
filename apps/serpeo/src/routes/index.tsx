@@ -55,24 +55,9 @@ function Index() {
   }, []);
 
   return (
-    // <WavyBackground
-    //   // rangeY={200}
-    //   //     // particleCount={500}
-    //   //     // baseHue={120}
-    //   //     baseRadius={3}
-    //   //     rangeRadius={2}
-    //   className="max-w-screen overflow-x-hidden"
-    // >
     <WavyBackground className="flex max-h-dvh max-w-dvh items-center justify-center overflow-hidden [view-transition-name:warp]">
-      {/* <WavyBackground className="max-h-full overflow-hidden"> */}
       <div className="relative rounded-md bg-background p-4 shadow-lg">
-        {/* <SettingsCard collapsible /> */}
-        <ShineBorder
-          borderWidth={2}
-          // className="bg-background"
-          shineColor={"chart"}
-          // shineColor={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
-        />
+        <ShineBorder borderWidth={2} shineColor={"chart"} />
         <Button
           className="fixed right-4 bottom-4"
           variant="outline"
@@ -85,32 +70,15 @@ function Index() {
           </Link>
         </Button>
         <div className="flex flex-col gap-4">
-          <div className="space-4 w-[calc(100vw-4rem)] grid-cols-1 gap-4 sm:w-sm md:w-md md:grid-cols-[1fr_auto]">
-            <div className="flex flex-col gap-2">
-              <Label>Analyze Your Website</Label>
-              <UrlInput
-                onSubmit={(url) => {
-                  analyzeSeo(url);
-                }}
-                previousUrls={sites?.map(({ site }) => site.url)}
-              />
-              {/* <Input
-                type="url"
-                placeholder="https://"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                className="flex-1"
-              /> */}
-            </div>
-            {/* <div className="flex items-end">
-              <Button
-                className="min-w-24"
-                onClick={() => analyzeSeo(baseUrl)}
-                disabled={loading || !baseUrl}
-              >
-                {loading ? "Analyzing..." : "Analyze"}
-              </Button>
-            </div> */}
+          <div className="flex flex-col gap-2">
+            <Label>Analyze Your Website</Label>
+            <UrlInput
+              className="md:w-sm lg:w-md"
+              onSubmit={(url) => {
+                analyzeSeo(url);
+              }}
+              previousUrls={sites?.map(({ site }) => site.url)}
+            />
           </div>
         </div>
 
@@ -124,54 +92,7 @@ function Index() {
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* {result.total_pages > 0 && (
-            <div className="mt-8 space-y-6">
-              <LinkDisplay />
-              <IssueCategoryOverview />
-              <IssueCategoryDetail />
-            </div>
-          )} */}
-
-        {/* <Card>
-            <CardHeader>
-              <CardTitle>SEO Analysis Tool</CardTitle>
-              <CardDescription>
-                Run a full SEO analysis on the website configured in settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-4 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto]">
-                <Input
-                  type="url"
-                  placeholder="Enter website URL..."
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  className="min-w-24"
-                  onClick={analyzeSeo}
-                  disabled={loading || !baseUrl}
-                >
-                  {loading ? "Analyzing..." : "Analyze"}
-                </Button>
-              </div>
-
-              <AnalysisStatus />
-              {result.total_pages > 0 && (
-                <div className="mt-8 space-y-6">
-                  <LinkDisplay />
-                  <IssueCategoryOverview />
-                  <IssueCategoryDetail />
-                </div>
-              )}
-            </CardContent>
-          </Card> */}
       </div>
-      {/* </WavyBackground> */}
     </WavyBackground>
-
-    // </WavyBackground>
   );
 }

@@ -32,7 +32,7 @@ const UrlSchema = z.string().url();
 export const UrlInput = ({
   onSubmit,
   placeholder,
-  //   className,
+  className,
   previousUrls = [],
 }: UrlInputProps) => {
   const [open, setOpen] = useState(false);
@@ -118,7 +118,7 @@ export const UrlInput = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full items-center space-x-2"
+      className={cn("flex w-full items-center space-x-2", className)}
     >
       <div className="relative flex-1">
         <Popover open={open} modal onOpenChange={setOpen}>
