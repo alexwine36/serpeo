@@ -11,10 +11,10 @@ use url::Url;
 
 use crate::utils::{
     config::RuleResult,
-    link_parser::{FromUrl, LinkType, parse_link},
+    link_parser::{FromUrl, LinkParseError, LinkType, parse_link},
     page::{Page, PageError},
     registry::PluginRegistry,
-    sitemap_parser::SitemapParser,
+    sitemap_parser::{SitemapParser, SitemapParserError},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type, PartialEq, Eq, Hash)]
@@ -70,9 +70,13 @@ pub type ProgressCallback = Option<Box<dyn Fn(AnalysisProgress) + Send + Sync + 
 #[derive(Debug, Error)]
 pub enum SiteAnalyzerError {
     #[error("Failed to parse URL: {0}")]
-    UrlParseError(String),
+    UrlParseError(#[from] LinkParseError),
+    #[error("Failed to join URL: {0}")]
+    UrlJoinError(#[from] url::ParseError),
     #[error("Page error: {0}")]
     PageError(#[from] PageError),
+    #[error("Sitemap parser error: {0}")]
+    SitemapParserError(#[from] SitemapParserError),
 }
 
 pub struct SiteAnalyzer {
@@ -83,24 +87,24 @@ pub struct SiteAnalyzer {
 }
 
 impl SiteAnalyzer {
-    pub fn new<T: FromUrl>(url: T, registry: PluginRegistry) -> Self {
-        let url = url.to_url().unwrap();
-        Self {
+    pub fn new<T: FromUrl>(url: T, registry: PluginRegistry) -> Result<Self, SiteAnalyzerError> {
+        let url = url.to_url().map_err(SiteAnalyzerError::UrlParseError)?;
+        Ok(Self {
             url,
             links: Arc::new(Mutex::new(HashMap::new())),
             registry: Arc::new(Mutex::new(registry)),
             progress_callback: Arc::new(Mutex::new(None)),
-        }
+        })
     }
 
-    pub fn new_with_default<T: FromUrl>(url: T) -> Self {
-        let url = url.to_url().unwrap();
-        Self {
+    pub fn new_with_default<T: FromUrl>(url: T) -> Result<Self, SiteAnalyzerError> {
+        let url = url.to_url().map_err(SiteAnalyzerError::UrlParseError)?;
+        Ok(Self {
             url,
             links: Arc::new(Mutex::new(HashMap::new())),
             registry: Arc::new(Mutex::new(PluginRegistry::default_with_config())),
             progress_callback: Arc::new(Mutex::new(None)),
-        }
+        })
     }
 
     pub async fn with_progress_callback(
@@ -142,8 +146,9 @@ impl SiteAnalyzer {
     }
 
     async fn fetch_sitemap(&self) -> Result<HashSet<String>, SiteAnalyzerError> {
-        let sitemap_parser = SitemapParser::new(self.url.clone()).unwrap();
-        let sitemap_urls = sitemap_parser.get_sitemap().await.unwrap();
+        let sitemap_parser =
+            SitemapParser::new(self.url.clone()).map_err(SiteAnalyzerError::SitemapParserError)?;
+        let sitemap_urls = sitemap_parser.get_sitemap().await?;
         Ok(sitemap_urls)
     }
 
@@ -182,7 +187,7 @@ impl SiteAnalyzer {
         url: &str,
         page_link_source: PageLinkSource,
     ) -> Result<(), SiteAnalyzerError> {
-        let link = parse_link(url, self.url.clone()).unwrap();
+        let link = parse_link(url, self.url.clone()).map_err(SiteAnalyzerError::UrlParseError)?;
         {
             if page_link_source.link_source_type == LinkSourceType::Sitemap {
                 println!("adding link: {}", url);
@@ -217,7 +222,7 @@ impl SiteAnalyzer {
             .await
             .map_err(SiteAnalyzerError::PageError);
 
-        if let Err(e) = page {
+        if page.is_err() {
             let _ = self
                 .record_page_result(
                     &url,
@@ -230,10 +235,10 @@ impl SiteAnalyzer {
             return Ok(());
         }
 
-        let page = page.unwrap();
+        let page = page?;
         let results = {
             let registry = self.registry.lock().await;
-            registry.analyze_async(&page).await
+            registry.analyze_async(&page).await?
         };
 
         // Record the page results
@@ -270,7 +275,11 @@ impl SiteAnalyzer {
                 &sitemap_url,
                 PageLinkSource {
                     link_source_type: LinkSourceType::Sitemap,
-                    url: self.url.join("/sitemap.xml").unwrap().to_string(),
+                    url: self
+                        .url
+                        .join(&sitemap_url)
+                        .map_err(SiteAnalyzerError::UrlJoinError)?
+                        .to_string(),
                 },
             )
             .await?;
@@ -303,7 +312,11 @@ impl SiteAnalyzer {
             // Process pages concurrently with a limit of 10 concurrent requests
             let mut stream = stream::iter(internal_links)
                 .map(|url| {
-                    let url = Url::parse(&url).unwrap();
+                    #[allow(clippy::unwrap_used)]
+                    let url = url
+                        .to_url()
+                        .map_err(SiteAnalyzerError::UrlParseError)
+                        .unwrap();
                     let registry = self.registry.clone();
                     let links = self.links.clone();
                     let progress_callback = self.progress_callback.clone();
@@ -324,9 +337,9 @@ impl SiteAnalyzer {
             }
         }
 
-        let site_result = self.registry.lock().await.analyze_site(self).await;
+        let site_result = self.registry.lock().await.analyze_site(self).await?;
         let links = self.links.lock().await;
-        let page_results: Vec<PageLink> = links.values().map(|link| link.clone()).collect();
+        let page_results: Vec<PageLink> = links.values().cloned().collect();
         Ok(CrawlResult {
             page_results,
             site_result,
@@ -359,7 +372,7 @@ mod tests {
     async fn test_site_crawl() {
         let addr = start_server().await;
         let base_url = format!("http://{}", addr);
-        let mut site = SiteAnalyzer::new_with_default(base_url);
+        let mut site = SiteAnalyzer::new_with_default(base_url).unwrap();
         let results = site.crawl().await.unwrap();
         let links = site.links.lock().await;
         // println!("links: {:#?}", links);
@@ -402,7 +415,7 @@ mod tests {
             .iter()
             .find(|result| result.rule_id == "orphaned_page.check")
             .unwrap();
-        assert!(orphaned_page.passed == false);
+        assert!(!orphaned_page.passed);
         // let page1 = links.get(&format!("{}/page1", base_url)).unwrap();
         // assert_eq!(page1.found_in.len(), 3);
     }

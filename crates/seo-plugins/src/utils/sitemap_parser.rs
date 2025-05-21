@@ -4,13 +4,13 @@ use reqwest::Client;
 use thiserror::Error;
 use url::Url;
 
-use super::link_parser::{FromUrl, parse_link};
+use super::link_parser::{FromUrl, LinkParseError, parse_link};
 use super::page::{Page, PageError};
 
 #[derive(Debug, Error)]
 pub enum SitemapParserError {
     #[error("Failed to parse URL: {0}")]
-    UrlParseError(String),
+    UrlParseError(#[from] LinkParseError),
     #[error("Failed to parse HTML: {0}")]
     HtmlParseError(String),
     #[error("Failed to parse sitemap: {0}")]
@@ -29,9 +29,7 @@ pub struct SitemapParser {
 
 impl SitemapParser {
     pub fn new<T: FromUrl>(url: T) -> Result<Self, SitemapParserError> {
-        let url = url
-            .to_url()
-            .map_err(|e| SitemapParserError::UrlParseError(e.to_string()))?;
+        let url = url.to_url().map_err(SitemapParserError::UrlParseError)?;
         let base_url = url.clone();
         let client = Client::builder()
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
@@ -93,7 +91,8 @@ impl SitemapParser {
         // Try to find sitemap URL from HTML first
         let mut sitemap_urls = HashSet::new();
         if let Some(discovered_url) = self.discover_sitemap_url().await? {
-            let link = parse_link(&discovered_url, self.base_url.clone()).unwrap();
+            let link = parse_link(&discovered_url, self.base_url.clone())
+                .map_err(SitemapParserError::UrlParseError)?;
             sitemap_urls.insert(normalize_url(&link.href));
         } else {
             // Fallback to common sitemap locations

@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)]
+
 use std::any::Any;
 
 use crate::utils::{

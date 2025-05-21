@@ -88,8 +88,8 @@ siteRunIdSet: "site-run-id-set"
 
 /** user-defined constants **/
 
-export const CRAWL_SETTINGS_KEY = "crawl_settings" as const;
 export const STORE_FILE = "store.json" as const;
+export const CRAWL_SETTINGS_KEY = "crawl_settings" as const;
 
 /** user-defined types **/
 

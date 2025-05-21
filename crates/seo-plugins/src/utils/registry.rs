@@ -6,7 +6,6 @@ use crate::plugins::title::TitlePlugin;
 use crate::site_analyzer::SiteAnalyzer;
 use crate::site_plugins::MetaDescriptionSitePlugin;
 use crate::site_plugins::orphaned_page::OrphanedPagePlugin;
-use futures::stream::StreamExt;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::fmt;
@@ -85,8 +84,8 @@ impl PluginRegistry {
         futures::executor::block_on(self.get_available_rules_async())
     }
 
-    pub async fn analyze_async(&self, page: &Page) -> Vec<RuleResult> {
-        let config = self.get_config().unwrap();
+    pub async fn analyze_async(&self, page: &Page) -> Result<Vec<RuleResult>, PageError> {
+        let config = self.get_config()?;
         let plugins = self.plugins.lock().await;
         let futures = plugins
             .values()
@@ -101,11 +100,11 @@ impl PluginRegistry {
         for plugin in self.site_plugins.lock().await.iter_mut() {
             let _ = plugin.after_page_hook(Arc::new(StdMutex::new(page.clone())), &results);
         }
-        results
+        Ok(results)
     }
 
-    pub fn analyze(&self, page: &Page) -> Vec<RuleResult> {
-        let config = self.get_config().unwrap();
+    pub fn analyze(&self, page: &Page) -> Result<Vec<RuleResult>, PageError> {
+        let config = self.get_config()?;
         let results = futures::executor::block_on(async {
             let r = self
                 .plugins
@@ -123,17 +122,20 @@ impl PluginRegistry {
             r
         });
 
-        results
+        Ok(results)
     }
 
-    pub async fn analyze_site(&self, site: &SiteAnalyzer) -> Vec<RuleResult> {
-        let config = self.get_config().unwrap();
-        self.site_plugins
+    pub async fn analyze_site(&self, site: &SiteAnalyzer) -> Result<Vec<RuleResult>, PageError> {
+        let config = self.get_config()?;
+        let results = self
+            .site_plugins
             .lock()
             .await
             .iter()
             .flat_map(|plugin| plugin.analyze(site, config))
-            .collect()
+            .collect();
+
+        Ok(results)
     }
 
     pub fn default_with_config() -> Self {
