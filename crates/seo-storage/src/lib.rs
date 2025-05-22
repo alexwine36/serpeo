@@ -29,16 +29,16 @@ impl SeoStorage {
     // Utilities
 
     /* #region Utilities */
-    pub async fn new(db_url: &str) -> Self {
+    pub async fn new(db_url: &str) -> Result<Self, DbErr> {
         let mut options = ConnectOptions::from(db_url.to_string());
-        options.max_connections(5);
+        options.max_connections(10);
         options.sqlx_logging(true);
-        let db = Database::connect(options).await.unwrap();
-        SeoStorage { db }
+        let db = Database::connect(options).await?;
+        Ok(SeoStorage { db })
     }
 
     pub async fn new_with_default() -> Self {
-        let seo_storage = SeoStorage::new(DATABASE_URL).await;
+        let seo_storage = SeoStorage::new(DATABASE_URL).await.unwrap();
         let _ = seo_storage.migrate_up().await;
         seo_storage
     }

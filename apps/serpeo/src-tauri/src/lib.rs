@@ -26,7 +26,8 @@ async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResu
     let app_handle_clone = app_handle.clone();
     let base_url = url.clone();
 
-    let crawl_settings = CrawlSettingsStore::get_or_default(&app_handle).unwrap();
+    let crawl_settings =
+        CrawlSettingsStore::get_or_default(&app_handle).map_err(|e| e.to_string())?;
 
     let config = CrawlConfig {
         base_url: url,
@@ -35,7 +36,9 @@ async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResu
     };
 
     {
-        AnalysisStart { base_url }.emit(&app_handle).unwrap();
+        AnalysisStart { base_url }
+            .emit(&app_handle)
+            .map_err(|e| e.to_string())?;
     }
     let progress_callback = Box::new(move |progress| {
         let _ = app_handle.emit("analysis-progress", progress);
@@ -48,15 +51,15 @@ async fn analyze_url_seo(app: tauri::AppHandle, url: String) -> Result<CrawlResu
         let site_run_id = app_handle_clone
             .state::<Mutex<AppData>>()
             .lock()
-            .unwrap()
+            .map_err(|e| e.to_string())?
             .site_run_id
-            .unwrap();
+            .expect("Failed to lock app data");
         AnalysisFinished {
             site_run_id,
             result: res_clone,
         }
         .emit(&app_handle_clone)
-        .unwrap();
+        .map_err(|e| e.to_string())?;
     }
 
     Ok(res)
@@ -106,11 +109,17 @@ pub fn run() {
             stores::crawl_settings::init(&app_clone);
 
             tauri::async_runtime::block_on(async move {
+                #[allow(clippy::unwrap_used)]
                 let db_path = app.path().app_data_dir().unwrap().join("serpeo.db");
                 let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
-                let storage = SeoStorage::new(&db_url).await;
+                #[allow(clippy::unwrap_used)]
+                let storage = SeoStorage::new(&db_url).await.unwrap();
 
-                storage.migrate_up().await.unwrap();
+                storage
+                    .migrate_up()
+                    .await
+                    .map_err(|e| e.to_string())
+                    .expect("Failed to migrate storage");
                 app.manage(Mutex::new(AppData {
                     storage,
                     site_run_id: None,
