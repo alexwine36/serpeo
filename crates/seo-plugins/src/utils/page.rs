@@ -207,7 +207,13 @@ impl Page {
     }
 
     pub fn extract_images(&self) -> Vec<Image> {
-        self.get_images().unwrap_or_default()
+        match self.get_images() {
+            Ok(images) => images,
+            Err(e) => {
+                eprintln!("Error extracting images: {}", e);
+                Vec::new()
+            }
+        }
     }
 
     // Meta Tags

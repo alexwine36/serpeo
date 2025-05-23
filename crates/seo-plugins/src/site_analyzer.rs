@@ -123,28 +123,27 @@ impl SiteAnalyzer {
         self.links.read().clone()
     }
 
-    async fn report_progress(
-        &self,
-        progress_type: AnalysisProgressType,
-        url: Option<String>,
-        // links: &RwLockReadGuard<'_, HashMap<String, PageLink>>,
-    ) {
+    async fn report_progress(&self, progress_type: AnalysisProgressType, url: Option<String>) {
         if let Some(callback) = &self.progress_callback.read().as_ref() {
-            callback(AnalysisProgress {
-                progress_type,
-                url,
-                total_pages: self
-                    .links
+            let total_pages = {
+                self.links
                     .read()
                     .values()
                     .filter(|link| link.link_type == LinkType::Internal)
-                    .count() as u32,
-                completed_pages: self
-                    .links
+                    .count() as u32
+            };
+            let completed_pages = {
+                self.links
                     .read()
                     .values()
-                    .filter(|link| link.link_type == LinkType::Internal && link.result.is_some())
-                    .count() as u32,
+                    .filter(|link| link.result.is_some())
+                    .count() as u32
+            };
+            callback(AnalysisProgress {
+                progress_type,
+                url,
+                total_pages,
+                completed_pages,
             });
         }
     }
@@ -182,7 +181,7 @@ impl SiteAnalyzer {
                         .await?;
                     }
                 }
-                SiteCheckContext::Values(values) => {}
+                SiteCheckContext::Values(_values) => {}
 
                 _ => {}
             }
@@ -195,8 +194,6 @@ impl SiteAnalyzer {
         url: &Url,
         result: PageResult,
     ) -> Result<(), SiteAnalyzerError> {
-        // let links = self.links;
-        // let mut links = self.links.write();
         {
             if let Some(link) = self.links.write().get_mut(&url.to_string()) {
                 if link.result.is_none() {
@@ -220,7 +217,6 @@ impl SiteAnalyzer {
             self.report_progress(
                 AnalysisProgressType::AnalyzedPage(link.clone()),
                 Some(url.to_string()),
-                // &links,
             )
             .await;
         }
@@ -362,7 +358,6 @@ impl SiteAnalyzer {
                 .filter(|(_, link)| link.link_type == LinkType::Internal && link.result.is_none())
                 .map(|(url, _)| url.clone())
                 .collect();
-            // drop(links);
 
             if internal_links.is_empty() {
                 break;
