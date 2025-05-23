@@ -6,11 +6,11 @@ use crate::plugins::title::TitlePlugin;
 use crate::site_analyzer::SiteAnalyzer;
 use crate::site_plugins::MetaDescriptionSitePlugin;
 use crate::site_plugins::orphaned_page::OrphanedPagePlugin;
+use parking_lot::RwLock;
 use std::any::TypeId;
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::{Arc, Mutex as StdMutex};
-use tokio::sync::Mutex;
 
 use super::config::{RuleConfig, RuleDisplay, RuleResult};
 use super::page::{Page, PageError};
@@ -19,8 +19,8 @@ use super::site_plugin::SitePlugin;
 
 #[derive(Clone)]
 pub struct PluginRegistry {
-    plugins: Arc<Mutex<HashMap<TypeId, Box<dyn SeoPlugin>>>>,
-    site_plugins: Arc<Mutex<Vec<Box<dyn SitePlugin>>>>,
+    plugins: Arc<RwLock<HashMap<TypeId, Box<dyn SeoPlugin>>>>,
+    site_plugins: Arc<RwLock<Vec<Box<dyn SitePlugin>>>>,
     config: Option<RuleConfig>,
 }
 
@@ -33,8 +33,8 @@ impl fmt::Debug for PluginRegistry {
 impl PluginRegistry {
     pub fn new() -> Self {
         Self {
-            plugins: Arc::new(Mutex::new(HashMap::new())),
-            site_plugins: Arc::new(Mutex::new(Vec::new())),
+            plugins: Arc::new(RwLock::new(HashMap::new())),
+            site_plugins: Arc::new(RwLock::new(Vec::new())),
             config: None,
         }
     }
@@ -47,32 +47,31 @@ impl PluginRegistry {
         self.config.as_ref().ok_or(PageError::ConfigNotSet)
     }
 
-    pub async fn register<P: SeoPlugin + 'static>(&mut self, mut plugin: P) -> Result<(), String> {
+    pub async fn register<P: SeoPlugin + 'static>(&self, plugin: P) -> Result<(), String> {
         let type_id = TypeId::of::<P>();
         plugin.initialize(self)?;
-        self.plugins.lock().await.insert(type_id, Box::new(plugin));
+        self.plugins.write().insert(type_id, Box::new(plugin));
         Ok(())
     }
 
     pub async fn register_site_plugin<P: SitePlugin + 'static>(
-        &mut self,
-        mut plugin: P,
+        &self,
+        plugin: P,
     ) -> Result<(), String> {
         plugin.initialize(self)?;
-        self.site_plugins.lock().await.push(Box::new(plugin));
+        self.site_plugins.write().push(Box::new(plugin));
         Ok(())
     }
 
-    async fn get_available_rules_async(&self) -> Vec<RuleDisplay> {
-        let plugins = self.plugins.lock().await;
+    pub fn get_available_rules(&self) -> Vec<RuleDisplay> {
+        let plugins = self.plugins.read();
         let page_rules: Vec<RuleDisplay> = plugins
             .values()
             .flat_map(|plugin| plugin.available_rules())
             .collect();
         let site_rules = self
             .site_plugins
-            .lock()
-            .await
+            .read()
             .iter()
             .flat_map(|plugin| plugin.available_rules())
             .collect();
@@ -80,16 +79,15 @@ impl PluginRegistry {
         [page_rules, site_rules].concat()
     }
 
-    pub fn get_available_rules(&self) -> Vec<RuleDisplay> {
-        futures::executor::block_on(self.get_available_rules_async())
-    }
-
     pub async fn analyze_async(&self, page: &Page) -> Result<Vec<RuleResult>, PageError> {
         let config = self.get_config()?;
-        let plugins = self.plugins.lock().await;
+        let plugins = self.plugins.read();
         let futures = plugins
             .values()
-            .map(|plugin| plugin.analyze_async(page, config));
+            .map(|plugin| plugin.analyze_async(page, config))
+            .collect::<Vec<_>>();
+        // drop(plugins); // Drop the lock before awaiting
+
         let results = futures::future::join_all(futures)
             .await
             .into_iter()
@@ -97,7 +95,7 @@ impl PluginRegistry {
             .collect();
 
         // Run site plugins
-        for plugin in self.site_plugins.lock().await.iter_mut() {
+        for plugin in self.site_plugins.read().iter() {
             let _ = plugin.after_page_hook(Arc::new(StdMutex::new(page.clone())), &results);
         }
         Ok(results)
@@ -108,14 +106,13 @@ impl PluginRegistry {
         let results = futures::executor::block_on(async {
             let r = self
                 .plugins
-                .lock()
-                .await
+                .read()
                 .values()
                 .flat_map(|plugin| plugin.analyze(page, config))
                 .collect();
 
             // Run site plugins
-            for plugin in self.site_plugins.lock().await.iter_mut() {
+            for plugin in self.site_plugins.read().iter() {
                 let _ = plugin.after_page_hook(Arc::new(StdMutex::new(page.clone())), &r);
             }
 
@@ -129,8 +126,7 @@ impl PluginRegistry {
         let config = self.get_config()?;
         let results = self
             .site_plugins
-            .lock()
-            .await
+            .read()
             .iter()
             .flat_map(|plugin| plugin.analyze(site, config))
             .collect();
@@ -155,7 +151,7 @@ impl PluginRegistry {
 
 impl Default for PluginRegistry {
     fn default() -> Self {
-        let mut registry = Self::new();
+        let registry = Self::new();
         futures::executor::block_on(async {
             let _ = registry.register(ImagePlugin::new()).await;
             let _ = registry.register(SeoBasicPlugin::new()).await;

@@ -47,10 +47,6 @@ impl SeoPlugin for ImagePlugin {
         vec![]
     }
 
-    fn initialize(&mut self, _registry: &PluginRegistry) -> Result<(), String> {
-        Ok(())
-    }
-
     fn available_rules(&self) -> Vec<Rule> {
         vec![
             Rule {

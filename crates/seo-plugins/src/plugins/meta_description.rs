@@ -34,10 +34,6 @@ impl SeoPlugin for MetaDescriptionPlugin {
         self
     }
 
-    fn initialize(&mut self, _registry: &PluginRegistry) -> Result<(), String> {
-        Ok(())
-    }
-
     fn available_rules(&self) -> Vec<Rule> {
         vec![
             Rule {

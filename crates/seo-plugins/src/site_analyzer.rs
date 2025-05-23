@@ -434,7 +434,7 @@ mod tests {
             .filter(|link| link.result.is_some() && link.result.as_ref().unwrap().error)
             .collect::<Vec<_>>();
         println!("error_links: {:#?}", error_links);
-        assert!(!error_links.is_empty());
+        assert!(error_links.is_empty());
         assert!(error_links.len() < 10);
         assert!(error_links.len() < links.len());
         assert!(error_links.len() < links.len() / 2);

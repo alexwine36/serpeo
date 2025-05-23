@@ -208,8 +208,9 @@ mod tests {
         for path in &["/base", "/index-0", "/index-1"] {
             assert!(
                 sitemap_urls.contains(&format!("{}{}", base_url_clone, path)),
-                "Sitemap URL not found: {}",
-                format!("{}{}", base_url_clone, path)
+                "Sitemap URL not found: {}{}",
+                base_url_clone,
+                path
             );
         }
     }
@@ -227,8 +228,9 @@ mod tests {
             let path = &"/defined";
             assert!(
                 sitemap_urls.contains(&format!("{}{}", base_url_clone, path)),
-                "Sitemap URL not found: {}",
-                format!("{}{}", base_url_clone, path)
+                "Sitemap URL not found: {}{}",
+                base_url_clone,
+                path
             );
         }
     }

@@ -47,11 +47,9 @@ impl SitePlugin for MetaDescriptionSitePlugin {
     fn description(&self) -> &str {
         "Checks if meta descriptions are unique across pages"
     }
-    fn initialize(&mut self, _registry: &mut PluginRegistry) -> Result<(), String> {
-        Ok(())
-    }
+
     fn after_page_hook(
-        &mut self,
+        &self,
         page: Arc<StdMutex<Page>>,
         _results: &Vec<RuleResult>,
     ) -> Result<(), String> {
