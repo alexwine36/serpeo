@@ -1,5 +1,11 @@
 # serpeo
 
+## 1.1.2
+
+### Patch Changes
+
+- 399707a: Removed unwraps from seo-plugins and main app
+
 ## 1.1.1
 
 ### Patch Changes
