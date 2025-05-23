@@ -66,11 +66,20 @@ pub fn setup_listeners(app: &tauri::AppHandle) {
             .map_err(|e| anyhow::anyhow!("Mutex poisoned: {}", e))?
             .site_run_id
             .expect("Site run id is not set");
-        if let AnalysisProgressType::AnalyzedPage(page_link) = payload.progress_type {
-            storage_clone
-                .insert_many_page_rule_results(site_run_id, page_link)
-                .await?;
+        match payload.progress_type {
+            AnalysisProgressType::AnalyzedPage(page_link) => {
+                storage_clone
+                    .insert_many_page_rule_results(site_run_id, page_link)
+                    .await?;
+            }
+            AnalysisProgressType::AnalyzedSite(site_result) => {
+                storage_clone
+                    .insert_many_site_rule_results(site_run_id, site_result)
+                    .await?;
+            }
+            _ => {}
         }
+
         Ok(())
     });
     AnalysisFinished::listen_any_spawn(app, |data, app| async move {

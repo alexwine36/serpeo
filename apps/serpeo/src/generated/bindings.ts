@@ -95,7 +95,7 @@ export const STORE_FILE = "store.json" as const;
 
 export type AnalysisFinished = { site_run_id: number; result: CrawlResult }
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
-export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink }
+export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink } | { AnalyzedSite: RuleResult[] }
 export type AnalysisStart = { base_url: string }
 export type CategoryDetailResponse = { data: Partial<{ [key in DbRuleCategory]: FlatRuleResult[] }> }
 export type CategoryResult = { total: number; passed: number; failed: number }

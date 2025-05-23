@@ -1,16 +1,17 @@
 use std::collections::{HashMap, HashSet};
 
 use futures::stream::{self, StreamExt};
+use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::sync::Arc;
 use tauri_specta::Event;
 use thiserror::Error;
-use tokio::sync::{Mutex, MutexGuard};
+
 use url::Url;
 
 use crate::utils::{
-    config::RuleResult,
+    config::{RuleResult, SiteCheckContext},
     link_parser::{FromUrl, LinkParseError, LinkType, parse_link},
     page::{Page, PageError},
     registry::PluginRegistry,
@@ -55,6 +56,7 @@ pub struct CrawlResult {
 pub enum AnalysisProgressType {
     FoundLink,
     AnalyzedPage(PageLink),
+    AnalyzedSite(Vec<RuleResult>),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Type, Event)]
@@ -77,13 +79,15 @@ pub enum SiteAnalyzerError {
     PageError(#[from] PageError),
     #[error("Sitemap parser error: {0}")]
     SitemapParserError(#[from] SitemapParserError),
+    #[error("Link not found: {0}")]
+    LinkNotFound(String),
 }
 
 pub struct SiteAnalyzer {
     url: Url,
-    links: Arc<Mutex<HashMap<String, PageLink>>>,
-    registry: Arc<Mutex<PluginRegistry>>,
-    progress_callback: Arc<Mutex<ProgressCallback>>,
+    links: Arc<RwLock<HashMap<String, PageLink>>>,
+    registry: Arc<RwLock<PluginRegistry>>,
+    progress_callback: Arc<RwLock<ProgressCallback>>,
 }
 
 impl SiteAnalyzer {
@@ -91,9 +95,9 @@ impl SiteAnalyzer {
         let url = url.to_url().map_err(SiteAnalyzerError::UrlParseError)?;
         Ok(Self {
             url,
-            links: Arc::new(Mutex::new(HashMap::new())),
-            registry: Arc::new(Mutex::new(registry)),
-            progress_callback: Arc::new(Mutex::new(None)),
+            links: Arc::new(RwLock::new(HashMap::new())),
+            registry: Arc::new(RwLock::new(registry)),
+            progress_callback: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -101,43 +105,43 @@ impl SiteAnalyzer {
         let url = url.to_url().map_err(SiteAnalyzerError::UrlParseError)?;
         Ok(Self {
             url,
-            links: Arc::new(Mutex::new(HashMap::new())),
-            registry: Arc::new(Mutex::new(PluginRegistry::default_with_config())),
-            progress_callback: Arc::new(Mutex::new(None)),
+            links: Arc::new(RwLock::new(HashMap::new())),
+            registry: Arc::new(RwLock::new(PluginRegistry::default_with_config())),
+            progress_callback: Arc::new(RwLock::new(None)),
         })
     }
 
     pub async fn with_progress_callback(
-        self,
+        &self,
         callback: impl Fn(AnalysisProgress) + Send + Sync + 'static,
-    ) -> Self {
-        let _ = self
-            .progress_callback
-            .lock()
-            .await
-            .insert(Box::new(callback));
+    ) -> &Self {
+        let _ = self.progress_callback.write().insert(Box::new(callback));
         self
     }
 
     pub fn get_links(&self) -> HashMap<String, PageLink> {
-        futures::executor::block_on(async { self.links.lock().await.clone() })
+        self.links.read().clone()
     }
 
     async fn report_progress(
         &self,
         progress_type: AnalysisProgressType,
         url: Option<String>,
-        links: &MutexGuard<'_, HashMap<String, PageLink>>,
+        // links: &RwLockReadGuard<'_, HashMap<String, PageLink>>,
     ) {
-        if let Some(callback) = &self.progress_callback.lock().await.as_ref() {
+        if let Some(callback) = &self.progress_callback.read().as_ref() {
             callback(AnalysisProgress {
                 progress_type,
                 url,
-                total_pages: links
+                total_pages: self
+                    .links
+                    .read()
                     .values()
                     .filter(|link| link.link_type == LinkType::Internal)
                     .count() as u32,
-                completed_pages: links
+                completed_pages: self
+                    .links
+                    .read()
                     .values()
                     .filter(|link| link.link_type == LinkType::Internal && link.result.is_some())
                     .count() as u32,
@@ -152,18 +156,71 @@ impl SiteAnalyzer {
         Ok(sitemap_urls)
     }
 
+    async fn record_site_results(
+        &self,
+        site_result: &[RuleResult],
+    ) -> Result<(), SiteAnalyzerError> {
+        for result in site_result {
+            match &result.context {
+                SiteCheckContext::Urls(urls) => {
+                    for url in urls {
+                        self.add_link(
+                            url,
+                            PageLinkSource {
+                                link_source_type: LinkSourceType::Link,
+                                url: self.url.to_string(),
+                            },
+                        )
+                        .await?;
+                        self.record_page_result(
+                            &url.to_url().map_err(SiteAnalyzerError::UrlParseError)?,
+                            PageResult {
+                                error: false,
+                                results: vec![result.clone()],
+                            },
+                        )
+                        .await?;
+                    }
+                }
+                SiteCheckContext::Values(values) => {}
+
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
     async fn record_page_result(
-        &mut self,
+        &self,
         url: &Url,
         result: PageResult,
     ) -> Result<(), SiteAnalyzerError> {
-        let mut links = self.links.lock().await;
-        if let Some(link) = links.get_mut(&url.to_string()) {
-            link.result = Some(result);
+        // let links = self.links;
+        // let mut links = self.links.write();
+        {
+            if let Some(link) = self.links.write().get_mut(&url.to_string()) {
+                if link.result.is_none() {
+                    link.result = Some(result);
+                } else if !result.results.is_empty() {
+                    link.result
+                        .as_mut()
+                        .expect("link.result is None")
+                        .results
+                        .extend(result.results);
+                }
+            }
+        }
+        {
+            let link = self
+                .links
+                .read()
+                .get(&url.to_string())
+                .ok_or(SiteAnalyzerError::LinkNotFound(url.to_string()))?
+                .clone();
             self.report_progress(
                 AnalysisProgressType::AnalyzedPage(link.clone()),
                 Some(url.to_string()),
-                &links,
+                // &links,
             )
             .await;
         }
@@ -183,7 +240,7 @@ impl SiteAnalyzer {
     }
 
     async fn add_link(
-        &mut self,
+        &self,
         url: &str,
         page_link_source: PageLinkSource,
     ) -> Result<(), SiteAnalyzerError> {
@@ -196,13 +253,13 @@ impl SiteAnalyzer {
         let url_string = Self::clean_url(link.href.clone());
         let url_string2 = Self::clean_url(link.href.clone());
         let url_string3 = Self::clean_url(link.href.clone());
-        let mut links = self.links.lock().await;
-        if let Some(existing) = links.get_mut(&url_string) {
+
+        if let Some(existing) = self.links.write().get_mut(&url_string) {
             existing.found_in.insert(page_link_source);
         } else {
             let mut found_in = HashSet::new();
             found_in.insert(page_link_source);
-            links.insert(
+            self.links.write().insert(
                 url_string,
                 PageLink {
                     url: url_string2,
@@ -211,13 +268,14 @@ impl SiteAnalyzer {
                     result: None,
                 },
             );
-            self.report_progress(AnalysisProgressType::FoundLink, Some(url_string3), &links)
+            println!("links length: {}", self.links.read().len());
+            self.report_progress(AnalysisProgressType::FoundLink, Some(url_string3))
                 .await;
         }
         Ok(())
     }
 
-    async fn process_page(&mut self, url: Url) -> Result<(), SiteAnalyzerError> {
+    async fn process_page(&self, url: Url) -> Result<(), SiteAnalyzerError> {
         let page = Page::from_url(url.clone())
             .await
             .map_err(SiteAnalyzerError::PageError);
@@ -237,7 +295,7 @@ impl SiteAnalyzer {
 
         let page = page?;
         let results = {
-            let registry = self.registry.lock().await;
+            let registry = self.registry.read().clone();
             registry.analyze_async(&page).await?
         };
 
@@ -267,7 +325,7 @@ impl SiteAnalyzer {
         Ok(())
     }
 
-    pub async fn crawl(&mut self) -> Result<CrawlResult, SiteAnalyzerError> {
+    pub async fn crawl(&self) -> Result<CrawlResult, SiteAnalyzerError> {
         let sitemap_urls = self.fetch_sitemap().await?;
         println!("sitemap_urls: {:#?}", sitemap_urls);
         for sitemap_url in sitemap_urls {
@@ -286,7 +344,7 @@ impl SiteAnalyzer {
         }
         {
             self.add_link(
-                &self.url.to_string(),
+                self.url.as_ref(),
                 PageLinkSource {
                     link_source_type: LinkSourceType::Root,
                     url: self.url.to_string(),
@@ -297,13 +355,14 @@ impl SiteAnalyzer {
 
         loop {
             // Get all unprocessed internal links
-            let links = self.links.lock().await;
-            let internal_links: Vec<String> = links
+            let internal_links: Vec<String> = self
+                .links
+                .read()
                 .iter()
                 .filter(|(_, link)| link.link_type == LinkType::Internal && link.result.is_none())
                 .map(|(url, _)| url.clone())
                 .collect();
-            drop(links);
+            // drop(links);
 
             if internal_links.is_empty() {
                 break;
@@ -317,18 +376,7 @@ impl SiteAnalyzer {
                         .to_url()
                         .map_err(SiteAnalyzerError::UrlParseError)
                         .unwrap();
-                    let registry = self.registry.clone();
-                    let links = self.links.clone();
-                    let progress_callback = self.progress_callback.clone();
-                    async move {
-                        let mut analyzer = SiteAnalyzer {
-                            url: url.clone(),
-                            links,
-                            registry,
-                            progress_callback,
-                        };
-                        analyzer.process_page(url).await
-                    }
+                    async move { self.process_page(url).await }
                 })
                 .buffer_unordered(10);
 
@@ -337,8 +385,13 @@ impl SiteAnalyzer {
             }
         }
 
-        let site_result = self.registry.lock().await.analyze_site(self).await?;
-        let links = self.links.lock().await;
+        let registry = self.registry.read().clone();
+
+        let site_result = registry.analyze_site(self).await?;
+
+        self.record_site_results(&site_result).await?;
+
+        let links = self.links.read();
         let page_results: Vec<PageLink> = links.values().cloned().collect();
         Ok(CrawlResult {
             page_results,
@@ -357,6 +410,7 @@ mod tests {
 
     use std::convert::Infallible;
     use std::net::SocketAddr;
+    use std::sync::Mutex as StdMutex;
     use tokio::net::TcpListener;
 
     #[test]
@@ -369,12 +423,99 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_site_crawl_with_progress_callback() {
+        let addr = start_weird_site_server().await;
+        let base_url = format!("http://{}", addr);
+        let site = SiteAnalyzer::new_with_default(base_url).unwrap();
+        site.crawl().await.unwrap();
+        let links = site.links.read();
+        let error_links = links
+            .values()
+            .filter(|link| link.result.is_some() && link.result.as_ref().unwrap().error)
+            .collect::<Vec<_>>();
+        println!("error_links: {:#?}", error_links);
+        assert!(!error_links.is_empty());
+        assert!(error_links.len() < 10);
+        assert!(error_links.len() < links.len());
+        assert!(error_links.len() < links.len() / 2);
+        assert!(error_links.len() < links.len() / 3);
+    }
+
+    #[tokio::test]
+    async fn test_site_crawl_with_progress() {
+        let addr = start_weird_site_server().await;
+        let base_url = format!("http://{}", addr);
+        let local_results: Arc<StdMutex<HashMap<String, PageLink>>> =
+            Arc::new(StdMutex::new(HashMap::new()));
+        let local_results_clone = local_results.clone();
+        let site = SiteAnalyzer::new_with_default(base_url).unwrap();
+        let site = site
+            .with_progress_callback(move |progress| {
+                let url = progress.url.clone().unwrap();
+                let url_clone = url.clone();
+                match progress.progress_type {
+                    AnalysisProgressType::FoundLink => {
+                        local_results_clone.lock().unwrap().insert(
+                            url_clone,
+                            PageLink {
+                                url: url.to_string(),
+                                link_type: LinkType::Internal,
+                                found_in: HashSet::new(),
+                                result: None,
+                            },
+                        );
+                    }
+                    AnalysisProgressType::AnalyzedPage(link) => {
+                        local_results_clone
+                            .lock()
+                            .unwrap()
+                            .insert(link.url.clone(), link);
+                    }
+                    _ => {}
+                }
+            })
+            .await;
+        let results = site.crawl().await.unwrap();
+        let links = local_results.lock().unwrap();
+        assert_eq!(links.len() as u32, results.total_pages);
+        let base_url = format!("http://{}", addr);
+
+        let test_paths = [
+            "/post1",
+            "/post2",
+            "/post3",
+            "/sitemap-page-1",
+            "/sitemap-page-2",
+            "/sitemap-page-3",
+            "/category1",
+            "/category2",
+            "/category3",
+        ];
+
+        for path in test_paths {
+            assert!(
+                results
+                    .page_results
+                    .iter()
+                    .any(|result| result.url == format!("{}{}", base_url, path)),
+                "Results - path: {} not found",
+                path
+            );
+            assert!(
+                links.get(&format!("{}{}", base_url, path)).is_some(),
+                "path: {} not found",
+                path
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn test_site_crawl() {
         let addr = start_server().await;
         let base_url = format!("http://{}", addr);
-        let mut site = SiteAnalyzer::new_with_default(base_url).unwrap();
+        let site = SiteAnalyzer::new_with_default(base_url).unwrap();
         let results = site.crawl().await.unwrap();
-        let links = site.links.lock().await;
+        let links = site.links.read();
         // println!("links: {:#?}", links);
         // assert_eq!(links.len(), 7);
         let base_url = format!("http://{}", addr);
@@ -394,10 +535,10 @@ mod tests {
             // println!("result: {:#?}", result);
             if result.link_type == LinkType::Internal {
                 assert!(result.result.is_some());
-                assert!(result.result.unwrap().results.len() > 0);
+                assert!(!result.result.unwrap().results.is_empty());
             }
         }
-        assert!(results.site_result.len() > 0);
+        assert!(!results.site_result.is_empty());
         assert!(
             results
                 .site_result
@@ -433,7 +574,7 @@ mod tests {
                     let base_url = base_url.clone();
                     async move {
                         match req.uri().path() {
-                            "/" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                            "/" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <!DOCTYPE html>
                                 <html>
@@ -452,9 +593,10 @@ mod tests {
                                         
                                     </body>
                                 </html>
-                            "#,
-                            )))),
-                            "/page1" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                            "#
+                                .to_string(),
+                            ))),
+                            "/page1" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <!DOCTYPE html>
                                 <html>
@@ -472,9 +614,10 @@ mod tests {
                                         
                                     </body>
                                 </html>
-                            "#,
-                            )))),
-                            "/page5" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                            "#
+                                .to_string(),
+                            ))),
+                            "/page5" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <!DOCTYPE html>
                                 <html>
@@ -492,9 +635,10 @@ mod tests {
                                         
                                     </body>
                                 </html>
-                            "#,
-                            )))),
-                            "/page6" => Ok::<_, Infallible>(Response::new(Body::from(format!(
+                            "#
+                                .to_string(),
+                            ))),
+                            "/page6" => Ok::<_, Infallible>(Response::new(Body::from(
                                 r#"
                                 <!DOCTYPE html>
                                 <html>
@@ -512,8 +656,9 @@ mod tests {
                                         
                                     </body>
                                 </html>
-                            "#,
-                            )))),
+                            "#
+                                .to_string(),
+                            ))),
                             "/sitemap.xml" => {
                                 let sitemap = format!(
                                     r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -527,6 +672,171 @@ mod tests {
                                 Ok(Response::new(Body::from(sitemap)))
                             }
 
+                            _ => Ok(Response::new(Body::from("404"))),
+                        }
+                    }
+                }))
+            }
+        });
+
+        tokio::spawn(async move {
+            Server::from_tcp(listener.into_std().unwrap())
+                .unwrap()
+                .serve(make_svc)
+                .await
+                .unwrap();
+        });
+
+        addr
+    }
+
+    async fn start_weird_site_server() -> SocketAddr {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+        let listener = TcpListener::bind(addr).await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let base_url = format!("http://{}", addr);
+
+        let make_svc = make_service_fn(move |_conn| {
+            let base_url = base_url.clone();
+            async move {
+                Ok::<_, Infallible>(service_fn(move |req| {
+                    let base_url = base_url.clone();
+                    async move {
+                        match req.uri().path() {
+                            "/" => Ok::<_, Infallible>(Response::new(Body::from(
+                                r#"
+                                <!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8">
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        
+                                        
+                                    </head>
+                                    <body>
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page1">Page 1</a>
+                                        <a href="/page2">Page 2</a>
+
+                                        
+                                    </body>
+                                </html>
+                            "#
+                                .to_string(),
+                            ))),
+                            "/page1" => Ok::<_, Infallible>(Response::new(Body::from(
+                                r#"
+                                <!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8">
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        
+                                        
+                                    </head>
+                                    <body>
+                                        <a href="/page5">Page 5</a>
+                                        
+
+                                        
+                                    </body>
+                                </html>
+                            "#
+                                .to_string(),
+                            ))),
+                            "/page5" => Ok::<_, Infallible>(Response::new(Body::from(
+                                r#"
+                                <!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8">
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        
+                                        
+                                    </head>
+                                    <body>
+                                        <a href="/page6">Page 6</a>
+                                        
+
+                                        
+                                    </body>
+                                </html>
+                            "#
+                                .to_string(),
+                            ))),
+                            "/page6" => Ok::<_, Infallible>(Response::new(Body::from(
+                                r#"
+                                <!DOCTYPE html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8">
+                                        <title>Test Page</title>
+                                        <meta name="description" content="Test description">
+                                        
+                                        
+                                    </head>
+                                    <body>
+                                        <a href="/page4">Page 4</a>
+                                        
+
+                                        
+                                    </body>
+                                </html>
+                            "#
+                                .to_string(),
+                            ))),
+                            "/sitemap_index.xml" => {
+                                let sitemap = format!(
+                                    r#"<?xml version="1.0" encoding="UTF-8"?>
+                                    <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                                    <sitemap><loc>{}/post-sitemap.xml</loc></sitemap>
+                                    <sitemap><loc>{}/page-sitemap.xml</loc></sitemap>
+                                    <sitemap><loc>{}/category-sitemap.xml</loc></sitemap>
+                                    
+                                    </sitemapindex>"#,
+                                    base_url, base_url, base_url
+                                );
+                                Ok(Response::new(Body::from(sitemap)))
+                            }
+                            "/post-sitemap.xml" => {
+                                let sitemap = format!(
+                                    r#"<?xml version="1.0" encoding="UTF-8"?>
+                                    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+                                    <url><loc>{}/post1</loc></url>
+                                    <url><loc>{}/post2</loc></url>
+                                    <url><loc>{}/post3</loc></url>
+                                    </urlset>"#,
+                                    base_url, base_url, base_url
+                                );
+                                Ok(Response::new(Body::from(sitemap)))
+                            }
+                            "/page-sitemap.xml" => {
+                                let sitemap = format!(
+                                    r#"<?xml version="1.0" encoding="UTF-8"?>
+                                    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+                                    <url><loc>{}/sitemap-page-1</loc></url>
+                                    <url><loc>{}/sitemap-page-2</loc></url>
+                                    <url><loc>{}/sitemap-page-3</loc></url>
+                                    </urlset>"#,
+                                    base_url, base_url, base_url
+                                );
+                                Ok(Response::new(Body::from(sitemap)))
+                            }
+                            "/category-sitemap.xml" => {
+                                let sitemap = format!(
+                                    r#"<?xml version="1.0" encoding="UTF-8"?>
+                                    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+                                    <url><loc>{}/category1</loc></url>
+                                    <url><loc>{}/category2</loc></url>
+                                    <url><loc>{}/category3</loc></url>
+                                    </urlset>"#,
+                                    base_url, base_url, base_url
+                                );
+                                Ok(Response::new(Body::from(sitemap)))
+                            }
                             _ => Ok(Response::new(Body::from("404"))),
                         }
                     }

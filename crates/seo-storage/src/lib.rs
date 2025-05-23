@@ -317,6 +317,13 @@ impl SeoStorage {
     ) -> Result<(), DbErr> {
         for rule_result in site_rule_results {
             let rule_result_clone = rule_result.clone();
+            let on_conflict = OnConflict::columns([
+                page_rule_result::Column::SitePageId,
+                page_rule_result::Column::RuleId,
+            ])
+            .update_column(page_rule_result::Column::Passed)
+            .to_owned();
+
             match rule_result.context {
                 SiteCheckContext::Urls(urls) => {
                     for url in urls {
@@ -332,6 +339,7 @@ impl SeoStorage {
                             rule_result.passed,
                         );
                         let _ = PageRuleResult::insert(site_rule_result)
+                            .on_conflict(on_conflict.clone())
                             .exec(&self.db)
                             .await
                             .unwrap();
@@ -352,15 +360,8 @@ impl SeoStorage {
                                 rule_result_clone.passed,
                             );
 
-                            let on_conflict = OnConflict::columns([
-                                page_rule_result::Column::SitePageId,
-                                page_rule_result::Column::RuleId,
-                            ])
-                            .update_column(page_rule_result::Column::Passed)
-                            .to_owned();
-
                             let _ = PageRuleResult::insert(site_rule_result)
-                                .on_conflict(on_conflict)
+                                .on_conflict(on_conflict.clone())
                                 .exec(&self.db)
                                 .await?;
                         }
