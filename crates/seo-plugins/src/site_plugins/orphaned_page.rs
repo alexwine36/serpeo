@@ -6,7 +6,6 @@ use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
     config::{RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
-    registry::PluginRegistry,
     site_plugin::SitePlugin,
 };
 

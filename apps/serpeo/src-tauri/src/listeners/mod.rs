@@ -4,7 +4,7 @@ use seo_storage::enums::site_run_status::SiteRunStatus;
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use std::{future::Future, sync::Mutex};
-use tauri::{ipc::private::ResultKind, Listener, Manager};
+use tauri::{Listener, Manager};
 
 use tauri_specta::Event;
 

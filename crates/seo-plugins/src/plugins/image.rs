@@ -5,7 +5,6 @@ use specta::Type;
 
 use crate::utils::config::{CheckResult, Rule, RuleCategory, Severity};
 use crate::utils::page_plugin::SeoPlugin;
-use crate::utils::registry::PluginRegistry;
 
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct ImageData {

@@ -4,7 +4,6 @@ use std::any::Any;
 use crate::utils::{
     config::{CheckResult, Rule, RuleCategory, Severity},
     page_plugin::SeoPlugin,
-    registry::PluginRegistry,
 };
 use scraper::Selector;
 
