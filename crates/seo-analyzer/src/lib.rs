@@ -27,7 +27,8 @@ pub async fn crawl_url(
     let url = config
         .get_url()
         .map_err(|e| SeoError::UrlParseError(e.to_string()))?;
-    let site = SiteAnalyzer::new_with_default(url);
+    let site =
+        SiteAnalyzer::new_with_default(url).map_err(|e| SeoError::AnalysisError(e.to_string()))?;
     site.with_progress_callback(move |progress| {
         progress_callback(progress);
     })

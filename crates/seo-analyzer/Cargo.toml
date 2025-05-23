@@ -15,3 +15,7 @@ specta = { workspace = true }
 
 [dev-dependencies]
 hyper = { workspace = true }
+
+
+[lints.clippy]
+unwrap_used = "deny"

@@ -12,10 +12,12 @@ pub trait SitePlugin: Send + Sync + 'static {
     fn name(&self) -> &str;
     fn description(&self) -> &str;
     fn as_any(&self) -> &dyn Any;
-    fn initialize(&mut self, registry: &mut super::registry::PluginRegistry) -> Result<(), String>;
+    fn initialize(&self, _registry: &super::registry::PluginRegistry) -> Result<(), String> {
+        Ok(())
+    }
     fn available_rules(&self) -> Vec<SiteRule>;
     fn after_page_hook(
-        &mut self,
+        &self,
         _page: Arc<StdMutex<Page>>,
         _results: &Vec<RuleResult>,
     ) -> Result<(), String> {
@@ -48,7 +50,6 @@ pub trait SitePlugin: Send + Sync + 'static {
             .filter(|rule| config.is_rule_enabled(rule.id))
             .collect();
 
-        
         stream::iter(rules)
             .map(|rule| {
                 let result = self.check(rule, site);

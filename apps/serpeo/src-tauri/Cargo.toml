@@ -31,7 +31,10 @@ specta = { workspace=true }
 seo-storage = { workspace = true }
 tokio = { workspace = true }
 tauri-plugin-store = "2"
+anyhow = "1.0.98"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]
 
+[lints.clippy]
+unwrap_used = "deny"

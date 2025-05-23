@@ -18,7 +18,9 @@ pub trait SeoPlugin: Send + Sync + 'static {
     }
 
     // Initialize the plugin with access to its dependencies
-    fn initialize(&mut self, registry: &PluginRegistry) -> Result<(), String>;
+    fn initialize(&self, _registry: &PluginRegistry) -> Result<(), String> {
+        Ok(())
+    }
 
     // Get available rules this plugin can check
     fn available_rules(&self) -> Vec<Rule>;
@@ -30,7 +32,6 @@ pub trait SeoPlugin: Send + Sync + 'static {
             .filter(|rule| config.is_rule_enabled(rule.id))
             .collect();
 
-        
         stream::iter(rules)
             .map(|rule| {
                 let result = (rule.check)(page);

@@ -69,13 +69,15 @@ pub fn init(app: &AppHandle) {
     let store = match CrawlSettingsStore::get(app) {
         Ok(Some(store)) => store,
         Ok(None) => CrawlSettingsStore::default(),
-        e => {
-            e.unwrap();
+        Err(e) => {
+            eprintln!("Failed to get crawl settings store: {e}");
             return;
         }
     };
 
-    store.save(app).unwrap();
+    store
+        .save(app)
+        .expect("Failed to save crawl settings store");
 
     println!("CrawlSettingsState managed");
 }

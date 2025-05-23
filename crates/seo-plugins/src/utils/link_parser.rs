@@ -1,4 +1,3 @@
-
 use serde::{Deserialize, Serialize};
 use specta::Type;
 use thiserror::Error;
@@ -33,12 +32,13 @@ pub fn parse_link<W: FromUrl>(link: &str, base_url: W) -> Result<Link, LinkParse
         .to_url()
         .map_err(|e| LinkParseError::LinkParseError(e.to_string()))?;
     let link = if link.starts_with("http") {
-        Url::parse(link).unwrap()
+        Url::parse(link).map_err(|e| LinkParseError::UrlParseError(e.to_string()))?
     } else {
         base_url.join(link).unwrap_or_else(|_| base_url.clone())
     };
+    let base_host_str = base_url.host_str().unwrap_or("");
 
-    let link_type = if link.host_str() == Some(base_url.host_str().unwrap()) {
+    let link_type = if link.host_str() == Some(base_host_str) {
         LinkType::Internal
     } else if link.scheme() == "mailto" {
         LinkType::Mailto

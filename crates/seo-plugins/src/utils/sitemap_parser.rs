@@ -1,16 +1,17 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
+use parking_lot::RwLock;
 use reqwest::Client;
 use thiserror::Error;
 use url::Url;
 
-use super::link_parser::{FromUrl, parse_link};
+use super::link_parser::{FromUrl, LinkParseError, parse_link};
 use super::page::{Page, PageError};
 
 #[derive(Debug, Error)]
 pub enum SitemapParserError {
     #[error("Failed to parse URL: {0}")]
-    UrlParseError(String),
+    UrlParseError(#[from] LinkParseError),
     #[error("Failed to parse HTML: {0}")]
     HtmlParseError(String),
     #[error("Failed to parse sitemap: {0}")]
@@ -21,17 +22,18 @@ pub enum SitemapParserError {
     ClientError(String),
 }
 
+type SitemapUrls = HashMap<String, Option<HashSet<String>>>;
+
 pub struct SitemapParser {
     _url: Url,
     base_url: Url,
     client: Client,
+    sitemap_urls: RwLock<SitemapUrls>,
 }
 
 impl SitemapParser {
     pub fn new<T: FromUrl>(url: T) -> Result<Self, SitemapParserError> {
-        let url = url
-            .to_url()
-            .map_err(|e| SitemapParserError::UrlParseError(e.to_string()))?;
+        let url = url.to_url().map_err(SitemapParserError::UrlParseError)?;
         let base_url = url.clone();
         let client = Client::builder()
             .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
@@ -41,14 +43,23 @@ impl SitemapParser {
             _url: url,
             base_url,
             client,
+            sitemap_urls: RwLock::new(SitemapUrls::new()),
         })
     }
 
     pub async fn get_sitemap(&self) -> Result<HashSet<String>, SitemapParserError> {
-        let sitemap_urls = self.fetch_sitemap().await?;
-        // let mut all_urls = HashSet::new();
-        Ok(sitemap_urls)
-        // for sitemap_url in sitemap_urls {
+        self.fetch_sitemap().await?;
+
+        let mut results = HashSet::new();
+        let sitemaps = self.sitemap_urls.read();
+        // println!("Sitemaps: {:?}", sitemaps);
+        for (sitemap, urls) in sitemaps.iter() {
+            if let Some(urls) = urls {
+                println!("Sitemap: {:?}, urls: {:?}", sitemap, urls.clone().len());
+                results.extend(urls.iter().cloned());
+            }
+        }
+        Ok(results)
     }
 
     async fn discover_sitemap_url(&self) -> Result<Option<String>, SitemapParserError> {
@@ -67,34 +78,32 @@ impl SitemapParser {
         content: &str,
     ) -> Result<HashSet<String>, SitemapParserError> {
         let content_clone = content.to_string();
-        tokio::task::spawn_blocking(move || -> Result<HashSet<String>, SitemapParserError> {
-            let document = match roxmltree::Document::parse(&content_clone) {
-                Ok(doc) => doc,
-                Err(_) => return Ok(HashSet::new()), // Return empty set on parse failure
-            };
 
-            let mut urls = HashSet::new();
-            for node in document.descendants() {
-                if node.has_tag_name("loc") {
-                    if let Some(url) = node.text() {
-                        urls.insert(normalize_url(url));
-                    }
+        let document = match roxmltree::Document::parse(&content_clone) {
+            Ok(doc) => doc,
+            Err(_) => return Ok(HashSet::new()), // Return empty set on parse failure
+        };
+
+        let mut urls = HashSet::new();
+        for node in document.descendants() {
+            if node.has_tag_name("loc") {
+                if let Some(url) = node.text() {
+                    urls.insert(normalize_url(url));
                 }
             }
-            Ok(urls)
-        })
-        .await
-        .map_err(|e| SitemapParserError::SitemapError(e.to_string()))?
+        }
+        Ok(urls)
     }
 
-    async fn fetch_sitemap(&self) -> Result<HashSet<String>, SitemapParserError> {
-        let mut all_urls = HashSet::new();
-
+    async fn fetch_sitemap(&self) -> Result<(), SitemapParserError> {
         // Try to find sitemap URL from HTML first
-        let mut sitemap_urls = HashSet::new();
+        // let mut sitemap_urls = HashSet::new();
         if let Some(discovered_url) = self.discover_sitemap_url().await? {
-            let link = parse_link(&discovered_url, self.base_url.clone()).unwrap();
-            sitemap_urls.insert(normalize_url(&link.href));
+            let link = parse_link(&discovered_url, self.base_url.clone())
+                .map_err(SitemapParserError::UrlParseError)?;
+            self.sitemap_urls
+                .write()
+                .insert(normalize_url(&link.href), None);
         } else {
             // Fallback to common sitemap locations
             for path in &[
@@ -104,46 +113,63 @@ impl SitemapParser {
                 "/sitemap/sitemap.xml",
             ] {
                 if let Ok(url) = self.base_url.join(path) {
-                    sitemap_urls.insert(normalize_url(url.as_ref()));
+                    self.sitemap_urls
+                        .write()
+                        .insert(normalize_url(url.as_ref()), None);
                 }
             }
         }
 
-        // Process each potential sitemap URL
-        for sitemap_url in sitemap_urls {
-            println!("Fetching sitemap: {}", sitemap_url);
-            let response = match self.client.get(&sitemap_url).send().await {
-                Ok(resp) => resp,
-                Err(_) => continue,
+        loop {
+            let sitemap_urls: Vec<String> = {
+                let sitemap_urls = self.sitemap_urls.read().clone();
+                sitemap_urls
+                    .iter()
+                    .filter(|(_, is_processed)| is_processed.is_none())
+                    .map(|(url, _)| url.clone())
+                    .collect()
             };
 
-            let text = match response.text().await {
-                Ok(t) => t,
-                Err(_) => continue,
-            };
+            if sitemap_urls.is_empty() {
+                break;
+            }
 
-            let urls = self.parse_sitemap_urls(&text).await?;
+            let futures = sitemap_urls.iter().map(|url| self.read_sitemap(url));
+            let _results = futures::future::join_all(futures).await;
+        }
 
-            // Check if this is a sitemap index
-            let is_index = text.contains("<sitemapindex");
-            println!("Is index: {}", is_index);
-            if is_index {
-                // Fetch each referenced sitemap
-                for url in urls {
-                    if let Ok(resp) = self.client.get(&url).send().await {
-                        if let Ok(text) = resp.text().await {
-                            if let Ok(sub_urls) = self.parse_sitemap_urls(&text).await {
-                                all_urls.extend(sub_urls);
-                            }
-                        }
-                    }
-                }
-            } else {
-                all_urls.extend(urls);
+        Ok(())
+    }
+
+    async fn read_sitemap(&self, sitemap_url: &str) -> Result<(), SitemapParserError> {
+        println!("Fetching sitemap: {}", sitemap_url);
+        let response = self
+            .client
+            .get(sitemap_url)
+            .send()
+            .await
+            .map_err(|e| SitemapParserError::ClientError(e.to_string()))?;
+
+        let text = response
+            .text()
+            .await
+            .map_err(|e| SitemapParserError::ClientError(e.to_string()))?;
+
+        let urls = self.parse_sitemap_urls(&text).await?;
+        let urls_clone = urls.clone();
+        {
+            let mut sitemap_urls = self.sitemap_urls.write();
+            let current_url = sitemap_urls.entry(sitemap_url.to_string()).or_insert(None);
+            *current_url = Some(urls);
+        }
+        let is_index = text.contains("<sitemapindex");
+        if is_index {
+            for url in urls_clone {
+                self.sitemap_urls.write().insert(normalize_url(&url), None);
             }
         }
 
-        Ok(all_urls)
+        Ok(())
     }
 }
 
@@ -166,7 +192,7 @@ mod tests {
         let base_url = "https://employer.directory.boomerang-nm.com/";
         let sitemap_parser = SitemapParser::new(base_url).unwrap();
         let sitemap_urls = sitemap_parser.get_sitemap().await.unwrap();
-        println!("Sitemap URLs: {:?}", sitemap_urls);
+        // println!("Sitemap URLs: {:?}", sitemap_urls);
         assert!(!sitemap_urls.is_empty());
     }
 
@@ -182,8 +208,9 @@ mod tests {
         for path in &["/base", "/index-0", "/index-1"] {
             assert!(
                 sitemap_urls.contains(&format!("{}{}", base_url_clone, path)),
-                "Sitemap URL not found: {}",
-                format!("{}{}", base_url_clone, path)
+                "Sitemap URL not found: {}{}",
+                base_url_clone,
+                path
             );
         }
     }
@@ -201,8 +228,9 @@ mod tests {
             let path = &"/defined";
             assert!(
                 sitemap_urls.contains(&format!("{}{}", base_url_clone, path)),
-                "Sitemap URL not found: {}",
-                format!("{}{}", base_url_clone, path)
+                "Sitemap URL not found: {}{}",
+                base_url_clone,
+                path
             );
         }
     }

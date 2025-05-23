@@ -3,7 +3,6 @@ use std::any::Any;
 use crate::utils::{
     config::{CheckResult, Rule, RuleCategory, Severity},
     page_plugin::SeoPlugin,
-    registry::PluginRegistry,
 };
 
 // MetaDescription Plugin
@@ -32,10 +31,6 @@ impl SeoPlugin for MetaDescriptionPlugin {
     }
     fn as_any(&self) -> &dyn Any {
         self
-    }
-
-    fn initialize(&mut self, _registry: &PluginRegistry) -> Result<(), String> {
-        Ok(())
     }
 
     fn available_rules(&self) -> Vec<Rule> {

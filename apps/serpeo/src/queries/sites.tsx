@@ -46,6 +46,7 @@ export const useSiteByIdQuery = (id: number) => {
 
 export const useSiteRunCategoryResultQuery = (siteRunId: number) => {
   return useQuery({
+    refetchInterval: 1000,
     queryKey: ["siteRun", "categoryResult", siteRunId],
     queryFn: async () => {
       const siteRunCategoryResult = await commands.getCategoryResult(siteRunId);
@@ -64,6 +65,7 @@ export type SiteRunLinkModified = {
 
 export const useSiteRunLinkCountsQuery = (siteRunId: number) => {
   return useQuery({
+    refetchInterval: 1000,
     queryKey: ["siteRun", "linkCounts", siteRunId],
     queryFn: async (): Promise<SiteRunLinkModified[]> => {
       const siteRunLinkCounts = await commands.getSiteRunLinkCounts(siteRunId);
@@ -90,6 +92,7 @@ export const useSiteRunCategoryResultDetailQuery = (
   passed: boolean | null
 ) => {
   return useQuery({
+    refetchInterval: 1000,
     queryKey: ["siteRun", "categoryResultDetail", siteRunId, passed],
     queryFn: async () => {
       const siteRunCategoryResultDetail =

@@ -8,7 +8,6 @@ use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
     config::{RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
-    registry::PluginRegistry,
     site_plugin::SitePlugin,
 };
 
@@ -47,17 +46,15 @@ impl SitePlugin for MetaDescriptionSitePlugin {
     fn description(&self) -> &str {
         "Checks if meta descriptions are unique across pages"
     }
-    fn initialize(&mut self, _registry: &mut PluginRegistry) -> Result<(), String> {
-        Ok(())
-    }
+
     fn after_page_hook(
-        &mut self,
+        &self,
         page: Arc<StdMutex<Page>>,
         _results: &Vec<RuleResult>,
     ) -> Result<(), String> {
-        let page = page.lock().unwrap();
+        let page = page.lock().map_err(|e| e.to_string())?;
 
-        let mut page_descriptions = self.page_descriptions.lock().unwrap();
+        let mut page_descriptions = self.page_descriptions.lock().map_err(|e| e.to_string())?;
         let url = page.get_url().to_string();
         let meta_tags = page.extract_meta_tags();
 
@@ -85,6 +82,7 @@ impl SitePlugin for MetaDescriptionSitePlugin {
     fn check(&self, rule: &SiteRule, _site: &SiteAnalyzer) -> SiteCheckResult {
         match rule.id {
             "meta_description_uniqueness" => {
+                #[allow(clippy::unwrap_used)]
                 let page_descriptions = self.page_descriptions.lock().unwrap();
                 let mut found_descriptions = HashMap::new();
                 for (_url, page_description) in page_descriptions.iter() {

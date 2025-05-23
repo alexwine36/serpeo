@@ -15,6 +15,7 @@ url = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 roxmltree = { workspace = true }
+parking_lot = {version = "0.12.3", features = ["send_guard"]}
 
 
 
@@ -26,3 +27,7 @@ harness = false
 [dev-dependencies]
 hyper = { workspace = true }
 criterion = { workspace = true }
+
+
+[lints.clippy]
+unwrap_used = "deny"

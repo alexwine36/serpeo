@@ -17,7 +17,7 @@ pub async fn get_sites(app: tauri::AppHandle) -> Result<Vec<SiteWithSiteRuns>, S
     let storage = app_handle
         .state::<Mutex<AppData>>()
         .lock()
-        .unwrap()
+        .map_err(|e| e.to_string())?
         .storage
         .clone();
     let sites = storage.get_sites().await.map_err(|e| e.to_string())?;
@@ -34,7 +34,7 @@ pub async fn get_site_category_history(
     let storage = app_handle
         .state::<Mutex<AppData>>()
         .lock()
-        .unwrap()
+        .expect("Failed to lock app data")
         .storage
         .clone();
     let category_result_history = storage
@@ -51,7 +51,7 @@ pub async fn get_site_by_id(app: tauri::AppHandle, id: i32) -> Result<site::Mode
     let storage = app_handle
         .state::<Mutex<AppData>>()
         .lock()
-        .unwrap()
+        .map_err(|e| e.to_string())?
         .storage
         .clone();
     let site = storage
@@ -71,7 +71,7 @@ pub async fn get_site_run_by_id(
     let storage = app_handle
         .state::<Mutex<AppData>>()
         .lock()
-        .unwrap()
+        .expect("Failed to lock app data")
         .storage
         .clone();
     let site_run = storage
@@ -91,7 +91,7 @@ pub async fn get_category_result(
     let storage = app_handle
         .state::<Mutex<AppData>>()
         .lock()
-        .unwrap()
+        .map_err(|e| e.to_string())?
         .storage
         .clone();
     let category_result = storage
@@ -112,7 +112,7 @@ pub async fn get_category_result_detail(
     let storage = app_handle
         .state::<Mutex<AppData>>()
         .lock()
-        .unwrap()
+        .map_err(|e| e.to_string())?
         .storage
         .clone();
     let category_result = storage
@@ -132,7 +132,7 @@ pub async fn get_site_run_link_counts(
     let storage = app_handle
         .state::<Mutex<AppData>>()
         .lock()
-        .unwrap()
+        .map_err(|e| e.to_string())?
         .storage
         .clone();
     let site_run_link_counts = storage

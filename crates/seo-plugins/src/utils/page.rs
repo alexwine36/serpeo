@@ -12,12 +12,12 @@ use thiserror::Error;
 use tokio::time::Instant;
 use url::Url;
 
-use super::link_parser::{FromUrl, Link, parse_link};
+use super::link_parser::{parse_link, FromUrl, Link, LinkParseError};
 
 #[derive(Debug, Error)]
 pub enum PageError {
     #[error("Failed to parse URL: {0}")]
-    UrlParseError(String),
+    UrlParseError(#[from] LinkParseError),
     #[error("Failed to fetch URL: {0}")]
     FetchError(String),
     #[error("Document not set: {0}")]
@@ -30,6 +30,8 @@ pub enum PageError {
     SelectorParseError(String),
     #[error("Link parse error: {0}")]
     LinkParseError(String),
+    #[error("Mutex error: {0}")]
+    MutexError(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -60,10 +62,15 @@ impl Page {
     }
 
     pub fn set_url<T: FromUrl>(&mut self, url: T) {
-        self.url = Some(url.to_url().unwrap());
+        if let Ok(url) = url.to_url() {
+            self.url = Some(url);
+        } else {
+            self.url = None;
+        }
     }
 
     pub fn get_url(&self) -> Url {
+        #[allow(clippy::unwrap_used)]
         self.url
             .clone()
             .unwrap_or(Url::parse(FALLBACK_URL).unwrap())
@@ -78,7 +85,12 @@ impl Page {
     }
 
     pub fn get_redirected(&self) -> bool {
-        self.status_code.is_some() && self.status_code.unwrap() >= NonZeroU16::new(300).unwrap() && self.status_code.unwrap() < NonZeroU16::new(400).unwrap()
+        if let Some(status_code) = self.status_code {
+            let status_code: u16 = status_code.into();
+            (300..400).contains(&status_code)
+        } else {
+            false
+        }
     }
 
     pub fn set_content(&mut self, html: String) {
@@ -94,7 +106,7 @@ impl Page {
     }
 
     pub async fn from_url<T: FromUrl>(url: T) -> Result<Self, PageError> {
-        let url = url.to_url().unwrap();
+        let url = url.to_url().map_err(PageError::UrlParseError)?;
         let redirect_status_code = Arc::new(AtomicU16::new(0));
         let redirect_status_code_clone = redirect_status_code.clone();
         let client = Client::
@@ -158,7 +170,7 @@ impl Page {
     }
 
     pub fn get_element(&self, selector: &str) -> Result<Element, PageError> {
-        let document = self.get_document().unwrap();
+        let document = self.get_document()?;
         let selector =
             Selector::parse(selector).map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         let element = document
@@ -171,43 +183,50 @@ impl Page {
 
 impl Page {
     // Images
-    fn set_images(&self) {
-        let document = self.get_document().unwrap();
-        let img_selector = Selector::parse("img").unwrap();
+    fn set_images(&self) -> Result<(), PageError> {
+        let document = self.get_document()?;
+        let img_selector = Selector::parse("img").map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         let mut images = Vec::new();
 
         for img in document.select(&img_selector) {
-            let src = img.value().attr("src").unwrap_or_default().to_string();
+            let src = img.value().attr("src").map_or_else(|| "".to_string(), |s| s.to_string());
             let alt = img.value().attr("alt").map(|s| s.to_string());
             let srcset = img.value().attr("srcset").map(|s| s.to_string());
             images.push(Image { src, alt, srcset });
         }
 
-        let _ = self.images.lock().unwrap().insert(images);
+        let _ = self.images.lock().map_err(|e| PageError::MutexError(e.to_string()))?.insert(images);
+        Ok(())
     }
 
-    fn get_images(&self) -> Option<Vec<Image>> {
-        if self.images.lock().unwrap().is_none() {
-            self.set_images();
+    fn get_images(&self) -> Result<Vec<Image>, PageError> {
+        if self.images.lock().map_err(|e| PageError::MutexError(e.to_string()))?.is_none() {
+            self.set_images()?;
         }
-        self.images.lock().unwrap().clone()
+        self.images.lock().map_err(|e| PageError::MutexError(e.to_string()))    ?.clone().ok_or(PageError::ElementNotFound)
     }
 
     pub fn extract_images(&self) -> Vec<Image> {
-        self.get_images().unwrap_or_default()
+        match self.get_images() {
+            Ok(images) => images,
+            Err(e) => {
+                eprintln!("Error extracting images: {}", e);
+                Vec::new()
+            }
+        }
     }
 
     // Meta Tags
-    fn set_meta_tags(&self) {
+    fn set_meta_tags(&self) -> Result<(), PageError> {
         
-        let document = self.get_document().unwrap();
+        let document = self.get_document()?;
         let mut meta_tags = MetaTagInfo::default();
 
-        let title_selector = Selector::parse("title").unwrap();
+        let title_selector = Selector::parse("title").map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         if let Some(title) = document.select(&title_selector).next() {
             meta_tags.title = Some(title.inner_html());
         }
-        let link_selector = Selector::parse("link").unwrap();
+        let link_selector = Selector::parse("link").map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         for link in document.select(&link_selector) {
             if let Some(rel) = link.value().attr("rel") {
                 if rel == "canonical" {
@@ -235,7 +254,7 @@ impl Page {
             }
         }
 
-        let meta_selector = Selector::parse("meta").unwrap();
+        let meta_selector = Selector::parse("meta").map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         for meta in document.select(&meta_selector) {
             if let Some(name) = meta.value().attr("name") {
                 match name {
@@ -280,24 +299,25 @@ impl Page {
             }
         }
 
-        let _ = self.meta_tags.lock().unwrap().insert(meta_tags);
+        let _ = self.meta_tags.lock().map_err(|e| PageError::MutexError(e.to_string()))?.insert(meta_tags);
+        Ok(())
     }
 
-    fn get_meta_tags(&self) -> MetaTagInfo {
-        if self.meta_tags.lock().unwrap().is_none() {
-            self.set_meta_tags();
+    fn get_meta_tags(&self) -> Result<MetaTagInfo, PageError> {
+        if self.meta_tags.lock().map_err(|e| PageError::MutexError(e.to_string()))?.is_none() {
+            self.set_meta_tags()?;
         }
-        self.meta_tags.lock().unwrap().clone().unwrap_or_default()
+        self.meta_tags.lock().map_err(|e| PageError::MutexError(e.to_string()))?.clone().ok_or(PageError::ElementNotFound)
     }
 
     pub fn extract_meta_tags(&self) -> MetaTagInfo {
-        self.get_meta_tags()
+        self.get_meta_tags().unwrap_or_default()
     }
 
     // Links
     pub fn extract_links(&self) -> Result<Vec<Link>, PageError> {
-        let document = self.get_document().unwrap();
-        let link_selector = Selector::parse("a").unwrap();
+        let document = self.get_document()?;
+        let link_selector = Selector::parse("a").map_err(|e| PageError::SelectorParseError(e.to_string()))?;
         let mut links = Vec::new();
 
         for link in document.select(&link_selector) {
@@ -305,7 +325,7 @@ impl Page {
                 let base_url = self
                     .url
                     .clone()
-                    .unwrap_or(Url::parse(FALLBACK_URL).unwrap());
+                    .unwrap_or(Url::parse(FALLBACK_URL).map_err(|e| PageError::LinkParseError(e.to_string()))?);
                 let link = parse_link(href, base_url)
                     .map_err(|e| PageError::LinkParseError(e.to_string()))?;
                 links.push(link);
@@ -314,13 +334,13 @@ impl Page {
 
         Ok(links)
     }
-    pub fn extract_headings(&self) -> Vec<Heading> {
-        let document = self.get_document().unwrap();
+    pub fn extract_headings(&self) -> Result<Vec<Heading>, PageError> {
+        let document = self.get_document()?;
         let mut headings: Vec<Heading> = Vec::new();
 
         for i in 1..=6 {
             let selector = format!("h{}", i);
-            let heading_selector = Selector::parse(&selector).unwrap();
+            let heading_selector = Selector::parse(&selector).map_err(|e| PageError::SelectorParseError(e.to_string()))?;
             let res = document.select(&heading_selector);
             for heading in res {
                 let text = heading.inner_html();
@@ -331,7 +351,7 @@ impl Page {
             }
         }
 
-        headings
+        Ok(headings)
     }
 }
 
@@ -506,7 +526,7 @@ mod tests {
         let mut parser = Page::from_html(html.to_string());
         parser.set_url(Url::parse("https://example.com").unwrap());
 
-        let headings = parser.extract_headings();
+        let headings = parser.extract_headings().unwrap();
 
         assert_eq!(headings.len(), 3);
         assert_eq!(headings[0].tag, "h1");

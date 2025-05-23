@@ -67,6 +67,7 @@ pub struct Rule {
     pub passed_message: &'static str,
     pub failed_message: &'static str,
     pub default_severity: Severity,
+    // TODO: Change to Result<CheckResult, CheckError>
     pub check: fn(&Page) -> CheckResult,
     pub category: RuleCategory,
 }

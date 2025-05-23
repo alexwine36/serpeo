@@ -1,9 +1,10 @@
+#![allow(clippy::unwrap_used)]
+
 use std::any::Any;
 
 use crate::utils::{
     config::{CheckResult, Rule, RuleCategory, Severity},
     page_plugin::SeoPlugin,
-    registry::PluginRegistry,
 };
 
 // SeoBasic Plugin
@@ -32,10 +33,6 @@ impl SeoPlugin for SeoBasicPlugin {
     }
     fn as_any(&self) -> &dyn Any {
         self
-    }
-
-    fn initialize(&mut self, _registry: &PluginRegistry) -> Result<(), String> {
-        Ok(())
     }
 
     fn available_rules(&self) -> Vec<Rule> {

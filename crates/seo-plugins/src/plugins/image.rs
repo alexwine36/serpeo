@@ -5,7 +5,6 @@ use specta::Type;
 
 use crate::utils::config::{CheckResult, Rule, RuleCategory, Severity};
 use crate::utils::page_plugin::SeoPlugin;
-use crate::utils::registry::PluginRegistry;
 
 #[derive(Debug, Serialize, Deserialize, Type, Clone)]
 pub struct ImageData {
@@ -45,10 +44,6 @@ impl SeoPlugin for ImagePlugin {
 
     fn dependencies(&self) -> Vec<TypeId> {
         vec![]
-    }
-
-    fn initialize(&mut self, _registry: &PluginRegistry) -> Result<(), String> {
-        Ok(())
     }
 
     fn available_rules(&self) -> Vec<Rule> {

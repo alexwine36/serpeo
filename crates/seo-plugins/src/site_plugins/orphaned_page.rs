@@ -6,7 +6,6 @@ use crate::utils::config::{SiteCheckContext, SiteCheckResult};
 use crate::utils::{
     config::{RuleCategory, RuleResult, Severity, SiteRule},
     page::Page,
-    registry::PluginRegistry,
     site_plugin::SitePlugin,
 };
 
@@ -35,11 +34,9 @@ impl SitePlugin for OrphanedPagePlugin {
     fn description(&self) -> &str {
         "Check if pages are found only in sitemap but not in links"
     }
-    fn initialize(&mut self, _registry: &mut PluginRegistry) -> Result<(), String> {
-        Ok(())
-    }
+
     fn after_page_hook(
-        &mut self,
+        &self,
         _page: Arc<StdMutex<Page>>,
         _results: &Vec<RuleResult>,
     ) -> Result<(), String> {

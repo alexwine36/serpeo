@@ -88,14 +88,14 @@ siteRunIdSet: "site-run-id-set"
 
 /** user-defined constants **/
 
-export const CRAWL_SETTINGS_KEY = "crawl_settings" as const;
 export const STORE_FILE = "store.json" as const;
+export const CRAWL_SETTINGS_KEY = "crawl_settings" as const;
 
 /** user-defined types **/
 
 export type AnalysisFinished = { site_run_id: number; result: CrawlResult }
 export type AnalysisProgress = { progress_type: AnalysisProgressType; url: string | null; total_pages: number; completed_pages: number }
-export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink }
+export type AnalysisProgressType = "FoundLink" | { AnalyzedPage: PageLink } | { AnalyzedSite: RuleResult[] }
 export type AnalysisStart = { base_url: string }
 export type CategoryDetailResponse = { data: Partial<{ [key in DbRuleCategory]: FlatRuleResult[] }> }
 export type CategoryResult = { total: number; passed: number; failed: number }
